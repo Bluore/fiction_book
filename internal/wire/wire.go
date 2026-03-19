@@ -5,8 +5,8 @@ package wire
 
 import (
 	"github.com/google/wire"
-
-	"github.com/d60-Lab/gin-template/internal/api/handler"
+	
+	"fiction-book/internal/api/handler"
 )
 
 // InitializeApp 初始化整个应用
@@ -14,16 +14,16 @@ func InitializeApp() (*App, error) {
 	wire.Build(
 		// 基础设施层
 		InfraSet,
-
+		
 		// 仓储层
 		RepositorySet,
-
+		
 		// 服务层
 		ServiceSet,
-
+		
 		// Handler 层
 		HandlerSet,
-
+		
 		// App 结构
 		NewApp,
 	)

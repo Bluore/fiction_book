@@ -3,9 +3,9 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-
-	"github.com/d60-Lab/gin-template/pkg/logger"
-	"github.com/d60-Lab/gin-template/pkg/response"
+	
+	"fiction-book/pkg/logger"
+	"fiction-book/pkg/response"
 )
 
 // Recovery 恢复中间件，捕获 panic

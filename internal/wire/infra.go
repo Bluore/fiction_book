@@ -3,9 +3,9 @@ package wire
 import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
-
-	"github.com/d60-Lab/gin-template/pkg/config"
-	"github.com/d60-Lab/gin-template/pkg/database"
+	
+	"fiction-book/pkg/config"
+	"fiction-book/pkg/database"
 )
 
 // InfraSet 基础设施 Provider 集合

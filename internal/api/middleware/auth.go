@@ -2,12 +2,12 @@ package middleware
 
 import (
 	"strings"
-
+	
 	"github.com/gin-gonic/gin"
-
-	"github.com/d60-Lab/gin-template/pkg/config"
-	"github.com/d60-Lab/gin-template/pkg/jwt"
-	"github.com/d60-Lab/gin-template/pkg/response"
+	
+	"fiction-book/pkg/config"
+	"fiction-book/pkg/jwt"
+	"fiction-book/pkg/response"
 )
 
 // Auth JWT 认证中间件
@@ -19,17 +19,17 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		
 		// 移除 "Bearer " 前缀
 		token = strings.TrimPrefix(token, "Bearer ")
-
+		
 		claims, err := jwt.ParseToken(token, cfg.JWT.Secret)
 		if err != nil {
 			response.Unauthorized(c)
 			c.Abort()
 			return
 		}
-
+		
 		// 将用户信息存入上下文
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
@@ -45,7 +45,7 @@ func AdminOnly(allowedRoles ...string) gin.HandlerFunc {
 	if len(allowedRoles) == 0 {
 		allowedRoles = []string{"admin"}
 	}
-
+	
 	return func(c *gin.Context) {
 		userID, exists := c.Get("userID")
 		if !exists {
@@ -53,7 +53,7 @@ func AdminOnly(allowedRoles ...string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		
 		// 从上下文获取用户角色（需要在 Auth 中间件中设置）
 		role, exists := c.Get("userRole")
 		if !exists {
@@ -63,14 +63,14 @@ func AdminOnly(allowedRoles ...string) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		
 		userRole, ok := role.(string)
 		if !ok {
 			response.Forbidden(c, "permission denied: invalid role type")
 			c.Abort()
 			return
 		}
-
+		
 		// 检查用户角色是否在允许列表中
 		allowed := false
 		for _, r := range allowedRoles {
@@ -79,13 +79,13 @@ func AdminOnly(allowedRoles ...string) gin.HandlerFunc {
 				break
 			}
 		}
-
+		
 		if !allowed {
 			response.Forbidden(c, "permission denied: insufficient privileges")
 			c.Abort()
 			return
 		}
-
+		
 		_ = userID // 可用于日志记录
 		c.Next()
 	}

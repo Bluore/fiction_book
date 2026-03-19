@@ -3,8 +3,8 @@ package wire
 import (
 	"github.com/google/wire"
 	"gorm.io/gorm"
-
-	"github.com/d60-Lab/gin-template/internal/repository"
+	
+	"fiction-book/internal/repository"
 )
 
 // RepositorySet 仓储层 Provider 集合

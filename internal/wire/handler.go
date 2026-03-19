@@ -2,9 +2,9 @@ package wire
 
 import (
 	"github.com/google/wire"
-
-	"github.com/d60-Lab/gin-template/internal/api/handler"
-	"github.com/d60-Lab/gin-template/internal/service"
+	
+	"fiction-book/internal/api/handler"
+	"fiction-book/internal/service"
 )
 
 // HandlerSet Handler 层 Provider 集合

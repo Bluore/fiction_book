@@ -8,21 +8,21 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/d60-Lab/gin-template/internal/api/middleware"
-	"github.com/d60-Lab/gin-template/internal/dto"
-	"github.com/d60-Lab/gin-template/internal/service"
-	"github.com/d60-Lab/gin-template/pkg/validator"
+	
+	"fiction-book/internal/api/middleware"
+	"fiction-book/internal/dto"
+	"fiction-book/internal/service"
+	"fiction-book/pkg/validator"
 )
 
 func TestMain(m *testing.M) {
 	// 初始化自定义验证器
 	validator.Init()
-
+	
 	// 运行测试
 	code := m.Run()
 	os.Exit(code)
@@ -95,61 +95,61 @@ func (m *MockUserService) List(ctx context.Context, page, pageSize int) ([]*dto.
 
 func TestGetUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-
+	
 	mockService := new(MockUserService)
 	handler := NewHandler(mockService)
-
+	
 	expectedUser := &dto.UserResponse{
 		ID:       "1",
 		Username: "testuser",
 		Email:    "test@example.com",
 	}
-
+	
 	mockService.On("GetByID", mock.Anything, "1").Return(expectedUser, nil)
-
+	
 	w := httptest.NewRecorder()
 	_, r := gin.CreateTestContext(w)
 	r.GET("/users/:id", middleware.Validation(&dto.GetUserRequest{}), handler.GetUser)
-
+	
 	req, err := http.NewRequestWithContext(context.Background(), "GET", "/users/1", nil)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
-
+	
 	r.ServeHTTP(w, req)
-
+	
 	assert.Equal(t, http.StatusOK, w.Code)
 	mockService.AssertExpectations(t)
 }
 
 func TestCreateUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-
+	
 	mockService := new(MockUserService)
 	handler := NewHandler(mockService)
-
+	
 	createReq := &dto.CreateUserRequest{
 		Username: "testuser",
 		Email:    "test@example.com",
 		Password: "password123", // pragma: allowlist secret
 	}
-
+	
 	expectedUser := &dto.UserResponse{
 		ID:       "1",
 		Username: "testuser",
 		Email:    "test@example.com",
 	}
-
+	
 	mockService.On("Create", mock.Anything, mock.MatchedBy(func(req *dto.CreateUserRequest) bool {
 		return req.Username == createReq.Username &&
 			req.Email == createReq.Email &&
 			req.Password == createReq.Password //nolint:gosec // pragma: allowlist secret
 	})).Return(expectedUser, nil)
-
+	
 	w := httptest.NewRecorder()
 	_, r := gin.CreateTestContext(w)
 	r.POST("/users", middleware.Validation(&dto.CreateUserRequest{}), handler.CreateUser)
-
+	
 	jsonData, err := json.Marshal(createReq)
 	if err != nil {
 		t.Fatalf("failed to marshal request: %v", err)
@@ -159,38 +159,38 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("failed to create request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-
+	
 	r.ServeHTTP(w, req)
-
+	
 	assert.Equal(t, http.StatusOK, w.Code)
 	mockService.AssertExpectations(t)
 }
 
 func TestGetUserNotFound(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-
+	
 	mockService := new(MockUserService)
 	handler := NewHandler(mockService)
-
+	
 	mockService.On("GetByID", mock.Anything, "999").Return(nil, service.ErrUserNotFound)
-
+	
 	w := httptest.NewRecorder()
 	_, r := gin.CreateTestContext(w)
 	r.GET("/users/:id", middleware.Validation(&dto.GetUserRequest{}), handler.GetUser)
-
+	
 	req, err := http.NewRequestWithContext(context.Background(), "GET", "/users/999", nil)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
-
+	
 	r.ServeHTTP(w, req)
-
+	
 	assert.Equal(t, http.StatusOK, w.Code)
-
+	
 	var resp map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(http.StatusNotFound), resp["code"])
-
+	
 	mockService.AssertExpectations(t)
 }

@@ -2,11 +2,11 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"github.com/d60-Lab/gin-template/internal/api/middleware"
-	"github.com/d60-Lab/gin-template/internal/dto"
-	"github.com/d60-Lab/gin-template/internal/service"
-	"github.com/d60-Lab/gin-template/pkg/response"
+	
+	"fiction-book/internal/api/middleware"
+	"fiction-book/internal/dto"
+	"fiction-book/internal/service"
+	"fiction-book/pkg/response"
 )
 
 // Handler 处理器结构
@@ -48,7 +48,7 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 // @Router /api/v1/users [post]
 func (h *Handler) CreateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreateUserRequest](c)
-
+	
 	user, err := h.userService.Create(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrUserExists {
@@ -58,7 +58,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-
+	
 	response.Success(c, user)
 }
 
@@ -75,7 +75,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 // @Router /api/v1/users/{id} [get]
 func (h *Handler) GetUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetUserRequest](c)
-
+	
 	user, err := h.userService.GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		if err == service.ErrUserNotFound {
@@ -85,7 +85,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-
+	
 	response.Success(c, user)
 }
 
@@ -106,7 +106,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 // @Router /api/v1/users/{id} [put]
 func (h *Handler) UpdateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserRequest](c)
-
+	
 	user, err := h.userService.Update(c.Request.Context(), req.ID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
@@ -116,7 +116,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-
+	
 	response.Success(c, user)
 }
 
@@ -136,7 +136,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 // @Router /api/v1/users/{id} [delete]
 func (h *Handler) DeleteUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.DeleteUserRequest](c)
-
+	
 	if err := h.userService.Delete(c.Request.Context(), req.ID); err != nil {
 		if err == service.ErrUserNotFound {
 			response.NotFound(c, "user not found")
@@ -145,7 +145,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-
+	
 	response.Success(c, nil)
 }
 
@@ -162,7 +162,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 // @Router /api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.LoginRequest](c)
-
+	
 	loginResp, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrUserNotFound || err == service.ErrInvalidPassword {
@@ -172,7 +172,7 @@ func (h *Handler) Login(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-
+	
 	response.Success(c, loginResp)
 }
 
@@ -190,13 +190,13 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) ListUsers(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.ListUsersRequest](c)
 	req.SetDefaults()
-
+	
 	users, err := h.userService.List(c.Request.Context(), req.Page, req.PageSize)
 	if err != nil {
 		response.InternalError(c, err)
 		return
 	}
-
+	
 	response.Success(c, gin.H{
 		"page":      req.Page,
 		"page_size": req.PageSize,

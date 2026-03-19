@@ -1,5 +1,5 @@
 # Local config (contains secrets)
-./config/config.yaml
+config/config.yaml
 
 # Binaries
 bin/
@@ -37,3 +37,5 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+/.claude/
+/.agents/

@@ -7,7 +7,7 @@
 package wire
 
 import (
-	"github.com/d60-Lab/gin-template/internal/api/handler"
+	"fiction-book/internal/api/handler"
 )
 
 // Injectors from wire.go:

@@ -2,10 +2,10 @@ package wire
 
 import (
 	"github.com/google/wire"
-
-	"github.com/d60-Lab/gin-template/internal/repository"
-	"github.com/d60-Lab/gin-template/internal/service"
-	"github.com/d60-Lab/gin-template/pkg/config"
+	
+	"fiction-book/internal/repository"
+	"fiction-book/internal/service"
+	"fiction-book/pkg/config"
 )
 
 // ServiceSet 服务层 Provider 集合
