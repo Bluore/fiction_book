@@ -1,4 +1,4 @@
-module github.com/d60-Lab/gin-template
+module fiction-book
 
 go 1.24.0
 
@@ -31,7 +31,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.46.0
 	golang.org/x/time v0.5.0
-	gorm.io/driver/postgres v1.6.0
+	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )
@@ -126,7 +126,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/mysql v1.6.0 // indirect
+	gorm.io/driver/postgres v1.6.0 // indirect
 	gorm.io/driver/sqlserver v1.6.3 // indirect
 	gorm.io/plugin/dbresolver v1.6.2 // indirect
 	modernc.org/libc v1.67.4 // indirect
