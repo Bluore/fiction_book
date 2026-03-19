@@ -1,0 +1,39 @@
+# Local config (contains secrets)
+./config/config.yaml
+
+# Binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+
+# Go vendor (optional - uncomment if you don't commit vendor)
+/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+*.local.yaml
+.env.local
+
+# Logs
+*.log
+
+# Temp
+tmp/
+temp/
+*.tmp
