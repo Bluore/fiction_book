@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,6 +23,8 @@ var (
 	ErrUserExists      = errors.New("user already exists")
 	ErrUserNotFound    = errors.New("user not found")
 	ErrInvalidPassword = errors.New("invalid password")
+	ErrVerification    = errors.New("verification failed")
+	ErrEmailVerifySend = errors.New("email verification not send")
 )
 
 // UserService 用户服务接口
@@ -49,6 +52,18 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config) User
 }
 
 func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
+	// 验证码是否正确
+	rVerify, err := redis.Get(
+		ctx,
+		fmt.Sprintf("email:verify:%s", req.Email),
+	)
+	if err != nil {
+		return nil, ErrEmailVerifySend
+	}
+	if req.Verify != rVerify {
+		return nil, ErrVerification
+	}
+
 	// 检查用户名是否已存在
 	existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
 	if err != nil {
@@ -212,17 +227,17 @@ func (s *userService) EmailVerify(cfg *config.Config, ctx context.Context, recei
 	}
 
 	// redis添加记录
-	r, err := redis.GetClient()
-	if err != nil {
-		return err
-	}
-	r.Set(
+	err = redis.SetWithExpiration(
 		ctx,
 		fmt.Sprintf("email:verify:%s",
 			receiver),
 		num,
-		10*time.Second,
+		10*time.Minute,
 	)
+	if err != nil {
+		log.Printf("redis add value error: %s\n", err.Error())
+		return err
+	}
 
 	// 发送邮件
 	if err := email.CreateEmailOne(

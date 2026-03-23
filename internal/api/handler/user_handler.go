@@ -58,6 +58,14 @@ func (h *Handler) CreateUser(c *gin.Context) {
 			response.BadRequest(c, "user already exists")
 			return
 		}
+		if err == service.ErrEmailVerifySend {
+			response.BadRequest(c, "please send email verify, firstly")
+			return
+		}
+		if err == service.ErrVerification {
+			response.BadRequest(c, "verification failed")
+			return
+		}
 		response.InternalError(c, err)
 		return
 	}

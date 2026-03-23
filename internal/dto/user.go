@@ -6,6 +6,7 @@ type CreateUserRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
 	Age      int    `json:"age" binding:"omitempty,gte=0,lte=130"`
+	Verify   string `json:"verify" binding:"omitempty,len=6"`
 }
 
 // UpdateUserRequest 更新用户请求
