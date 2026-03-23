@@ -3,21 +3,23 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	
+
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	
+
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/api/router"
 	"fiction-book/internal/wire"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
+	"fiction-book/pkg/redis"
 	"fiction-book/pkg/validator"
 )
 
@@ -46,18 +48,23 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
-	
+
 	// 初始化日志
 	if err := logger.Init(cfg.Server.Mode); err != nil {
 		panic(fmt.Sprintf("Failed to init logger: %v", err))
 	}
 	defer logger.Sync()
-	
+
 	logger.Info("Starting application...",
 		zap.String("mode", cfg.Server.Mode),
 		zap.Int("port", cfg.Server.Port),
 	)
-	
+
+	// 初始化redis
+	if err := redis.Init(&cfg.Redis); err != nil {
+		log.Fatal(err)
+	}
+
 	// 初始化 Sentry（如果启用）
 	if cfg.Sentry.Enabled {
 		err := middleware.InitSentry(middleware.SentryConfig{
@@ -73,7 +80,7 @@ func main() {
 			defer sentry.Flush(2 * time.Second)
 		}
 	}
-	
+
 	// 初始化 OpenTelemetry（如果启用）
 	if cfg.Tracing.Enabled {
 		tp, err := middleware.InitTracing(middleware.TracingConfig{
@@ -92,23 +99,23 @@ func main() {
 			}()
 		}
 	}
-	
+
 	// 初始化自定义验证器
 	validator.Init()
-	
+
 	// 使用 Wire 初始化应用（自动注入所有依赖）
 	app, err := wire.InitializeApp()
 	if err != nil {
 		logger.Fatal("Failed to initialize app", zap.Error(err))
 	}
-	
+
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
-	
+
 	// 创建路由
 	r := gin.New()
 	router.Setup(r, app.Handler, cfg)
-	
+
 	// 创建 HTTP 服务器
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
@@ -116,7 +123,7 @@ func main() {
 		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
 	}
-	
+
 	// 在 goroutine 中启动服务
 	go func() {
 		logger.Info("Server is running",
@@ -126,21 +133,21 @@ func main() {
 			logger.Fatal("Failed to start server", zap.Error(err))
 		}
 	}()
-	
+
 	// 等待中断信号以优雅地关闭服务器
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	
+
 	logger.Info("Shutting down server...")
-	
+
 	// 设置 5 秒的超时时间用于优雅关闭
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal("Server forced to shutdown", zap.Error(err))
 	}
-	
+
 	logger.Info("Server exited")
 }

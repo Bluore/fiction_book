@@ -14,6 +14,7 @@ type Config struct {
 	Sentry   SentryConfig   `mapstructure:"sentry"`
 	Tracing  TracingConfig  `mapstructure:"tracing"`
 	OSS      OSSConfig      `mapstructure:"oss"`
+	Resend   Resend         `mapstructure:"resend"`
 }
 
 // OSSConfig 对象存储配置
@@ -82,6 +83,11 @@ type TracingConfig struct {
 	Enabled        bool   `mapstructure:"enabled"`
 	ServiceName    string `mapstructure:"service_name"`
 	JaegerEndpoint string `mapstructure:"jaeger_endpoint"`
+}
+
+type Resend struct {
+	From   string `mapstructure:"from"`
+	ApiKey string `mapstructure:"api_key"`
 }
 
 // Load 加载配置

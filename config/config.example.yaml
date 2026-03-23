@@ -42,3 +42,8 @@ tracing:
   enabled: false # 按需开启
   service_name: gin-template # 服务名称
   jaeger_endpoint: http://localhost:14268/api/traces # Jaeger endpoint
+
+# Resend
+resend:
+  from: 123@abc.com
+  api_key: re_***************

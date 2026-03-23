@@ -2,22 +2,25 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	
+
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
+	"fiction-book/pkg/config"
 	"fiction-book/pkg/response"
 )
 
 // Handler 处理器结构
 type Handler struct {
 	userService service.UserService
+	cfg         *config.Config
 }
 
 // NewHandler 创建处理器实例
-func NewHandler(userService service.UserService) *Handler {
+func NewHandler(userService service.UserService, cfg *config.Config) *Handler {
 	return &Handler{
 		userService: userService,
+		cfg:         cfg,
 	}
 }
 
@@ -48,7 +51,7 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 // @Router /api/v1/users [post]
 func (h *Handler) CreateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreateUserRequest](c)
-	
+
 	user, err := h.userService.Create(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrUserExists {
@@ -58,7 +61,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-	
+
 	response.Success(c, user)
 }
 
@@ -75,7 +78,7 @@ func (h *Handler) CreateUser(c *gin.Context) {
 // @Router /api/v1/users/{id} [get]
 func (h *Handler) GetUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetUserRequest](c)
-	
+
 	user, err := h.userService.GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		if err == service.ErrUserNotFound {
@@ -85,7 +88,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-	
+
 	response.Success(c, user)
 }
 
@@ -106,7 +109,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 // @Router /api/v1/users/{id} [put]
 func (h *Handler) UpdateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserRequest](c)
-	
+
 	user, err := h.userService.Update(c.Request.Context(), req.ID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
@@ -116,7 +119,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-	
+
 	response.Success(c, user)
 }
 
@@ -136,7 +139,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 // @Router /api/v1/users/{id} [delete]
 func (h *Handler) DeleteUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.DeleteUserRequest](c)
-	
+
 	if err := h.userService.Delete(c.Request.Context(), req.ID); err != nil {
 		if err == service.ErrUserNotFound {
 			response.NotFound(c, "user not found")
@@ -145,7 +148,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-	
+
 	response.Success(c, nil)
 }
 
@@ -162,7 +165,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 // @Router /api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.LoginRequest](c)
-	
+
 	loginResp, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrUserNotFound || err == service.ErrInvalidPassword {
@@ -172,7 +175,7 @@ func (h *Handler) Login(c *gin.Context) {
 		response.InternalError(c, err)
 		return
 	}
-	
+
 	response.Success(c, loginResp)
 }
 
@@ -190,16 +193,41 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) ListUsers(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.ListUsersRequest](c)
 	req.SetDefaults()
-	
+
 	users, err := h.userService.List(c.Request.Context(), req.Page, req.PageSize)
 	if err != nil {
 		response.InternalError(c, err)
 		return
 	}
-	
+
 	response.Success(c, gin.H{
 		"page":      req.Page,
 		"page_size": req.PageSize,
 		"list":      users,
+	})
+}
+
+// EmailVerify 获取邮箱验证码
+// @Summary 获取邮箱验证码
+// @Description 向指定邮箱发送验证码
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body dto.EmailVerifyRequest true "邮箱信息"
+// @Success 200 {object} response.Response{data=dto.EmailVerifyResponse}
+// @Failure 400 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/auth/email/verify [post]
+func (h *Handler) EmailVerify(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.EmailVerifyRequest](c)
+
+	err := h.userService.EmailVerify(h.cfg, c.Request.Context(), req.Email)
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+
+	response.Success(c, dto.EmailVerifyResponse{
+		Email: req.Email,
 	})
 }

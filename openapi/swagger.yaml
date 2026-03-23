@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  github_com_bjmayor_gin-template_internal_dto.CreateUserRequest:
+  dto.CreateUserRequest:
     properties:
       age:
         maximum: 130
@@ -18,7 +18,19 @@ definitions:
     - password
     - username
     type: object
-  github_com_bjmayor_gin-template_internal_dto.LoginRequest:
+  dto.EmailVerifyRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.EmailVerifyResponse:
+    properties:
+      email:
+        type: string
+    type: object
+  dto.LoginRequest:
     properties:
       password:
         type: string
@@ -28,7 +40,7 @@ definitions:
     - password
     - username
     type: object
-  github_com_bjmayor_gin-template_internal_dto.LoginResponse:
+  dto.LoginResponse:
     properties:
       token:
         type: string
@@ -37,7 +49,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_bjmayor_gin-template_internal_dto.UpdateUserRequest:
+  dto.UpdateUserRequest:
     properties:
       age:
         maximum: 130
@@ -45,10 +57,14 @@ definitions:
         type: integer
       email:
         type: string
+      id:
+        type: string
       username:
         type: string
+    required:
+    - id
     type: object
-  github_com_bjmayor_gin-template_internal_dto.UserResponse:
+  dto.UserResponse:
     properties:
       age:
         type: integer
@@ -63,7 +79,7 @@ definitions:
       username:
         type: string
     type: object
-  github_com_bjmayor_gin-template_pkg_response.Response:
+  response.Response:
     properties:
       code:
         type: integer
@@ -84,6 +100,41 @@ info:
   title: Gin Template API
   version: "1.0"
 paths:
+  /api/v1/auth/email/verify:
+    post:
+      consumes:
+      - application/json
+      description: 向指定邮箱发送验证码
+      parameters:
+      - description: 邮箱信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EmailVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.EmailVerifyResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取邮箱验证码
+      tags:
+      - 认证
   /api/v1/auth/login:
     post:
       consumes:
@@ -95,7 +146,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.LoginRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
@@ -103,19 +154,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.LoginResponse'
+                  $ref: '#/definitions/dto.LoginResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 用户登录
       tags:
       - 认证
@@ -142,7 +193,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   additionalProperties: true
@@ -151,7 +202,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取用户列表
       tags:
       - 用户管理
@@ -165,7 +216,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.CreateUserRequest'
+          $ref: '#/definitions/dto.CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -173,19 +224,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 创建用户
       tags:
       - 用户管理
@@ -206,23 +257,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 删除用户
@@ -245,19 +296,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取用户信息
       tags:
       - 用户管理
@@ -276,7 +327,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.UpdateUserRequest'
+          $ref: '#/definitions/dto.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -284,27 +335,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/github_com_bjmayor_gin-template_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 更新用户信息
@@ -322,7 +373,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_bjmayor_gin-template_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   additionalProperties:

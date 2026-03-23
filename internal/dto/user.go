@@ -64,3 +64,13 @@ type UserResponse struct {
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
+
+// EmailVerifyRequest 邮箱验证请求
+type EmailVerifyRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+// EmailVerifyResponse 邮箱验证响应
+type EmailVerifyResponse struct {
+	Email string `json:"email"`
+}

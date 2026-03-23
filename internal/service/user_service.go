@@ -3,15 +3,19 @@ package service
 import (
 	"context"
 	"errors"
-	
+	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	
+
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/email"
 	"fiction-book/pkg/jwt"
+	"fiction-book/pkg/redis"
 )
 
 var (
@@ -28,6 +32,7 @@ type UserService interface {
 	Delete(ctx context.Context, id string) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
+	EmailVerify(cfg *config.Config, ctx context.Context, receiver string) error
 }
 
 type userService struct {
@@ -52,7 +57,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	if existingUser != nil {
 		return nil, ErrUserExists
 	}
-	
+
 	// 检查邮箱是否已存在
 	existingUser, err = s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
@@ -61,13 +66,13 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	if existingUser != nil {
 		return nil, ErrUserExists
 	}
-	
+
 	// 加密密码
 	hashedPassword, err := hashPassword(req.Password)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 创建用户
 	user := &model.User{
 		ID:       uuid.New().String(),
@@ -76,11 +81,11 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 		Password: hashedPassword, // pragma: allowlist secret
 		Age:      req.Age,
 	}
-	
+
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		return nil, err
 	}
-	
+
 	return s.toUserResponse(user), nil
 }
 
@@ -103,7 +108,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 	if user == nil {
 		return nil, ErrUserNotFound
 	}
-	
+
 	// 更新字段
 	if req.Username != nil {
 		user.Username = *req.Username
@@ -114,11 +119,11 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 	if req.Age != nil {
 		user.Age = *req.Age
 	}
-	
+
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, err
 	}
-	
+
 	return s.toUserResponse(user), nil
 }
 
@@ -130,7 +135,7 @@ func (s *userService) Delete(ctx context.Context, id string) error {
 	if user == nil {
 		return ErrUserNotFound
 	}
-	
+
 	return s.userRepo.Delete(ctx, id)
 }
 
@@ -142,18 +147,18 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	if user == nil {
 		return nil, ErrUserNotFound
 	}
-	
+
 	// 验证密码
 	if !checkPasswordHash(req.Password, user.Password) {
 		return nil, ErrInvalidPassword
 	}
-	
+
 	// 生成 JWT token
 	token, err := jwt.GenerateToken(user.ID, user.Username, s.cfg.JWT.Secret, s.cfg.JWT.Expire) // pragma: allowlist secret
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &dto.LoginResponse{
 		Token:    token,
 		UserID:   user.ID,
@@ -167,12 +172,12 @@ func (s *userService) List(ctx context.Context, page, pageSize int) ([]*dto.User
 	if err != nil {
 		return nil, err
 	}
-	
+
 	responses := make([]*dto.UserResponse, len(users))
 	for i, user := range users {
 		responses[i] = s.toUserResponse(user)
 	}
-	
+
 	return responses, nil
 }
 
@@ -197,4 +202,36 @@ func hashPassword(password string) (string, error) {
 func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func (s *userService) EmailVerify(cfg *config.Config, ctx context.Context, receiver string) error {
+	// 生成验证码
+	num, err := email.CreateVerifyNumber()
+	if err != nil {
+		return err
+	}
+
+	// redis添加记录
+	r, err := redis.GetClient()
+	if err != nil {
+		return err
+	}
+	r.Set(
+		ctx,
+		fmt.Sprintf("email:verify:%s",
+			receiver),
+		num,
+		10*time.Second,
+	)
+
+	// 发送邮件
+	if err := email.CreateEmailOne(
+		cfg,
+		receiver,
+		"GSF小说 你的一次性邮箱验证码",
+		fmt.Sprintf("邮箱验证密码: %s </br> 10分钟内有效", num),
+	); err != nil {
+		return err
+	}
+	return nil
 }
