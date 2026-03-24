@@ -52,16 +52,9 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config) User
 }
 
 func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
-	// 验证码是否正确
-	rVerify, err := redis.Get(
-		ctx,
-		fmt.Sprintf("email:verify:%s", req.Email),
-	)
+	err := emailVerify(ctx, req.Email, req.Verify)
 	if err != nil {
-		return nil, ErrEmailVerifySend
-	}
-	if req.Verify != rVerify {
-		return nil, ErrVerification
+		return nil, err
 	}
 
 	// 检查用户名是否已存在
@@ -104,6 +97,28 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	return s.toUserResponse(user), nil
 }
 
+func emailVerify(ctx context.Context, emailVer string, pwdVer string) error {
+	// 验证码是否正确
+	rVerify, err := redis.Get(
+		ctx,
+		fmt.Sprintf("email:verify:%s", emailVer),
+	)
+	if err != nil {
+		return ErrEmailVerifySend
+	}
+	if pwdVer != rVerify {
+		return ErrVerification
+	}
+	err = redis.Delete(
+		ctx,
+		fmt.Sprintf("email:verify:%s", emailVer),
+	)
+	if err != nil {
+		return nil
+	}
+	return nil
+}
+
 func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
@@ -116,6 +131,11 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 }
 
 func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
+	err := emailVerify(ctx, *req.Email, *req.Verify)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -198,12 +218,15 @@ func (s *userService) List(ctx context.Context, page, pageSize int) ([]*dto.User
 
 func (s *userService) toUserResponse(user *model.User) *dto.UserResponse {
 	return &dto.UserResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		Age:       user.Age,
-		CreatedAt: user.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt: user.UpdatedAt.Format("2006-01-02 15:04:05"),
+		ID:           user.ID,
+		Username:     user.Username,
+		Email:        user.Email,
+		Age:          user.Age,
+		Description:  user.Description,
+		ProfileImage: user.ProfileImage,
+		CoverImage:   user.CoverImage,
+		CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
+		UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
 	}
 }
 

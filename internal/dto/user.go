@@ -11,10 +11,14 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest 更新用户请求
 type UpdateUserRequest struct {
-	ID       string  `uri:"id" binding:"required"`
-	Username *string `json:"username" binding:"omitempty,username"`
-	Email    *string `json:"email" binding:"omitempty,email"`
-	Age      *int    `json:"age" binding:"omitempty,gte=0,lte=130"`
+	ID           string  `uri:"id" binding:"required"`
+	Username     *string `json:"username" binding:"omitempty,username"`
+	Email        *string `json:"email" binding:"omitempty,email"`
+	Age          *int    `json:"age" binding:"omitempty,gte=0,lte=130"`
+	Description  *string `json:"description" gorm:"type:text"`
+	ProfileImage *string `json:"profile_image" gorm:"type:varchar(255)"`
+	CoverImage   *string `json:"cover_image" gorm:"type:varchar(255)"`
+	Verify       *string `json:"verify" binding:"omitempty,len=6"`
 }
 
 // GetUserRequest 获取用户请求
@@ -58,12 +62,16 @@ type LoginResponse struct {
 
 // UserResponse 用户响应
 type UserResponse struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Age       int    `json:"age"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID           string `json:"id"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	Age          int    `json:"age"`
+	Description  string `json:"description"`
+	ProfileImage string `json:"profile_image"`
+	CoverImage   string `json:"cover_image"`
+	Verify       string `json:"verify"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // EmailVerifyRequest 邮箱验证请求

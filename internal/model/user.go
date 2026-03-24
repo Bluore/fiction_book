@@ -13,7 +13,9 @@ type User struct {
 	Email        string         `json:"email" gorm:"uniqueIndex;type:varchar(100);not null"`
 	Password     string         `json:"-" gorm:"type:varchar(255);not null"`
 	Age          int            `json:"age" gorm:"type:int"`
+	Description  string         `json:"description" gorm:"type:text"`
 	ProfileImage string         `json:"profile_image" gorm:"type:varchar(255)"`
+	CoverImage   string         `json:"cover_image" gorm:"type:varchar(255)"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`

@@ -510,6 +510,9 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                },
+                "verify": {
+                    "type": "string"
                 }
             }
         },
@@ -572,13 +575,25 @@ const docTemplate = `{
                     "maximum": 130,
                     "minimum": 0
                 },
+                "cover_image": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
+                "profile_image": {
+                    "type": "string"
+                },
                 "username": {
+                    "type": "string"
+                },
+                "verify": {
                     "type": "string"
                 }
             }
@@ -589,7 +604,13 @@ const docTemplate = `{
                 "age": {
                     "type": "integer"
                 },
+                "cover_image": {
+                    "type": "string"
+                },
                 "created_at": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "email": {
@@ -598,10 +619,16 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "profile_image": {
+                    "type": "string"
+                },
                 "updated_at": {
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                },
+                "verify": {
                     "type": "string"
                 }
             }

@@ -13,6 +13,8 @@ definitions:
         type: string
       username:
         type: string
+      verify:
+        type: string
     required:
     - email
     - password
@@ -55,11 +57,19 @@ definitions:
         maximum: 130
         minimum: 0
         type: integer
+      cover_image:
+        type: string
+      description:
+        type: string
       email:
         type: string
       id:
         type: string
+      profile_image:
+        type: string
       username:
+        type: string
+      verify:
         type: string
     required:
     - id
@@ -68,15 +78,23 @@ definitions:
     properties:
       age:
         type: integer
+      cover_image:
+        type: string
       created_at:
+        type: string
+      description:
         type: string
       email:
         type: string
       id:
         type: string
+      profile_image:
+        type: string
       updated_at:
         type: string
       username:
+        type: string
+      verify:
         type: string
     type: object
   response.Response:
