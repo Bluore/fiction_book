@@ -3,11 +3,11 @@ package database
 import (
 	"fmt"
 	"time"
-	
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	
+
 	"fiction-book/internal/model"
 	"fiction-book/pkg/config"
 )
@@ -21,35 +21,38 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		cfg.Database.Port,
 		cfg.Database.Database,
 	)
-	
+
 	var logLevel logger.LogLevel
 	if cfg.Server.Mode == "release" {
 		logLevel = logger.Error
 	} else {
 		logLevel = logger.Info
 	}
-	
+
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logLevel),
 	})
 	if err != nil {
 		return nil, err
 	}
-	
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 设置连接池
 	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(time.Duration(cfg.Database.ConnMaxLifetime) * time.Second)
-	
+
 	// 自动迁移
 	if err := db.AutoMigrate(&model.User{}); err != nil {
 		return nil, err
 	}
-	
+	if err := db.AutoMigrate(&model.Book{}); err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }

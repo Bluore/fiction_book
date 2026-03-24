@@ -24,7 +24,9 @@ func InitializeApp() (*App, error) {
 	}
 	userRepository := ProvideUserRepository(db)
 	userService := ProvideUserService(userRepository, config)
-	handler := ProvideHandler(userService, config)
+	bookRepository := ProvideBookRepository(db)
+	bookService := ProvideBookService(bookRepository, config)
+	handler := ProvideHandler(userService, bookService, config)
 	app := NewApp(handler)
 	return app, nil
 }

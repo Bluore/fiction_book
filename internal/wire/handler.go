@@ -14,6 +14,6 @@ var HandlerSet = wire.NewSet(
 )
 
 // ProvideHandler 提供主 Handler
-func ProvideHandler(userService service.UserService, cfg *config.Config) *handler.Handler {
-	return handler.NewHandler(userService, cfg)
+func ProvideHandler(userService service.UserService, bookService service.BookService, cfg *config.Config) *handler.Handler {
+	return handler.NewHandler(userService, bookService, cfg)
 }

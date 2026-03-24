@@ -35,7 +35,7 @@ type UserService interface {
 	Delete(ctx context.Context, id string) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
-	EmailVerify(cfg *config.Config, ctx context.Context, receiver string) error
+	EmailVerify(ctx context.Context, receiver string) error
 }
 
 type userService struct {
@@ -242,7 +242,7 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func (s *userService) EmailVerify(cfg *config.Config, ctx context.Context, receiver string) error {
+func (s *userService) EmailVerify(ctx context.Context, receiver string) error {
 	// 生成验证码
 	num, err := email.CreateVerifyNumber()
 	if err != nil {
@@ -264,7 +264,7 @@ func (s *userService) EmailVerify(cfg *config.Config, ctx context.Context, recei
 
 	// 发送邮件
 	if err := email.CreateEmailOne(
-		cfg,
+		s.cfg,
 		receiver,
 		"GSF小说 你的一次性邮箱验证码",
 		fmt.Sprintf("邮箱验证密码: %s </br> 10分钟内有效", num),

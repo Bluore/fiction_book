@@ -13,13 +13,19 @@ import (
 // Handler 处理器结构
 type Handler struct {
 	userService service.UserService
+	bookService service.BookService
 	cfg         *config.Config
 }
 
 // NewHandler 创建处理器实例
-func NewHandler(userService service.UserService, cfg *config.Config) *Handler {
+func NewHandler(
+	userService service.UserService,
+	bookService service.BookService,
+	cfg *config.Config,
+) *Handler {
 	return &Handler{
 		userService: userService,
+		bookService: bookService,
 		cfg:         cfg,
 	}
 }
@@ -229,7 +235,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 func (h *Handler) EmailVerify(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.EmailVerifyRequest](c)
 
-	err := h.userService.EmailVerify(h.cfg, c.Request.Context(), req.Email)
+	err := h.userService.EmailVerify(c.Request.Context(), req.Email)
 	if err != nil {
 		response.InternalError(c, err)
 		return

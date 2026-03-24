@@ -40,7 +40,7 @@
 | **email** | VARCHAR(255) | null |  | |
 | **profile_image** | VARCHAR(255) | null |  | |
 | **cover_image** | VARCHAR(255) | null |  | |
-| **describe** | VARCHAR(255) | null |  | | 
+| **description** | VARCHAR(255) | null |  | | 
 
 
 ### user_asset
@@ -118,8 +118,9 @@
 |-------------|---------------|-------------------------------|-------------------------------|--------------------------------|
 | **id** | INTEGER | 🔑 PK, not null, unique, autoincrement |  | |
 | **name** | VARCHAR(255) | null |  | |
-| **cover** | VARCHAR(255) | null |  | |
-| **describe** | TEXT(65535) | null |  | |
+| **username** | INTEGER | null |  | |
+| **cover_image** | VARCHAR(255) | null |  | |
+| **description** | TEXT(65535) | null |  | |
 | **publish_at** | DATETIME | null |  | |
 | **vip_level** | VARCHAR(255) | null |  | |
 | **price** | INTEGER | null |  | | 
@@ -140,8 +141,7 @@
 
 | Name        | Type          | Settings                      | References                    | Note                           |
 |-------------|---------------|-------------------------------|-------------------------------|--------------------------------|
-| **id** | INTEGER | 🔑 PK, not null, unique, autoincrement |  | |
-| **book_id** | INTEGER | null | fk_book_stats_book_id_book | |
+| **book_id** | INTEGER | 🔑 PK, not null | fk_book_stats_book_id_book | |
 | **browse_amount** | INTEGER | null |  | |
 | **bookshelf_amount** | INTEGER | null |  | | 
 
@@ -216,7 +216,7 @@
 - **user_reading_progress to book**: many_to_one
 - **user_reading_progress to book_chapter**: many_to_one
 - **book_chapter to book**: many_to_one
-- **book_stats to book**: many_to_one
+- **book_stats to book**: one_to_one
 - **payment to order**: many_to_one
 - **payment to user**: many_to_one
 - **order to user**: many_to_one
@@ -239,7 +239,7 @@ erDiagram
 	user_reading_progress }o--|| book : references
 	user_reading_progress }o--|| book_chapter : references
 	book_chapter }o--|| book : references
-	book_stats }o--|| book : references
+	book_stats ||--|| book : references
 	payment }o--|| order : references
 	payment }o--|| user : references
 	order }o--|| user : references
@@ -256,7 +256,7 @@ erDiagram
 		VARCHAR(255) email
 		VARCHAR(255) profile_image
 		VARCHAR(255) cover_image
-		VARCHAR(255) describe
+		VARCHAR(255) description
 	}
 
 	user_asset {
@@ -310,8 +310,9 @@ erDiagram
 	book {
 		INTEGER id
 		VARCHAR(255) name
-		VARCHAR(255) cover
-		TEXT(65535) describe
+		INTEGER username
+		VARCHAR(255) cover_image
+		TEXT(65535) description
 		DATETIME publish_at
 		VARCHAR(255) vip_level
 		INTEGER price
@@ -326,7 +327,6 @@ erDiagram
 	}
 
 	book_stats {
-		INTEGER id
 		INTEGER book_id
 		INTEGER browse_amount
 		INTEGER bookshelf_amount
