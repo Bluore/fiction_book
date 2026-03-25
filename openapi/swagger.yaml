@@ -8,11 +8,19 @@ definitions:
         type: string
       description:
         type: string
+      id:
+        type: string
       name:
         type: string
       owner_id:
         type: string
+      price:
+        type: number
+      push_at:
+        type: string
       updated_at:
+        type: string
+      vip_level:
         type: string
     type: object
   dto.CreateBookRequest:
@@ -25,6 +33,16 @@ definitions:
         type: string
       owner_id:
         type: string
+      price:
+        type: number
+      push_at:
+        type: string
+      vip_level:
+        type: string
+    required:
+    - cover_image
+    - description
+    - name
     type: object
   dto.CreateUserRequest:
     properties:

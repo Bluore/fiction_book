@@ -6,6 +6,7 @@ import (
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 // CreateBook 创建书籍
@@ -22,6 +23,9 @@ import (
 // @Router /api/v1/books/create [post]
 func (h *Handler) CreateBook(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreateBookRequest](c)
+	if req.PushAt.IsZero() {
+		req.PushAt = time.Now()
+	}
 
 	book, err := h.bookService.Create(c.Request.Context(), req)
 	if err != nil {

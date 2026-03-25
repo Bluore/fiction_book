@@ -45,11 +45,16 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 	}
 
 	book := &model.Book{
-		ID:          uuid.New().String(),
-		OwnerID:     req.OwnerId,
-		Name:        req.Name,
-		Description: req.Description,
-		CoverImage:  req.CoverImage,
+		ID:              uuid.New().String(),
+		OwnerID:         req.OwnerId,
+		Name:            req.Name,
+		Description:     req.Description,
+		VIPLevel:        req.VIPLevel,
+		Price:           req.Price,
+		CoverImage:      req.CoverImage,
+		PushedAt:        req.PushAt,
+		BrowseAmount:    0,
+		BookshelfAmount: 0,
 	}
 	err = s.bookRepo.Create(ctx, book)
 	if err != nil {
@@ -65,6 +70,9 @@ func (s *bookService) toBookResponse(book *model.Book) *dto.BookResponse {
 		Description: book.Description,
 		CoverImage:  book.CoverImage,
 		OwnerID:     book.OwnerID,
+		VIPLevel:    book.VIPLevel,
+		Price:       book.Price,
+		PushAt:      book.PushedAt,
 		CreatedAt:   book.CreatedAt,
 		UpdatedAt:   book.UpdatedAt,
 	}

@@ -622,19 +622,36 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "owner_id": {
                     "type": "string"
                 },
+                "price": {
+                    "type": "number"
+                },
+                "push_at": {
+                    "type": "string"
+                },
                 "updated_at": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }
         },
         "dto.CreateBookRequest": {
             "type": "object",
+            "required": [
+                "cover_image",
+                "description",
+                "name"
+            ],
             "properties": {
                 "cover_image": {
                     "type": "string"
@@ -646,6 +663,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "owner_id": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "push_at": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }
