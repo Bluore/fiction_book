@@ -12,6 +12,7 @@ type CreateBookRequest struct {
 }
 
 type BookResponse struct {
+	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	CoverImage  string    `json:"cover_image"`
@@ -21,5 +22,5 @@ type BookResponse struct {
 }
 
 type GetBookRequest struct {
-	ID string `json:"id" binding:"required"`
+	ID string `uri:"id" binding:"required"`
 }

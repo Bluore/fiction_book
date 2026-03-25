@@ -62,5 +62,12 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			users.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserRequest{}), h.UpdateUser)
 			users.DELETE("/:id", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteUserRequest{}), h.DeleteUser)
 		}
+
+		// 书籍模块
+		books := v1.Group("/books")
+		{
+			books.POST("/create", middleware.Validation(&dto.CreateBookRequest{}), h.CreateBook)
+			books.GET("/:id", middleware.Validation(&dto.GetBookRequest{}), h.GetBook)
+		}
 	}
 }

@@ -19,7 +19,7 @@ import (
 // @Failure 400 {object} response.Response
 // @Failure 409 {object} response.Response "书籍已存在"
 // @Failure 500 {object} response.Response
-// @Router /api/books [post]
+// @Router /api/v1/books/create [post]
 func (h *Handler) CreateBook(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreateBookRequest](c)
 
@@ -45,7 +45,7 @@ func (h *Handler) CreateBook(c *gin.Context) {
 // @Success 200 {object} response.Response{data=dto.BookResponse}
 // @Failure 400 {object} response.Response
 // @Failure 500 {object} response.Response
-// @Router /api/books [get]
+// @Router /api/v1/books/{id} [get]
 func (h *Handler) GetBook(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetBookRequest](c)
 

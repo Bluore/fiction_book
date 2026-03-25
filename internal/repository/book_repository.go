@@ -30,6 +30,9 @@ func (r *bookRepository) GetByID(ctx context.Context, id string) (*model.Book, e
 	var book model.Book
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&book).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &book, nil
@@ -39,6 +42,9 @@ func (r *bookRepository) GetByOwnerID(ctx context.Context, ownerID string) ([]*m
 	var books []*model.Book
 	err := r.db.WithContext(ctx).Where("owner_id = ?", ownerID).Find(&books).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return books, nil
@@ -48,6 +54,9 @@ func (r *bookRepository) GetByName(ctx context.Context, name string) (*model.Boo
 	var book model.Book
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&book).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &book, nil

@@ -40,7 +40,7 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	if existingBook == nil {
+	if existingBook != nil {
 		return nil, ErrBookExists
 	}
 
@@ -60,6 +60,7 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 
 func (s *bookService) toBookResponse(book *model.Book) *dto.BookResponse {
 	return &dto.BookResponse{
+		ID:          book.ID,
 		Name:        book.Name,
 		Description: book.Description,
 		CoverImage:  book.CoverImage,
@@ -73,6 +74,9 @@ func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse
 	book, err := s.bookRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
 	}
 	return s.toBookResponse(book), nil
 }
