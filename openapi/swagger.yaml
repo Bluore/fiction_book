@@ -1,5 +1,31 @@
 basePath: /
 definitions:
+  dto.CreateBookRequest:
+    properties:
+      cover_image:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+    type: object
+  dto.CreateBookResponse:
+    properties:
+      cover_image:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
   dto.CreateUserRequest:
     properties:
       age:
@@ -118,6 +144,45 @@ info:
   title: Gin Template API
   version: "1.0"
 paths:
+  /api/books:
+    post:
+      consumes:
+      - application/json
+      description: 创建一本新书籍
+      parameters:
+      - description: 创建书籍请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.CreateBookResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: 书籍已存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 创建书籍
+      tags:
+      - 书籍管理
   /api/v1/auth/email/verify:
     post:
       consumes:
