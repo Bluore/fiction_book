@@ -19,7 +19,7 @@ var (
 type BookService interface {
 	Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error)
 	GetByID(ctx context.Context, id string) (*dto.BookResponse, error)
-	//List(ctx context.Context, page int, size int) ([]*model.Book, error)
+	List(ctx context.Context, page int, size int) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -89,4 +89,33 @@ func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse
 		return nil, ErrBookNotFound
 	}
 	return s.toBookResponse(book), nil
+}
+
+func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookListResponse, error) {
+	books, err := s.bookRepo.List(ctx, page, size)
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := s.bookRepo.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var bookResponses []*dto.BookResponse
+	for _, book := range books {
+		bookResponses = append(bookResponses, s.toBookResponse(book))
+	}
+
+	pageCount := &dto.PageListResponse{
+		Page:  page,
+		Size:  size,
+		Count: count,
+	}
+
+	bookListResponse := &dto.BookListResponse{
+		Books:            bookResponses,
+		PageListResponse: *pageCount,
+	}
+	return bookListResponse, nil
 }

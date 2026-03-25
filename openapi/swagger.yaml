@@ -1,7 +1,24 @@
 basePath: /
 definitions:
+  dto.BookListResponse:
+    properties:
+      books:
+        items:
+          $ref: '#/definitions/dto.BookResponse'
+        type: array
+      count:
+        type: integer
+      page:
+        type: integer
+      size:
+        type: integer
+    type: object
   dto.BookResponse:
     properties:
+      bookshelf_amount:
+        type: integer
+      browse_amount:
+        type: integer
       cover_image:
         type: string
       created_at:
@@ -311,6 +328,41 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 创建书籍
+      tags:
+      - 书籍管理
+  /api/v1/books/list:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取书籍列表
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.BookListResponse'
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取书籍列表
       tags:
       - 书籍管理
   /api/v1/users:

@@ -64,3 +64,25 @@ func (h *Handler) GetBook(c *gin.Context) {
 	}
 	response.Success(c, book)
 }
+
+// BookList 获取书籍列表
+// @Summary 获取书籍列表
+// @Description 分页获取书籍列表
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param size query int false "每页数量" default(10)
+// @Success 200 {object} response.Response{data=dto.BookListResponse}
+// @Failure 500 {object} response.Response
+// @Router /api/v1/books/list [get]
+func (h *Handler) BookList(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.PageListRequest](c).ToStandard()
+
+	booklist, err := h.bookService.List(c.Request.Context(), req.Page, req.Size)
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, booklist)
+}

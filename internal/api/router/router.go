@@ -68,6 +68,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		{
 			books.POST("/create", middleware.Validation(&dto.CreateBookRequest{}), h.CreateBook)
 			books.GET("/:id", middleware.Validation(&dto.GetBookRequest{}), h.GetBook)
+			books.GET("/list", middleware.Validation(&dto.PageListRequest{}), h.BookList)
 		}
 	}
 }

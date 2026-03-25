@@ -32,3 +32,31 @@ type BookResponse struct {
 type GetBookRequest struct {
 	ID string `uri:"id" binding:"required"`
 }
+
+type BookListResponse struct {
+	Books []*BookResponse `json:"books"`
+	PageListResponse
+}
+type PageListResponse struct {
+	Page  int `json:"page"`
+	Size  int `json:"size"`
+	Count int `json:"count"`
+}
+
+type PageListRequest struct {
+	Page int `json:"page"`
+	Size int `json:"size"`
+}
+
+func (p *PageListRequest) ToStandard() *PageListRequest {
+	if p.Page < 1 {
+		p.Page = 1
+	}
+	if p.Size < 1 {
+		p.Size = 10
+	}
+	if p.Page > 100 {
+		p.Page = 100
+	}
+	return p
+}

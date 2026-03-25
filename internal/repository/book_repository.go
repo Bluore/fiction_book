@@ -11,10 +11,11 @@ type BookRepository interface {
 	GetByID(ctx context.Context, id string) (*model.Book, error)
 	GetByOwnerID(ctx context.Context, ownerID string) ([]*model.Book, error)
 	GetByName(ctx context.Context, name string) (*model.Book, error)
-	List(ctx context.Context) ([]*model.Book, error)
+	List(ctx context.Context, page int, size int) ([]*model.Book, error)
 	Create(ctx context.Context, model *model.Book) error
 	Update(ctx context.Context, model *model.Book) error
 	Delete(ctx context.Context, id string) error
+	Count(ctx context.Context) (int, error)
 }
 
 type bookRepository struct {
@@ -62,10 +63,13 @@ func (r *bookRepository) GetByName(ctx context.Context, name string) (*model.Boo
 	return &book, nil
 }
 
-func (r *bookRepository) List(ctx context.Context) ([]*model.Book, error) {
+func (r *bookRepository) List(ctx context.Context, page int, size int) ([]*model.Book, error) {
 	var books []*model.Book
-	err := r.db.WithContext(ctx).Find(&books).Error
+	err := r.db.WithContext(ctx).Limit(size).Offset((page - 1) * size).Find(&books).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return books, nil
@@ -81,4 +85,10 @@ func (r *bookRepository) Update(ctx context.Context, model *model.Book) error {
 
 func (r *bookRepository) Delete(ctx context.Context, id string) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Book{}).Error
+}
+
+func (r *bookRepository) Count(ctx context.Context) (int, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.Book{}).Count(&count).Error
+	return int(count), err
 }
