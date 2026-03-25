@@ -1,17 +1,6 @@
 basePath: /
 definitions:
-  dto.CreateBookRequest:
-    properties:
-      cover_image:
-        type: string
-      description:
-        type: string
-      name:
-        type: string
-      owner_id:
-        type: string
-    type: object
-  dto.CreateBookResponse:
+  dto.BookResponse:
     properties:
       cover_image:
         type: string
@@ -24,6 +13,17 @@ definitions:
       owner_id:
         type: string
       updated_at:
+        type: string
+    type: object
+  dto.CreateBookRequest:
+    properties:
+      cover_image:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      owner_id:
         type: string
     type: object
   dto.CreateUserRequest:
@@ -57,6 +57,13 @@ definitions:
     properties:
       email:
         type: string
+    type: object
+  dto.GetBookRequest:
+    properties:
+      id:
+        type: string
+    required:
+    - id
     type: object
   dto.LoginRequest:
     properties:
@@ -145,6 +152,40 @@ info:
   version: "1.0"
 paths:
   /api/books:
+    get:
+      consumes:
+      - application/json
+      description: 根据ID获取书籍详情
+      parameters:
+      - description: 获取书籍请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.GetBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.BookResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取书籍
+      tags:
+      - 书籍管理
     post:
       consumes:
       - application/json
@@ -166,7 +207,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.CreateBookResponse'
+                  $ref: '#/definitions/dto.BookResponse'
               type: object
         "400":
           description: Bad Request

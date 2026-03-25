@@ -11,13 +11,14 @@ import (
 )
 
 var (
-	ErrBookExists = errors.New("book already exists")
+	ErrBookExists   = errors.New("book already exists")
+	ErrBookNotFound = errors.New("book not found")
 )
 
 // BookService 用户服务接口
 type BookService interface {
-	Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.CreateBookResponse, error)
-	//GetByID(ctx context.Context, id string) (*dto., error)
+	Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error)
+	GetByID(ctx context.Context, id string) (*dto.BookResponse, error)
 	//List(ctx context.Context, page int, size int) ([]*model.Book, error)
 }
 
@@ -34,7 +35,7 @@ func NewBookService(bookRepo repository.BookRepository, cfg *config.Config) Book
 	}
 }
 
-func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.CreateBookResponse, error) {
+func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error) {
 	existingBook, err := s.bookRepo.GetByName(ctx, req.Name)
 	if err != nil {
 		return nil, err
@@ -57,8 +58,8 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 	return s.toBookResponse(book), nil
 }
 
-func (s *bookService) toBookResponse(book *model.Book) *dto.CreateBookResponse {
-	return &dto.CreateBookResponse{
+func (s *bookService) toBookResponse(book *model.Book) *dto.BookResponse {
+	return &dto.BookResponse{
 		Name:        book.Name,
 		Description: book.Description,
 		CoverImage:  book.CoverImage,
@@ -66,4 +67,12 @@ func (s *bookService) toBookResponse(book *model.Book) *dto.CreateBookResponse {
 		CreatedAt:   book.CreatedAt,
 		UpdatedAt:   book.UpdatedAt,
 	}
+}
+
+func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse, error) {
+	book, err := s.bookRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return s.toBookResponse(book), nil
 }
