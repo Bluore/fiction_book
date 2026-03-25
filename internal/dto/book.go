@@ -5,10 +5,10 @@ import (
 )
 
 type CreateBookRequest struct {
-	Name        string `json:"name" gorm:"uniqueIndex;type:varchar(50);not null"`
-	Description string `json:"description" gorm:"type:text;not null"`
-	CoverImage  string `json:"cover_image" gorm:"type:varchar(255);not null"`
-	OwnerId     string `json:"owner_id" gorm:"type:varchar(36)"`
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description" binding:"required"`
+	CoverImage  string `json:"cover_image" binding:"required"`
+	OwnerId     string `json:"owner_id"`
 }
 
 type BookResponse struct {
