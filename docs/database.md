@@ -1,3 +1,5 @@
+https://www.drawdb.app/editor?shareId=9d62bd626f5274b7ac45d280bb13fd5a
+
 # nbread数据库设计 documentation
 ## Summary
 
@@ -14,7 +16,6 @@
 	- [post_like](#post_like)
 	- [book](#book)
 	- [book_chapter](#book_chapter)
-	- [book_stats](#book_stats)
 	- [order](#order)
 	- [payment](#payment)
 	- [voucher](#voucher)
@@ -118,12 +119,14 @@
 |-------------|---------------|-------------------------------|-------------------------------|--------------------------------|
 | **id** | INTEGER | 🔑 PK, not null, unique, autoincrement |  | |
 | **name** | VARCHAR(255) | null |  | |
-| **username** | INTEGER | null |  | |
+| **owner_id** | INTEGER | null |  | |
 | **cover_image** | VARCHAR(255) | null |  | |
 | **description** | TEXT(65535) | null |  | |
-| **publish_at** | DATETIME | null |  | |
+| **push_at** | DATETIME | null |  | |
 | **vip_level** | VARCHAR(255) | null |  | |
-| **price** | INTEGER | null |  | | 
+| **price** | INTEGER | null |  | |
+| **browse_amount** | INTEGER | null |  | |
+| **bookshelf_amount** | INTEGER | null |  | | 
 
 
 ### book_chapter
@@ -135,15 +138,6 @@
 | **title** | VARCHAR(255) | null |  | |
 | **content** | TEXT(65535) | null |  | |
 | **order** | INTEGER | null |  | | 
-
-
-### book_stats
-
-| Name        | Type          | Settings                      | References                    | Note                           |
-|-------------|---------------|-------------------------------|-------------------------------|--------------------------------|
-| **book_id** | INTEGER | 🔑 PK, not null | fk_book_stats_book_id_book | |
-| **browse_amount** | INTEGER | null |  | |
-| **bookshelf_amount** | INTEGER | null |  | | 
 
 
 ### order
@@ -216,7 +210,6 @@
 - **user_reading_progress to book**: many_to_one
 - **user_reading_progress to book_chapter**: many_to_one
 - **book_chapter to book**: many_to_one
-- **book_stats to book**: one_to_one
 - **payment to order**: many_to_one
 - **payment to user**: many_to_one
 - **order to user**: many_to_one
@@ -239,7 +232,6 @@ erDiagram
 	user_reading_progress }o--|| book : references
 	user_reading_progress }o--|| book_chapter : references
 	book_chapter }o--|| book : references
-	book_stats ||--|| book : references
 	payment }o--|| order : references
 	payment }o--|| user : references
 	order }o--|| user : references
@@ -310,12 +302,14 @@ erDiagram
 	book {
 		INTEGER id
 		VARCHAR(255) name
-		INTEGER username
+		INTEGER owner_id
 		VARCHAR(255) cover_image
 		TEXT(65535) description
-		DATETIME publish_at
+		DATETIME push_at
 		VARCHAR(255) vip_level
 		INTEGER price
+		INTEGER browse_amount
+		INTEGER bookshelf_amount
 	}
 
 	book_chapter {
@@ -324,12 +318,6 @@ erDiagram
 		VARCHAR(255) title
 		TEXT(65535) content
 		INTEGER order
-	}
-
-	book_stats {
-		INTEGER book_id
-		INTEGER browse_amount
-		INTEGER bookshelf_amount
 	}
 
 	order {

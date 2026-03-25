@@ -65,16 +65,18 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 
 func (s *bookService) toBookResponse(book *model.Book) *dto.BookResponse {
 	return &dto.BookResponse{
-		ID:          book.ID,
-		Name:        book.Name,
-		Description: book.Description,
-		CoverImage:  book.CoverImage,
-		OwnerID:     book.OwnerID,
-		VIPLevel:    book.VIPLevel,
-		Price:       book.Price,
-		PushAt:      book.PushedAt,
-		CreatedAt:   book.CreatedAt,
-		UpdatedAt:   book.UpdatedAt,
+		ID:              book.ID,
+		Name:            book.Name,
+		Description:     book.Description,
+		CoverImage:      book.CoverImage,
+		OwnerID:         book.OwnerID,
+		VIPLevel:        book.VIPLevel,
+		Price:           book.Price,
+		PushAt:          book.PushedAt,
+		BrowseAmount:    book.BrowseAmount,
+		BookshelfAmount: book.BookshelfAmount,
+		CreatedAt:       book.CreatedAt,
+		UpdatedAt:       book.UpdatedAt,
 	}
 }
 
