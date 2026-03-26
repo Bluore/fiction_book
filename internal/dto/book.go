@@ -67,6 +67,8 @@ type BookSortKey string
 const (
 	SortByBrowseAmount    BookSortKey = "browse_amount"
 	SortByBookshelfAmount BookSortKey = "bookshelf_amount"
+	SortByNewUpdate       BookSortKey = "new_update"
+	SortByNewPush         BookSortKey = "new_push"
 )
 
 // SortOrder 排序方向
@@ -79,10 +81,10 @@ const (
 
 // ListBooksRequest 带排序的分页请求
 type ListBooksRequest struct {
-	Page      int         `json:"page"`
-	Size      int         `json:"size"`
-	SortKey   BookSortKey `json:"sort_key"`
-	SortOrder SortOrder   `json:"sort_order"`
+	Page      int         `form:"page"`
+	Size      int         `form:"size"`
+	SortKey   BookSortKey `form:"sort_key"`
+	SortOrder SortOrder   `form:"sort_order"`
 }
 
 func (p *ListBooksRequest) ToStandard() *ListBooksRequest {
@@ -97,7 +99,7 @@ func (p *ListBooksRequest) ToStandard() *ListBooksRequest {
 	}
 	// 默认排序：按浏览量降序
 	if p.SortKey == "" {
-		p.SortKey = SortByBrowseAmount
+		p.SortKey = SortByNewUpdate
 	}
 	if p.SortOrder == "" {
 		p.SortOrder = SortDesc

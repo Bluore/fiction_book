@@ -234,7 +234,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "default": "browse_amount",
-                        "description": "排序字段 (browse_amount|bookshelf_amount)",
+                        "description": "排序字段 (browse_amount|bookshelf_amount|new_update|new_push)",
                         "name": "sort_key",
                         "in": "query"
                     },

@@ -20,10 +20,12 @@ func MapSortKeyToColumn(sortKey dto.BookSortKey, order dto.SortOrder) string {
 	columnMap := map[dto.BookSortKey]string{
 		dto.SortByBrowseAmount:    "browse_amount",
 		dto.SortByBookshelfAmount: "bookshelf_amount",
+		dto.SortByNewUpdate:       "updated_at",
+		dto.SortByNewPush:         "pushed_at",
 	}
 	col, ok := columnMap[sortKey]
 	if !ok {
-		return "browse_amount"
+		return "updated_at"
 	}
 	return col + " " + string(order)
 }

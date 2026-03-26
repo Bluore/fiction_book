@@ -347,7 +347,7 @@ paths:
         name: size
         type: integer
       - default: browse_amount
-        description: 排序字段 (browse_amount|bookshelf_amount)
+        description: 排序字段 (browse_amount|bookshelf_amount|new_update|new_push)
         in: query
         name: sort_key
         type: string

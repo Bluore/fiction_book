@@ -73,7 +73,7 @@ func (h *Handler) GetBook(c *gin.Context) {
 // @Produce json
 // @Param page query int false "页码" default(1)
 // @Param size query int false "每页数量" default(10)
-// @Param sort_key query string false "排序字段 (browse_amount|bookshelf_amount)" default(browse_amount)
+// @Param sort_key query string false "排序字段 (browse_amount|bookshelf_amount|new_update|new_push)" default(browse_amount)
 // @Param sort_order query string false "排序方向 (asc|desc)" default(desc)
 // @Success 200 {object} response.Response{data=dto.BookListResponse}
 // @Failure 500 {object} response.Response
