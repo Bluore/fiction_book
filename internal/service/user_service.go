@@ -36,6 +36,7 @@ type UserService interface {
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
 	SendEmailVerification(ctx context.Context, receiver string) error
+	UpdateAvatar(ctx context.Context, userID string, avatarURL string) (*dto.UserResponse, error)
 }
 
 type userService struct {
@@ -276,4 +277,21 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 		return err
 	}
 	return nil
+}
+
+func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatarURL string) (*dto.UserResponse, error) {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	user.ProfileImage = avatarURL
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return s.toUserResponse(user), nil
 }

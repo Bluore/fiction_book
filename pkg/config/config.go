@@ -31,6 +31,7 @@ type OSSConfig struct {
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
+	Website      string `mapstructure:"website"`
 	Port         int    `mapstructure:"port"`
 	Mode         string `mapstructure:"mode"`
 	ReadTimeout  int    `mapstructure:"read_timeout"`

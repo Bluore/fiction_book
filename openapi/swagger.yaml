@@ -142,6 +142,11 @@ definitions:
     required:
     - id
     type: object
+  dto.UploadAvatarResponse:
+    properties:
+      url:
+        type: string
+    type: object
   dto.UserResponse:
     properties:
       age:
@@ -564,6 +569,55 @@ paths:
       security:
       - Bearer: []
       summary: 更新用户信息
+      tags:
+      - 用户管理
+  /api/v1/users/{id}/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传用户头像（需要认证，只能修改自己的头像）
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 头像文件（仅支持 jpeg/png，尺寸必须为 1024x1024）
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UploadAvatarResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 上传头像
       tags:
       - 用户管理
   /health:

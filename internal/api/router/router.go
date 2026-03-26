@@ -40,6 +40,9 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 	// Swagger 文档
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	// 静态文件服务
+	r.Static("/upload", "upload")
+
 	// 健康检查
 	r.GET("/health", h.HealthCheck)
 
@@ -61,6 +64,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			users.GET("/:id", middleware.Validation(&dto.GetUserRequest{}), h.GetUser)
 			users.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserRequest{}), h.UpdateUser)
 			users.DELETE("/:id", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteUserRequest{}), h.DeleteUser)
+			users.POST("/:id/avatar", middleware.Auth(cfg), h.UploadAvatar)
 		}
 
 		// 书籍模块

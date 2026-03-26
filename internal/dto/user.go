@@ -83,3 +83,8 @@ type EmailVerifyRequest struct {
 type EmailVerifyResponse struct {
 	Email string `json:"email"`
 }
+
+// UploadAvatarResponse 上传头像响应
+type UploadAvatarResponse struct {
+	URL string `json:"url"`
+}
