@@ -2,9 +2,31 @@ package repository
 
 import (
 	"context"
+	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"gorm.io/gorm"
 )
+
+// ListOption 通用列表查询选项
+type ListOption struct {
+	Page      int
+	Size      int
+	SortKey   dto.BookSortKey
+	SortOrder dto.SortOrder
+}
+
+// MapSortKeyToColumn 将 SortKey 映射为 GORM Order 字符串
+func MapSortKeyToColumn(sortKey dto.BookSortKey, order dto.SortOrder) string {
+	columnMap := map[dto.BookSortKey]string{
+		dto.SortByBrowseAmount:    "browse_amount",
+		dto.SortByBookshelfAmount: "bookshelf_amount",
+	}
+	col, ok := columnMap[sortKey]
+	if !ok {
+		return "browse_amount"
+	}
+	return col + " " + string(order)
+}
 
 // BookRepository 用户仓储接口
 type BookRepository interface {
@@ -12,6 +34,7 @@ type BookRepository interface {
 	GetByOwnerID(ctx context.Context, ownerID string) ([]*model.Book, error)
 	GetByName(ctx context.Context, name string) (*model.Book, error)
 	List(ctx context.Context, page int, size int) ([]*model.Book, error)
+	ListWithOption(ctx context.Context, opt ListOption) ([]*model.Book, error)
 	Create(ctx context.Context, model *model.Book) error
 	Update(ctx context.Context, model *model.Book) error
 	Delete(ctx context.Context, id string) error
@@ -66,6 +89,23 @@ func (r *bookRepository) GetByName(ctx context.Context, name string) (*model.Boo
 func (r *bookRepository) List(ctx context.Context, page int, size int) ([]*model.Book, error) {
 	var books []*model.Book
 	err := r.db.WithContext(ctx).Limit(size).Offset((page - 1) * size).Find(&books).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return books, nil
+}
+
+func (r *bookRepository) ListWithOption(ctx context.Context, opt ListOption) ([]*model.Book, error) {
+	var books []*model.Book
+	orderClause := MapSortKeyToColumn(opt.SortKey, opt.SortOrder)
+	err := r.db.WithContext(ctx).
+		Order(orderClause).
+		Limit(opt.Size).
+		Offset((opt.Page - 1) * opt.Size).
+		Find(&books).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil

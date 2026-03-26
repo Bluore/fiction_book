@@ -224,6 +224,20 @@
                         "description": "每页数量",
                         "name": "size",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "browse_amount",
+                        "description": "排序字段 (browse_amount|bookshelf_amount)",
+                        "name": "sort_key",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "desc",
+                        "description": "排序方向 (asc|desc)",
+                        "name": "sort_order",
+                        "in": "query"
                     }
                 ],
                 "responses": {

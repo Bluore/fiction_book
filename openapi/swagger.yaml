@@ -346,6 +346,16 @@ paths:
         in: query
         name: size
         type: integer
+      - default: browse_amount
+        description: 排序字段 (browse_amount|bookshelf_amount)
+        in: query
+        name: sort_key
+        type: string
+      - default: desc
+        description: 排序方向 (asc|desc)
+        in: query
+        name: sort_order
+        type: string
       produces:
       - application/json
       responses:

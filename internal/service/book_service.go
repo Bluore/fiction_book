@@ -20,6 +20,7 @@ type BookService interface {
 	Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error)
 	GetByID(ctx context.Context, id string) (*dto.BookResponse, error)
 	List(ctx context.Context, page int, size int) (*dto.BookListResponse, error)
+	ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -118,4 +119,36 @@ func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookLi
 		PageListResponse: *pageCount,
 	}
 	return bookListResponse, nil
+}
+
+func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error) {
+	req.ToStandard()
+	books, err := s.bookRepo.ListWithOption(ctx, repository.ListOption{
+		Page:      req.Page,
+		Size:      req.Size,
+		SortKey:   req.SortKey,
+		SortOrder: req.SortOrder,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := s.bookRepo.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var bookResponses []*dto.BookResponse
+	for _, book := range books {
+		bookResponses = append(bookResponses, s.toBookResponse(book))
+	}
+
+	return &dto.BookListResponse{
+		Books: bookResponses,
+		PageListResponse: dto.PageListResponse{
+			Page:  req.Page,
+			Size:  req.Size,
+			Count: count,
+		},
+	}, nil
 }

@@ -60,3 +60,47 @@ func (p *PageListRequest) ToStandard() *PageListRequest {
 	}
 	return p
 }
+
+// BookSortKey 排序字段枚举
+type BookSortKey string
+
+const (
+	SortByBrowseAmount    BookSortKey = "browse_amount"
+	SortByBookshelfAmount BookSortKey = "bookshelf_amount"
+)
+
+// SortOrder 排序方向
+type SortOrder string
+
+const (
+	SortAsc  SortOrder = "asc"
+	SortDesc SortOrder = "desc"
+)
+
+// ListBooksRequest 带排序的分页请求
+type ListBooksRequest struct {
+	Page      int         `json:"page"`
+	Size      int         `json:"size"`
+	SortKey   BookSortKey `json:"sort_key"`
+	SortOrder SortOrder   `json:"sort_order"`
+}
+
+func (p *ListBooksRequest) ToStandard() *ListBooksRequest {
+	if p.Page < 1 {
+		p.Page = 1
+	}
+	if p.Size < 1 {
+		p.Size = 10
+	}
+	if p.Size > 100 {
+		p.Size = 100
+	}
+	// 默认排序：按浏览量降序
+	if p.SortKey == "" {
+		p.SortKey = SortByBrowseAmount
+	}
+	if p.SortOrder == "" {
+		p.SortOrder = SortDesc
+	}
+	return p
+}

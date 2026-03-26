@@ -73,13 +73,15 @@ func (h *Handler) GetBook(c *gin.Context) {
 // @Produce json
 // @Param page query int false "页码" default(1)
 // @Param size query int false "每页数量" default(10)
+// @Param sort_key query string false "排序字段 (browse_amount|bookshelf_amount)" default(browse_amount)
+// @Param sort_order query string false "排序方向 (asc|desc)" default(desc)
 // @Success 200 {object} response.Response{data=dto.BookListResponse}
 // @Failure 500 {object} response.Response
 // @Router /api/v1/books/list [get]
 func (h *Handler) BookList(c *gin.Context) {
-	req := middleware.MustGetRequest[dto.PageListRequest](c).ToStandard()
+	req := middleware.MustGetRequest[dto.ListBooksRequest](c).ToStandard()
 
-	booklist, err := h.bookService.List(c.Request.Context(), req.Page, req.Size)
+	booklist, err := h.bookService.ListBooks(c.Request.Context(), req)
 	if err != nil {
 		response.InternalError(c, err)
 		return
