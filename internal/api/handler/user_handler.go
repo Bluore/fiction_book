@@ -235,7 +235,7 @@ func (h *Handler) ListUsers(c *gin.Context) {
 func (h *Handler) EmailVerify(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.EmailVerifyRequest](c)
 
-	err := h.userService.EmailVerify(c.Request.Context(), req.Email)
+	err := h.userService.SendEmailVerification(c.Request.Context(), req.Email)
 	if err != nil {
 		response.InternalError(c, err)
 		return

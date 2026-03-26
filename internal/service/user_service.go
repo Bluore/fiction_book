@@ -35,7 +35,7 @@ type UserService interface {
 	Delete(ctx context.Context, id string) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
-	EmailVerify(ctx context.Context, receiver string) error
+	SendEmailVerification(ctx context.Context, receiver string) error
 }
 
 type userService struct {
@@ -52,7 +52,7 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config) User
 }
 
 func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
-	err := emailVerify(ctx, req.Email, req.Verify)
+	err := s.emailVerify(ctx, req.Email, req.Verify)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,11 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	return s.toUserResponse(user), nil
 }
 
-func emailVerify(ctx context.Context, emailVer string, pwdVer string) error {
+func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer string) error {
+	if s.cfg.Server.Mode == "debug" {
+		return nil
+	}
+
 	// 验证码是否正确
 	rVerify, err := redis.Get(
 		ctx,
@@ -131,7 +135,7 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 }
 
 func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	err := emailVerify(ctx, *req.Email, *req.Verify)
+	err := s.emailVerify(ctx, *req.Email, *req.Verify)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +246,7 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func (s *userService) EmailVerify(ctx context.Context, receiver string) error {
+func (s *userService) SendEmailVerification(ctx context.Context, receiver string) error {
 	// 生成验证码
 	num, err := email.CreateVerifyNumber()
 	if err != nil {
