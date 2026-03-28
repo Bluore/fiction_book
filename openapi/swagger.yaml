@@ -582,7 +582,7 @@ paths:
         name: id
         required: true
         type: string
-      - description: 头像文件（仅支持 jpeg/png，尺寸必须为 1024x1024）
+      - description: 头像文件（仅支持 jpeg/png，尺寸必须为 180x180）
         in: formData
         name: avatar
         required: true

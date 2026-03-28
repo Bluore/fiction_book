@@ -263,7 +263,7 @@ func (h *Handler) EmailVerify(c *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path string true "用户ID"
-// @Param avatar formData file true "头像文件（仅支持 jpeg/png，尺寸必须为 1024x1024）"
+// @Param avatar formData file true "头像文件（仅支持 jpeg/png，尺寸必须为 180x180）"
 // @Success 200 {object} response.Response{data=dto.UploadAvatarResponse}
 // @Failure 400 {object} response.Response
 // @Failure 401 {object} response.Response
@@ -314,8 +314,8 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 		response.BadRequest(c, "invalid image format")
 		return
 	}
-	if cfg.Width != 1024 || cfg.Height != 1024 {
-		response.BadRequest(c, "avatar must be exactly 1024x1024 pixels")
+	if cfg.Width != 180 || cfg.Height != 180 {
+		response.BadRequest(c, "avatar must be exactly 180x180 pixels")
 		return
 	}
 
