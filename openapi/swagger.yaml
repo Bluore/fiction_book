@@ -133,6 +133,9 @@ definitions:
         type: string
       id:
         type: string
+      password:
+        minLength: 6
+        type: string
       profile_image:
         type: string
       username:
@@ -178,17 +181,17 @@ definitions:
       message:
         type: string
     type: object
-host: localhost:8080
+host: localhost:9929
 info:
   contact:
     email: support@example.com
     name: API Support
-  description: 基于 Gin 框架的项目模板 API
+  description: fiction_book API文档
   license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    name: GNU
+    url: https://opensource.org/license/gpl-3.0
   termsOfService: http://swagger.io/terms/
-  title: Gin Template API
+  title: fiction_book swagger
   version: "1.0"
 paths:
   /api/v1/auth/email/verify:

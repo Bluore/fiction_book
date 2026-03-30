@@ -15,8 +15,8 @@ const docTemplate = `{
             "email": "support@example.com"
         },
         "license": {
-            "name": "MIT",
-            "url": "https://opensource.org/licenses/MIT"
+            "name": "GNU",
+            "url": "https://opensource.org/license/gpl-3.0"
         },
         "version": "{{.Version}}"
     },
@@ -963,6 +963,10 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
                 "profile_image": {
                     "type": "string"
                 },
@@ -1043,11 +1047,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "localhost:9929",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "Gin Template API",
-	Description:      "基于 Gin 框架的项目模板 API",
+	Title:            "fiction_book swagger",
+	Description:      "fiction_book API文档",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

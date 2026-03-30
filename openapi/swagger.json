@@ -1,20 +1,20 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "基于 Gin 框架的项目模板 API",
-        "title": "Gin Template API",
+        "description": "fiction_book API文档",
+        "title": "fiction_book swagger",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "API Support",
             "email": "support@example.com"
         },
         "license": {
-            "name": "MIT",
-            "url": "https://opensource.org/licenses/MIT"
+            "name": "GNU",
+            "url": "https://opensource.org/license/gpl-3.0"
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "localhost:9929",
     "basePath": "/",
     "paths": {
         "/api/v1/auth/email/verify": {
@@ -956,6 +956,10 @@
                 },
                 "id": {
                     "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
                 },
                 "profile_image": {
                     "type": "string"

@@ -136,9 +136,19 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 }
 
 func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	err := s.emailVerify(ctx, *req.Email, *req.Verify)
-	if err != nil {
-		return nil, err
+	if req.Email != nil || req.Password != nil {
+		err := s.emailVerify(ctx, *req.Email, *req.Verify)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if req.Password != nil {
+		hashedPassword, err := hashPassword(*req.Password)
+		if err != nil {
+			return nil, err
+		}
+		req.Password = &hashedPassword
 	}
 
 	user, err := s.userRepo.GetByID(ctx, id)
@@ -158,6 +168,21 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 	}
 	if req.Age != nil {
 		user.Age = *req.Age
+	}
+	if req.Description != nil {
+		user.Description = *req.Description
+	}
+	if req.Email != nil {
+		user.Email = *req.Email
+	}
+	if req.CoverImage != nil {
+		user.CoverImage = *req.CoverImage
+	}
+	if req.ProfileImage != nil {
+		user.ProfileImage = *req.ProfileImage
+	}
+	if req.Password != nil {
+		user.Password = *req.Password
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {

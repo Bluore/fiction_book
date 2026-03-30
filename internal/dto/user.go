@@ -13,6 +13,7 @@ type CreateUserRequest struct {
 type UpdateUserRequest struct {
 	ID           string  `uri:"id" binding:"required"`
 	Username     *string `json:"username" binding:"omitempty,username"`
+	Password     *string `json:"password" binding:"omitempty,min=6"`
 	Email        *string `json:"email" binding:"omitempty,email"`
 	Age          *int    `json:"age" binding:"omitempty,gte=0,lte=130"`
 	Description  *string `json:"description" gorm:"type:text"`
