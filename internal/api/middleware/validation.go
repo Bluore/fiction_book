@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	
+
 	"fiction-book/pkg/response"
 )
 
@@ -26,33 +27,40 @@ func Validation(req interface{}) gin.HandlerFunc {
 			val = val.Elem()
 		}
 		newReq := reflect.New(val.Type()).Interface()
-		
+
 		// 2. 绑定 URI 参数（如 :id），忽略错误因为字段可能不存在
 		//nolint:errcheck
 		c.ShouldBindUri(newReq)
-		
+
 		// 3. 绑定 Query 参数，忽略错误因为字段可能不存在
 		//nolint:errcheck
 		c.ShouldBindQuery(newReq)
-		
-		// 4. 对于有 body 的请求，绑定 JSON
+
+		// 4. 对于有 body 的请求，根据 Content-Type 绑定
 		if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
-			if c.Request.ContentLength > 0 || c.Request.Method == "POST" {
+			contentType := c.ContentType()
+			if strings.Contains(contentType, "application/json") {
 				if err := c.ShouldBindJSON(newReq); err != nil {
+					response.BadRequest(c, processError(err).Error())
+					c.Abort()
+					return
+				}
+			} else if strings.Contains(contentType, "multipart/form-data") {
+				if err := c.ShouldBind(newReq); err != nil {
 					response.BadRequest(c, processError(err).Error())
 					c.Abort()
 					return
 				}
 			}
 		}
-		
+
 		// 5. 手动触发验证
 		if err := validate(newReq); err != nil {
 			response.BadRequest(c, processError(err).Error())
 			c.Abort()
 			return
 		}
-		
+
 		// 6. 将验证后的对象存入上下文
 		c.Set(ValidatedRequestKey, newReq)
 		c.Next()
@@ -74,12 +82,12 @@ func processError(err error) error {
 			return fmt.Errorf("参数校验失败: 字段 %s %s", e.Field(), e.Tag())
 		}
 	}
-	
+
 	var unmarshalTypeError *json.UnmarshalTypeError
 	if errors.As(err, &unmarshalTypeError) {
 		return fmt.Errorf("类型错误: 字段 %s 期望类型 %s", unmarshalTypeError.Field, unmarshalTypeError.Type.String())
 	}
-	
+
 	return err
 }
 

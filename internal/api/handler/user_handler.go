@@ -1,14 +1,8 @@
 package handler
 
 import (
-	"bytes"
-	"fmt"
-	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 
@@ -148,7 +142,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 
 // UpdateUserPassword 更新用户密码
 // @Summary 更新用户密码
-// @Description 更新用户信息（需要认证）
+// @Description 更新用户信息
 // @Tags 用户管理
 // @Accept json
 // @Produce json
@@ -342,93 +336,41 @@ func (h *Handler) EmailVerify(c *gin.Context) {
 
 // UploadAvatar 上传头像
 // @Summary 上传头像
-// @Description 上传用户头像（需要认证，只能修改自己的头像）
+// @Description 上传并修改用户头像（需要认证，只能修改自己的头像）
 // @Tags 用户管理
 // @Accept multipart/form-data
 // @Produce json
 // @Security Bearer
 // @Param id path string true "用户ID"
 // @Param avatar formData file true "头像文件（仅支持 jpeg/png，尺寸必须为 180x180）"
-// @Success 200 {object} response.Response{data=dto.UploadAvatarResponse}
+// @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Failure 400 {object} response.Response
 // @Failure 401 {object} response.Response
 // @Failure 403 {object} response.Response
 // @Failure 500 {object} response.Response
 // @Router /api/v1/users/{id}/avatar [post]
 func (h *Handler) UploadAvatar(c *gin.Context) {
-	id := c.Param("id")
-	userID, exists := c.Get("userID")
-	if !exists {
-		response.Unauthorized(c)
-		return
-	}
-	if userID.(string) != id {
-		response.Forbidden(c, "you can only update your own avatar")
-		return
-	}
+	req := middleware.MustGetRequest[dto.UploadAvatarRequest](c)
 
-	file, err := c.FormFile("avatar")
+	user, err := h.userService.UpdateAvatar(c.Request.Context(), req.ID, req.Avatar)
 	if err != nil {
-		response.BadRequest(c, "avatar file is required")
-		return
-	}
-
-	// 校验文件类型
-	contentType := file.Header.Get("Content-Type")
-	if contentType != "image/jpeg" && contentType != "image/png" {
-		response.BadRequest(c, "avatar must be jpeg or png")
-		return
-	}
-
-	// 读取文件内容
-	src, err := file.Open()
-	if err != nil {
+		if err == service.ErrUserNotFound {
+			response.NotFound(c, "user not found")
+			return
+		}
+		if err == service.ErrFileType {
+			response.BadRequest(c, "file type is invalid")
+			return
+		}
+		if err == service.ErrImage {
+			response.BadRequest(c, "image is invalid")
+			return
+		}
+		if err == service.ErrSizeExceed {
+			response.BadRequest(c, "size exceed")
+		}
 		response.InternalError(c, err)
 		return
 	}
-	data, err := io.ReadAll(src)
-	src.Close()
-	if err != nil {
-		response.InternalError(c, err)
-		return
-	}
-
-	// 校验图片尺寸
-	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
-	if err != nil {
-		response.BadRequest(c, "invalid image format")
-		return
-	}
-	if cfg.Width != 180 || cfg.Height != 180 {
-		response.BadRequest(c, "avatar must be exactly 180x180 pixels")
-		return
-	}
-
-	// 确定文件扩展名
-	ext := ".jpg"
-	switch contentType {
-	case "image/png":
-		ext = ".png"
-	}
-
-	filename := fmt.Sprintf("%s%s", id, ext)
-	uploadDir := "upload/avatar"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		response.InternalError(c, err)
-		return
-	}
-	dstPath := filepath.Join(uploadDir, filename)
-
-	if err := os.WriteFile(dstPath, data, 0644); err != nil {
-		response.InternalError(c, err)
-		return
-	}
-
-	avatarURL := fmt.Sprintf("%s/upload/avatar/%s", h.cfg.Server.Website, filename)
-	if _, err := h.userService.UpdateAvatar(c.Request.Context(), id, avatarURL); err != nil {
-		response.InternalError(c, err)
-		return
-	}
-
-	response.Success(c, dto.UploadAvatarResponse{URL: avatarURL})
+	response.Success(c, user)
 }

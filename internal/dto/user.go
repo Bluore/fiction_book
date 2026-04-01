@@ -1,5 +1,7 @@
 package dto
 
+import "mime/multipart"
+
 // CreateUserRequest 创建用户请求
 type CreateUserRequest struct {
 	Username string `json:"username" binding:"required,username"`
@@ -98,7 +100,8 @@ type EmailVerifyResponse struct {
 	Email string `json:"email"`
 }
 
-// UploadAvatarResponse 上传头像响应
-type UploadAvatarResponse struct {
-	URL string `json:"url"`
+// UploadAvatarRequest 上传头像请求
+type UploadAvatarRequest struct {
+	ID     string                `uri:"id" binding:"required"`
+	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
 }

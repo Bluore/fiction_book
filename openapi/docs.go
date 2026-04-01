@@ -648,7 +648,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "上传用户头像（需要认证，只能修改自己的头像）",
+                "description": "上传并修改用户头像（需要认证，只能修改自己的头像）",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -687,7 +687,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UploadAvatarResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -1175,14 +1175,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "verify": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UploadAvatarResponse": {
-            "type": "object",
-            "properties": {
-                "url": {
                     "type": "string"
                 }
             }

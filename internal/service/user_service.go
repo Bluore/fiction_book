@@ -3,8 +3,14 @@ package service
 import (
 	"context"
 	"errors"
+	"fiction-book/pkg/logger"
 	"fmt"
+	"image"
+	"io"
 	"log"
+	"mime/multipart"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -25,6 +31,11 @@ var (
 	ErrInvalidPassword = errors.New("invalid password")
 	ErrVerification    = errors.New("verification failed")
 	ErrEmailVerifySend = errors.New("email verification not send")
+	ErrSizeExceed      = errors.New("size exceed")
+	ErrImage           = errors.New("image error")
+	ErrFileType        = errors.New("file type error")
+
+	imageFilePath = "/upload/avatar/"
 )
 
 // UserService 用户服务接口
@@ -38,7 +49,7 @@ type UserService interface {
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
 	SendEmailVerification(ctx context.Context, receiver string) error
-	UpdateAvatar(ctx context.Context, userID string, avatarURL string) (*dto.UserResponse, error)
+	UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error)
 }
 
 type userService struct {
@@ -346,7 +357,20 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 	return nil
 }
 
-func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatarURL string) (*dto.UserResponse, error) {
+func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error) {
+	// 判断图像大小
+	if avatar.Size > 2*1024*1024 {
+		return nil, ErrSizeExceed
+	}
+	// 判断图像类型
+	if len(strings.Split(avatar.Filename, ".")) > 2 {
+		return nil, ErrFileType
+	}
+	suf := strings.Split(avatar.Filename, ".")[1]
+	if suf != "png" && suf != "jpg" {
+		return nil, ErrFileType
+	}
+
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -354,9 +378,66 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatarURL
 	if user == nil {
 		return nil, ErrUserNotFound
 	}
+	var imgId string
+	if user.ProfileImage == "" {
+		imgId = uuid.New().String()
+	} else {
+		imgId = strings.TrimPrefix(user.ProfileImage, imageFilePath)
+		imgId = strings.Split(imgId, ".")[0]
 
-	user.ProfileImage = avatarURL
-	if err := s.userRepo.Update(ctx, user); err != nil {
+		_, err := uuid.Parse(imgId)
+		if err != nil {
+			return nil, err
+		}
+	}
+	path := fmt.Sprintf("%s%s.%s", imageFilePath, imgId, suf)
+
+	// 打开图像
+	src, err := avatar.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer func(src multipart.File) {
+		err := src.Close()
+		if err != nil {
+			logger.Error("image file close error: " + err.Error())
+		}
+	}(src)
+
+	img, _, err := image.Decode(src)
+	if err != nil {
+		return nil, err
+	}
+
+	if img.Bounds().Dx() != 180 || img.Bounds().Dy() != 180 {
+		return nil, ErrImage
+	}
+
+	// 创建文件
+	dstFile, err := os.Create(fmt.Sprintf(".%s", path))
+	if err != nil {
+		return nil, err
+	}
+	defer func(dstFile *os.File) {
+		err := dstFile.Close()
+		if err != nil {
+			logger.Error("image file close error: " + err.Error())
+		}
+	}(dstFile)
+
+	// 重置指针流
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	// 复制文件
+	_, err = io.Copy(dstFile, src)
+	if err != nil {
+		return nil, err
+	}
+
+	user.ProfileImage = path
+	err = s.userRepo.Update(ctx, user)
+	if err != nil {
 		return nil, err
 	}
 

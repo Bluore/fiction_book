@@ -64,8 +64,8 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			users.GET("/:id", middleware.Validation(&dto.GetUserRequest{}), h.GetUser)
 			users.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserRequest{}), h.UpdateUser)
 			users.DELETE("/:id", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteUserRequest{}), h.DeleteUser)
-			users.POST("/:id/avatar", middleware.Auth(cfg), h.UploadAvatar)
-			users.PUT("/:id/password", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserPasswordRequest{}), h.UpdateUserPassword)
+			users.POST("/:id/avatar", middleware.Auth(cfg), middleware.Validation(&dto.UploadAvatarRequest{}), h.UploadAvatar)
+			users.PUT("/:id/password", middleware.Validation(&dto.UpdateUserPasswordRequest{}), h.UpdateUserPassword)
 			users.PUT("/:id/email", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserEmailRequest{}), h.UpdateUserEmail)
 		}
 
