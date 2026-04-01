@@ -32,6 +32,7 @@ type UserService interface {
 	Create(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error)
 	GetByID(ctx context.Context, id string) (*dto.UserResponse, error)
 	Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error)
+	UpdatePassword(ctx context.Context, id string, req *dto.UpdateUserPasswordRequest) (*dto.UserResponse, error)
 	Delete(ctx context.Context, id string) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
@@ -50,6 +51,35 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config) User
 		userRepo: userRepo,
 		cfg:      cfg,
 	}
+}
+
+func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.UpdateUserPasswordRequest) (*dto.UserResponse, error) {
+	// 获取用户信息
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	err = s.emailVerify(ctx, user.Email, req.Verify)
+	if err != nil {
+		return nil, err
+	}
+
+	// 密码加密
+	hashPwd, err := hashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+	user.Password = hashPwd
+
+	err = s.userRepo.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return s.toUserResponse(user), nil
 }
 
 func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*dto.UserResponse, error) {
@@ -136,21 +166,6 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 }
 
 func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	if req.Email != nil || req.Password != nil {
-		err := s.emailVerify(ctx, *req.Email, *req.Verify)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if req.Password != nil {
-		hashedPassword, err := hashPassword(*req.Password)
-		if err != nil {
-			return nil, err
-		}
-		req.Password = &hashedPassword
-	}
-
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -163,26 +178,17 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 	if req.Username != nil {
 		user.Username = *req.Username
 	}
-	if req.Email != nil {
-		user.Email = *req.Email
-	}
 	if req.Age != nil {
 		user.Age = *req.Age
 	}
 	if req.Description != nil {
 		user.Description = *req.Description
 	}
-	if req.Email != nil {
-		user.Email = *req.Email
-	}
 	if req.CoverImage != nil {
 		user.CoverImage = *req.CoverImage
 	}
 	if req.ProfileImage != nil {
 		user.ProfileImage = *req.ProfileImage
-	}
-	if req.Password != nil {
-		user.Password = *req.Password
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {

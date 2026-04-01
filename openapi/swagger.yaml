@@ -119,6 +119,20 @@ definitions:
       username:
         type: string
     type: object
+  dto.UpdateUserPasswordRequest:
+    properties:
+      id:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      verify:
+        type: string
+    required:
+    - id
+    - password
+    - verify
+    type: object
   dto.UpdateUserRequest:
     properties:
       age:
@@ -129,12 +143,7 @@ definitions:
         type: string
       description:
         type: string
-      email:
-        type: string
       id:
-        type: string
-      password:
-        minLength: 6
         type: string
       profile_image:
         type: string
@@ -621,6 +630,56 @@ paths:
       security:
       - Bearer: []
       summary: 上传头像
+      tags:
+      - 用户管理
+  /api/v1/users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: 更新用户信息（需要认证）
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 更新用户密码
       tags:
       - 用户管理
   /health:

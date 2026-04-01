@@ -23,16 +23,16 @@ import (
 	"fiction-book/pkg/validator"
 )
 
-// @title Gin Template API
+// @title fiction_book swagger
 // @version 1.0
-// @description 基于 Gin 框架的项目模板 API
+// @description fiction_book API文档
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
 // @contact.email support@example.com
 
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
+// @license.name GNU
+// @license.url https://opensource.org/license/gpl-3.0
 
 // @host localhost:8080
 // @BasePath /

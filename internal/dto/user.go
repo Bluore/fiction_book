@@ -13,13 +13,18 @@ type CreateUserRequest struct {
 type UpdateUserRequest struct {
 	ID           string  `uri:"id" binding:"required"`
 	Username     *string `json:"username" binding:"omitempty,username"`
-	Password     *string `json:"password" binding:"omitempty,min=6"`
-	Email        *string `json:"email" binding:"omitempty,email"`
 	Age          *int    `json:"age" binding:"omitempty,gte=0,lte=130"`
 	Description  *string `json:"description" gorm:"type:text"`
 	ProfileImage *string `json:"profile_image" gorm:"type:varchar(255)"`
 	CoverImage   *string `json:"cover_image" gorm:"type:varchar(255)"`
 	Verify       *string `json:"verify" binding:"omitempty,len=6"`
+}
+
+// UpdateUserPasswordRequest 更新用户密码请求
+type UpdateUserPasswordRequest struct {
+	ID       string `uri:"id" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
+	Verify   string `json:"verify" binding:"required,len=6"`
 }
 
 // GetUserRequest 获取用户请求
