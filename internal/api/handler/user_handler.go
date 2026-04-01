@@ -185,6 +185,52 @@ func (h *Handler) UpdateUserPassword(c *gin.Context) {
 	response.Success(c, user)
 }
 
+// UpdateUserEmail 更新用户邮箱
+// @Summary 更新用户邮箱
+// @Description 更新用户信息（需要认证新的邮箱）
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "用户ID"
+// @Param request body dto.UpdateUserEmailRequest true "更新信息"
+// @Success 200 {object} response.Response{data=dto.UserResponse}
+// @Failure 400 {object} response.Response
+// @Failure 401 {object} response.Response
+// @Failure 404 {object} response.Response
+// @Failure 500 {object} response.Response
+// @Router /api/v1/users/{id}/email [put]
+func (h *Handler) UpdateUserEmail(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.UpdateUserEmailRequest](c)
+
+	user, err := h.userService.UpdateEmail(c.Request.Context(), req.ID, req)
+	if err != nil {
+		if err == service.ErrUserNotFound {
+			response.NotFound(c, "user not found")
+			return
+		}
+		if err == service.ErrEmailVerifySend {
+			response.BadRequest(c, "please send email verify, firstly")
+			return
+		}
+		if err == service.ErrVerification {
+			response.BadRequest(c, "verification failed")
+			return
+		}
+		if err == service.ErrUserExists {
+			response.NotFound(c, "email exists")
+			return
+		}
+		if err == service.ErrInvalidPassword {
+			response.BadRequest(c, "invalid password")
+			return
+		}
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, user)
+}
+
 // DeleteUser 删除用户
 // @Summary 删除用户
 // @Description 删除用户（需要认证和管理员权限）

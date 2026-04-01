@@ -33,6 +33,7 @@ type UserService interface {
 	GetByID(ctx context.Context, id string) (*dto.UserResponse, error)
 	Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error)
 	UpdatePassword(ctx context.Context, id string, req *dto.UpdateUserPasswordRequest) (*dto.UserResponse, error)
+	UpdateEmail(ctx context.Context, id string, req *dto.UpdateUserEmailRequest) (*dto.UserResponse, error)
 	Delete(ctx context.Context, id string) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
@@ -51,6 +52,41 @@ func NewUserService(userRepo repository.UserRepository, cfg *config.Config) User
 		userRepo: userRepo,
 		cfg:      cfg,
 	}
+}
+
+func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.UpdateUserEmailRequest) (*dto.UserResponse, error) {
+	// 获取用户信息
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	if !checkPasswordHash(req.Password, user.Password) {
+		return nil, ErrInvalidPassword
+	}
+
+	err = s.emailVerify(ctx, req.Email, req.Verify)
+	if err != nil {
+		return nil, err
+	}
+
+	exist, err := s.userRepo.GetByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+	if exist != nil {
+		return nil, ErrUserExists
+	}
+
+	user.Email = req.Email
+	err = s.userRepo.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return s.toUserResponse(user), nil
 }
 
 func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.UpdateUserPasswordRequest) (*dto.UserResponse, error) {

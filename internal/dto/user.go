@@ -27,6 +27,14 @@ type UpdateUserPasswordRequest struct {
 	Verify   string `json:"verify" binding:"required,len=6"`
 }
 
+// UpdateUserEmailRequest 更新用户邮箱请求
+type UpdateUserEmailRequest struct {
+	ID       string `uri:"id" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
+	Email    string `json:"email" binding:"required,email"`
+	Verify   string `json:"verify" binding:"required,len=6"`
+}
+
 // GetUserRequest 获取用户请求
 type GetUserRequest struct {
 	ID string `uri:"id" binding:"required"`
