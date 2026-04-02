@@ -231,12 +231,6 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 	if req.Description != nil {
 		user.Description = *req.Description
 	}
-	if req.CoverImage != nil {
-		user.CoverImage = *req.CoverImage
-	}
-	if req.ProfileImage != nil {
-		user.ProfileImage = *req.ProfileImage
-	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, err
@@ -306,10 +300,28 @@ func (s *userService) toUserResponse(user *model.User) *dto.UserResponse {
 		Email:        user.Email,
 		Age:          user.Age,
 		Description:  user.Description,
-		ProfileImage: user.ProfileImage,
-		CoverImage:   user.CoverImage,
+		ProfileImage: s.getProfileImageUri(user.ProfileImage),
+		CoverImage:   s.getCoverImageUri(user.CoverImage),
 		CreatedAt:    user.CreatedAt.Format("2006-01-02 15:04:05"),
 		UpdatedAt:    user.UpdatedAt.Format("2006-01-02 15:04:05"),
+	}
+}
+
+// 获取用户的头像绝对链接
+func (s *userService) getProfileImageUri(path string) string {
+	if path == "" {
+		return fmt.Sprintf("%s%s", s.cfg.Server.Website, "/upload/avatar/默认头像-神秘人.jpg")
+	} else {
+		return fmt.Sprintf("%s%s", s.cfg.Server.Website, path)
+	}
+}
+
+// 获取用户的头图绝对链接
+func (s *userService) getCoverImageUri(path string) string {
+	if path == "" {
+		return fmt.Sprintf("%s%s", s.cfg.Server.Website, "/upload/avatar/默认头像-神秘人.jpg")
+	} else {
+		return fmt.Sprintf("%s%s", s.cfg.Server.Website, path)
 	}
 }
 
@@ -371,6 +383,7 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 		return nil, ErrFileType
 	}
 
+	// 获取信息
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -404,11 +417,13 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 		}
 	}(src)
 
+	// 解码图像
 	img, _, err := image.Decode(src)
 	if err != nil {
 		return nil, err
 	}
 
+	// 判断图像像素大小
 	if img.Bounds().Dx() != 180 || img.Bounds().Dy() != 180 {
 		return nil, ErrImage
 	}
@@ -435,6 +450,7 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 		return nil, err
 	}
 
+	// 更新数据库
 	user.ProfileImage = path
 	err = s.userRepo.Update(ctx, user)
 	if err != nil {

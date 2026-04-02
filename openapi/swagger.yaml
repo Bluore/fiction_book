@@ -156,17 +156,12 @@ definitions:
         maximum: 130
         minimum: 0
         type: integer
-      cover_image:
-        type: string
       description:
+        minLength: 1
         type: string
       id:
         type: string
-      profile_image:
-        type: string
       username:
-        type: string
-      verify:
         type: string
     required:
     - id
@@ -698,7 +693,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: 更新用户信息（需要认证）
+      description: 更新用户信息
       parameters:
       - description: 用户ID
         in: path

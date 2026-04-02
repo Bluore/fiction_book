@@ -810,7 +810,7 @@ const docTemplate = `{
                         "Bearer": []
                     }
                 ],
-                "description": "更新用户信息（需要认证）",
+                "description": "更新用户信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -1159,22 +1159,14 @@ const docTemplate = `{
                     "maximum": 130,
                     "minimum": 0
                 },
-                "cover_image": {
-                    "type": "string"
-                },
                 "description": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "id": {
                     "type": "string"
                 },
-                "profile_image": {
-                    "type": "string"
-                },
                 "username": {
-                    "type": "string"
-                },
-                "verify": {
                     "type": "string"
                 }
             }
