@@ -310,7 +310,7 @@ func (s *userService) toUserResponse(user *model.User) *dto.UserResponse {
 // 获取用户的头像绝对链接
 func (s *userService) getProfileImageUri(path string) string {
 	if path == "" {
-		return fmt.Sprintf("%s%s", s.cfg.Server.Website, "/upload/avatar/默认头像-神秘人.jpg")
+		return fmt.Sprintf("%s%s", s.cfg.Server.Website, "/upload/avatar/default.jpg")
 	} else {
 		return fmt.Sprintf("%s%s", s.cfg.Server.Website, path)
 	}
@@ -319,7 +319,7 @@ func (s *userService) getProfileImageUri(path string) string {
 // 获取用户的头图绝对链接
 func (s *userService) getCoverImageUri(path string) string {
 	if path == "" {
-		return fmt.Sprintf("%s%s", s.cfg.Server.Website, "/upload/avatar/默认头像-神秘人.jpg")
+		return fmt.Sprintf("%s%s", s.cfg.Server.Website, "/upload/cover_image/default.jpg")
 	} else {
 		return fmt.Sprintf("%s%s", s.cfg.Server.Website, path)
 	}
