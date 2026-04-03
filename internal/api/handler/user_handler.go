@@ -15,21 +15,24 @@ import (
 
 // Handler 处理器结构
 type Handler struct {
-	userService service.UserService
-	bookService service.BookService
-	cfg         *config.Config
+	userService        service.UserService
+	bookService        service.BookService
+	bookChapterService service.BookChapterService
+	cfg                *config.Config
 }
 
 // NewHandler 创建处理器实例
 func NewHandler(
 	userService service.UserService,
 	bookService service.BookService,
+	bookChapterService service.BookChapterService,
 	cfg *config.Config,
 ) *Handler {
 	return &Handler{
-		userService: userService,
-		bookService: bookService,
-		cfg:         cfg,
+		userService:        userService,
+		bookService:        bookService,
+		bookChapterService: bookChapterService,
+		cfg:                cfg,
 	}
 }
 

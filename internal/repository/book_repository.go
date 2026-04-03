@@ -4,31 +4,9 @@ import (
 	"context"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
+
 	"gorm.io/gorm"
 )
-
-// ListOption 通用列表查询选项
-type ListOption struct {
-	Page      int
-	Size      int
-	SortKey   dto.BookSortKey
-	SortOrder dto.SortOrder
-}
-
-// MapSortKeyToColumn 将 SortKey 映射为 GORM Order 字符串
-func MapSortKeyToColumn(sortKey dto.BookSortKey, order dto.SortOrder) string {
-	columnMap := map[dto.BookSortKey]string{
-		dto.SortByBrowseAmount:    "browse_amount",
-		dto.SortByBookshelfAmount: "bookshelf_amount",
-		dto.SortByNewUpdate:       "updated_at",
-		dto.SortByNewPush:         "pushed_at",
-	}
-	col, ok := columnMap[sortKey]
-	if !ok {
-		return "updated_at"
-	}
-	return col + " " + string(order)
-}
 
 // BookRepository 用户仓储接口
 type BookRepository interface {
@@ -36,7 +14,7 @@ type BookRepository interface {
 	GetByOwnerID(ctx context.Context, ownerID string) ([]*model.Book, error)
 	GetByName(ctx context.Context, name string) (*model.Book, error)
 	List(ctx context.Context, page int, size int) ([]*model.Book, error)
-	ListWithOption(ctx context.Context, opt ListOption) ([]*model.Book, error)
+	ListWithOption(ctx context.Context, opt BookListOption) ([]*model.Book, error)
 	Create(ctx context.Context, model *model.Book) error
 	Update(ctx context.Context, model *model.Book) error
 	Delete(ctx context.Context, id string) error
@@ -62,6 +40,29 @@ func (r *bookRepository) GetByID(ctx context.Context, id string) (*model.Book, e
 		return nil, err
 	}
 	return &book, nil
+}
+
+// BookListOption 通用列表查询选项
+type BookListOption struct {
+	Page      int
+	Size      int
+	SortKey   dto.BookSortKey
+	SortOrder dto.SortOrder
+}
+
+// MapSortKeyToColumn 将 SortKey 映射为 GORM Order 字符串
+func MapSortKeyToColumn(sortKey dto.BookSortKey, order dto.SortOrder) string {
+	columnMap := map[dto.BookSortKey]string{
+		dto.SortByBrowseAmount:    "browse_amount",
+		dto.SortByBookshelfAmount: "bookshelf_amount",
+		dto.SortByNewUpdate:       "updated_at",
+		dto.SortByNewPush:         "pushed_at",
+	}
+	col, ok := columnMap[sortKey]
+	if !ok {
+		return "updated_at"
+	}
+	return col + " " + string(order)
 }
 
 func (r *bookRepository) GetByOwnerID(ctx context.Context, ownerID string) ([]*model.Book, error) {
@@ -100,7 +101,7 @@ func (r *bookRepository) List(ctx context.Context, page int, size int) ([]*model
 	return books, nil
 }
 
-func (r *bookRepository) ListWithOption(ctx context.Context, opt ListOption) ([]*model.Book, error) {
+func (r *bookRepository) ListWithOption(ctx context.Context, opt BookListOption) ([]*model.Book, error) {
 	var books []*model.Book
 	orderClause := MapSortKeyToColumn(opt.SortKey, opt.SortOrder)
 	err := r.db.WithContext(ctx).

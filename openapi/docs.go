@@ -332,6 +332,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/chapters/create": {
+            "post": {
+                "description": "为书籍创建一章章节",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "章节管理"
+                ],
+                "summary": "创建书籍章节",
+                "parameters": [
+                    {
+                        "description": "创建章节请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreatBookChapterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.BookChapterResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "description": "获取用户列表（分页）",
@@ -925,6 +971,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.BookChapterResponse": {
+            "type": "object",
+            "properties": {
+                "Book": {
+                    "$ref": "#/definitions/dto.BookResponse"
+                },
+                "chapter_id": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.BookListResponse": {
             "type": "object",
             "properties": {
@@ -982,6 +1048,25 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "vip_level": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreatBookChapterRequest": {
+            "type": "object",
+            "required": [
+                "book_id",
+                "content",
+                "title"
+            ],
+            "properties": {
+                "book_id": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 }
             }

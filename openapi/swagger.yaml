@@ -1,5 +1,18 @@
 basePath: /
 definitions:
+  dto.BookChapterResponse:
+    properties:
+      Book:
+        $ref: '#/definitions/dto.BookResponse'
+      chapter_id:
+        type: string
+      content:
+        type: string
+      order:
+        type: integer
+      title:
+        type: string
+    type: object
   dto.BookListResponse:
     properties:
       books:
@@ -39,6 +52,19 @@ definitions:
         type: string
       vip_level:
         type: string
+    type: object
+  dto.CreatBookChapterRequest:
+    properties:
+      book_id:
+        type: string
+      content:
+        type: string
+      title:
+        type: string
+    required:
+    - book_id
+    - content
+    - title
     type: object
   dto.CreateBookRequest:
     properties:
@@ -399,6 +425,33 @@ paths:
       summary: 获取书籍列表
       tags:
       - 书籍管理
+  /api/v1/chapters/create:
+    post:
+      consumes:
+      - application/json
+      description: 为书籍创建一章章节
+      parameters:
+      - description: 创建章节请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatBookChapterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.BookChapterResponse'
+              type: object
+      summary: 创建书籍章节
+      tags:
+      - 章节管理
   /api/v1/users:
     get:
       consumes:

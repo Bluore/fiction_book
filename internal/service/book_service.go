@@ -7,6 +7,7 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+
 	"github.com/google/uuid"
 )
 
@@ -15,7 +16,7 @@ var (
 	ErrBookNotFound = errors.New("book not found")
 )
 
-// BookService 用户服务接口
+// BookService 书籍服务接口
 type BookService interface {
 	Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error)
 	GetByID(ctx context.Context, id string) (*dto.BookResponse, error)
@@ -28,7 +29,7 @@ type bookService struct {
 	cfg      *config.Config
 }
 
-// NewBookService 创建用户服务实例
+// NewBookService 创建书籍服务实例
 func NewBookService(bookRepo repository.BookRepository, cfg *config.Config) BookService {
 	return &bookService{
 		bookRepo: bookRepo,
@@ -61,10 +62,10 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 	if err != nil {
 		return nil, err
 	}
-	return s.toBookResponse(book), nil
+	return toBookResponse(book), nil
 }
 
-func (s *bookService) toBookResponse(book *model.Book) *dto.BookResponse {
+func toBookResponse(book *model.Book) *dto.BookResponse {
 	return &dto.BookResponse{
 		ID:              book.ID,
 		Name:            book.Name,
@@ -89,7 +90,7 @@ func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse
 	if book == nil {
 		return nil, ErrBookNotFound
 	}
-	return s.toBookResponse(book), nil
+	return toBookResponse(book), nil
 }
 
 func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookListResponse, error) {
@@ -105,7 +106,7 @@ func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookLi
 
 	var bookResponses []*dto.BookResponse
 	for _, book := range books {
-		bookResponses = append(bookResponses, s.toBookResponse(book))
+		bookResponses = append(bookResponses, toBookResponse(book))
 	}
 
 	pageCount := &dto.PageListResponse{
@@ -123,7 +124,7 @@ func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookLi
 
 func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error) {
 	req.ToStandard()
-	books, err := s.bookRepo.ListWithOption(ctx, repository.ListOption{
+	books, err := s.bookRepo.ListWithOption(ctx, repository.BookListOption{
 		Page:      req.Page,
 		Size:      req.Size,
 		SortKey:   req.SortKey,
@@ -140,7 +141,7 @@ func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) 
 
 	var bookResponses []*dto.BookResponse
 	for _, book := range books {
-		bookResponses = append(bookResponses, s.toBookResponse(book))
+		bookResponses = append(bookResponses, toBookResponse(book))
 	}
 
 	return &dto.BookListResponse{

@@ -76,5 +76,10 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			books.GET("/:id", middleware.Validation(&dto.GetBookRequest{}), h.GetBook)
 			books.GET("/list", middleware.Validation(&dto.ListBooksRequest{}), h.BookList)
 		}
+		// 书籍章节模块
+		bookChapters := v1.Group("/chapters")
+		{
+			bookChapters.POST("/create", middleware.Validation(&dto.CreatBookChapterRequest{}), h.AddBookChapter)
+		}
 	}
 }
