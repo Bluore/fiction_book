@@ -5,7 +5,7 @@ type BookChapter struct {
 	BookID  string `json:"book_id" gorm:"type:varchar(36)"`
 	Title   string `json:"title" gorm:"type:varchar(255)"`
 	Content string `json:"content" gorm:"type:text"`
-	Order   int    `json:"order" gorm:"type:integer;not null;unique"`
+	Order   int    `json:"order" gorm:"type:integer;not null"`
 }
 
 func (BookChapter) TableName() string {

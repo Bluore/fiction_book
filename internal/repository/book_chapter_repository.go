@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fiction-book/internal/model"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -73,6 +74,7 @@ func (b bookChapterRepository) AddByBookID(ctx context.Context, bookID string, t
 		}
 	}
 	bookChapter := model.BookChapter{
+		ID:      uuid.New().String(),
 		BookID:  bookID,
 		Title:   title,
 		Content: content,
