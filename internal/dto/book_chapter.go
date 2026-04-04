@@ -24,3 +24,9 @@ type BookChapterInfoResponse struct {
 type GetBookChapterRequest struct {
 	ChapterID string `uri:"id" binding:"required"`
 }
+
+type UpdateBookChapterRequest struct {
+	ID      string  `uri:"id" binding:"required"`
+	Title   *string `json:"title" binding:""`
+	Content *string `json:"content" binding:""`
+}

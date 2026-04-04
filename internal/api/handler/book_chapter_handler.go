@@ -99,3 +99,30 @@ func (h *Handler) GetBookChapter(c *gin.Context) {
 	}
 	response.Success(c, bookChapter)
 }
+
+// UpdateBookChapter 修改编辑小说章节
+// @Summary 修改编辑小说章节 (认证)
+// @Description 修改编辑小说章节(认证)
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "章节id"
+// @Param request body dto.UpdateBookChapterRequest true "修改章节请求"
+// @Success 200 {object} response.Response{data=dto.BookChapterResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/chapters/{id} [put]
+func (h *Handler) UpdateBookChapter(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.UpdateBookChapterRequest](c)
+	curChapter, err := h.bookChapterService.UpdateChapter(c.Request.Context(), req)
+	if err != nil {
+		if err == service.ErrBookNotFound {
+			response.InternalError(c, err)
+		}
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, curChapter)
+}

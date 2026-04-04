@@ -18,6 +18,7 @@ type BookChapterService interface {
 	AddByBookID(ctx context.Context, bookID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
 	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
 	GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error)
+	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
 }
 
 type bookChapterService struct {
@@ -164,4 +165,38 @@ func VIPLevelToStr(vipLevel int) string {
 	default:
 		return "off"
 	}
+}
+
+func (b bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
+	old, err := b.bookChapterRepo.GetByID(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	if old == nil {
+		return nil, ErrBookChapterNotFound
+	}
+	cur := old
+
+	if req.Title != nil && *req.Title != "" {
+		cur.Title = *req.Title
+	}
+	if req.Content != nil && *req.Content != "" {
+		cur.Content = *req.Content
+	}
+
+	err = b.bookChapterRepo.Update(ctx, old.ID, cur)
+	if err != nil {
+		return nil, err
+	}
+
+	book, err := b.bookRepo.GetByID(ctx, old.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
+
+	return toBookChapterResponse(cur, book), nil
+
 }
