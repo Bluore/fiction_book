@@ -20,3 +20,7 @@ type BookChapterInfoResponse struct {
 	Order     int           `json:"order"`
 	Book      *BookResponse `json:"Book"`
 }
+
+type GetBookChapterRequest struct {
+	ChapterID string `uri:"id" binding:"required"`
+}

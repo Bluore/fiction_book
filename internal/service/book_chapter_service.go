@@ -15,6 +15,7 @@ var (
 
 type BookChapterService interface {
 	AddByBookID(ctx context.Context, bookID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
+	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
 }
 
 type bookChapterService struct {
@@ -55,4 +56,37 @@ func toBookChapterInfoResponse(info *model.BookChapterInfo, book *model.Book) *d
 		Order:     info.Order,
 		Book:      toBookResponse(book),
 	}
+}
+
+func toBookChapterResponse(info *model.BookChapter, book *model.Book) *dto.BookChapterResponse {
+	return &dto.BookChapterResponse{
+		ChapterID: info.ID,
+		Title:     info.Title,
+		Content:   info.Content,
+		Order:     info.Order,
+		Book:      toBookResponse(book),
+	}
+}
+
+func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error) {
+	bookChapter, err := b.bookChapterRepo.GetByID(ctx, bookID)
+	if err != nil {
+		return nil, err
+	}
+	if bookChapter == nil {
+		return nil, ErrBookChapterNotFound
+	}
+
+	book, err := b.bookRepo.GetByID(ctx, bookChapter.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
+
+	if book.VIPLevel != "" {
+		return nil, ErrUserNotLogin
+	}
+	return toBookChapterResponse(bookChapter, book), nil
 }

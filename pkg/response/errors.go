@@ -56,5 +56,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4013,
 			Message: "邮箱已存在",
 		},
+		service.ErrUserNotLogin: errorResponse{
+			Code:    4014,
+			Message: "请先完成登录",
+		},
 	}
 }

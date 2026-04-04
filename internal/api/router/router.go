@@ -80,6 +80,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		bookChapters := v1.Group("/chapters")
 		{
 			bookChapters.POST("/create", middleware.Validation(&dto.CreatBookChapterRequest{}), h.AddBookChapter)
+			bookChapters.GET("/:id/guest", middleware.Validation(&dto.GetBookChapterRequest{}), h.GuestGetBookChapter)
 		}
 	}
 }

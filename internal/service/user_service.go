@@ -35,6 +35,7 @@ var (
 	ErrSizeExceed      = errors.New("size exceed")
 	ErrImage           = errors.New("image error")
 	ErrFileType        = errors.New("file type error")
+	ErrUserNotLogin    = errors.New("user need login")
 
 	imageFilePath = "/upload/avatar/"
 )

@@ -36,3 +36,31 @@ func (h *Handler) AddBookChapter(c *gin.Context) {
 	}
 	response.Success(c, bookChapterInfo)
 }
+
+// GuestGetBookChapter 获取章节内容(游客)
+// @Summary 获取章节内容（游客）
+// @Description 获取章节内容（游客）
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Param request path dto.GetBookChapterRequest true "获取章节请求"
+// @Success 200 {object} response.Response{data=dto.BookChapterResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4009 {object} response.Response "书籍未找到"
+// @Failure 4014 {object} response.Response "该章节需要先完成登录"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/chapters/{id}/guest [get]
+func (h *Handler) GuestGetBookChapter(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookChapterRequest](c)
+
+	bookChapter, err := h.bookChapterService.GuestGetChapter(c.Request.Context(), req.ChapterID)
+	if err != nil {
+		if err == service.ErrBookNotFound {
+			response.InternalError(c, err)
+			return
+		}
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, bookChapter)
+}
