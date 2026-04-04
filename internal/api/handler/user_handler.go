@@ -58,8 +58,12 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 // @Produce json
 // @Param request body dto.CreateUserRequest true "用户信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4003 {object} response.Response "验证码验证失败"
+// @Failure 4004 {object} response.Response "验证码未发送"
+// @Failure 4007 {object} response.Response "用户已存在"
+// @Failure 4013 {object} response.Response "邮箱已存在"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users [post]
 func (h *Handler) CreateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreateUserRequest](c)
@@ -67,15 +71,19 @@ func (h *Handler) CreateUser(c *gin.Context) {
 	user, err := h.userService.Create(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrUserExists {
-			response.BadRequest(c, "user already exists")
+			response.PushError(c, err)
+			return
+		}
+		if err == service.ErrEmailExists {
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrEmailVerifySend {
-			response.BadRequest(c, "please send email verify, firstly")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrVerification {
-			response.BadRequest(c, "verification failed")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -93,8 +101,9 @@ func (h *Handler) CreateUser(c *gin.Context) {
 // @Produce json
 // @Param id path string true "用户ID"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 404 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users/{id} [get]
 func (h *Handler) GetUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetUserRequest](c)
@@ -102,7 +111,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 	user, err := h.userService.GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		if err == service.ErrUserNotFound {
-			response.NotFound(c, "user not found")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -122,10 +131,10 @@ func (h *Handler) GetUser(c *gin.Context) {
 // @Param id path string true "用户ID"
 // @Param request body dto.UpdateUserRequest true "更新信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 401 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users/{id} [put]
 func (h *Handler) UpdateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserRequest](c)
@@ -133,7 +142,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 	user, err := h.userService.Update(c.Request.Context(), req.ID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
-			response.NotFound(c, "user not found")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -153,10 +162,12 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 // @Param id path string true "用户ID"
 // @Param request body dto.UpdateUserPasswordRequest true "更新信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 401 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4003 {object} response.Response "验证码验证失败"
+// @Failure 4004 {object} response.Response "验证码未发送"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users/{id}/password [put]
 func (h *Handler) UpdateUserPassword(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserPasswordRequest](c)
@@ -164,15 +175,15 @@ func (h *Handler) UpdateUserPassword(c *gin.Context) {
 	user, err := h.userService.UpdatePassword(c.Request.Context(), req.ID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
-			response.NotFound(c, "user not found")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrEmailVerifySend {
-			response.BadRequest(c, "please send email verify, firstly")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrVerification {
-			response.BadRequest(c, "verification failed")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -192,10 +203,13 @@ func (h *Handler) UpdateUserPassword(c *gin.Context) {
 // @Param id path string true "用户ID"
 // @Param request body dto.UpdateUserEmailRequest true "更新信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 401 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4003 {object} response.Response "验证码验证失败"
+// @Failure 4004 {object} response.Response "验证码未发送"
+// @Failure 4013 {object} response.Response "邮箱已存在"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users/{id}/email [put]
 func (h *Handler) UpdateUserEmail(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserEmailRequest](c)
@@ -203,23 +217,23 @@ func (h *Handler) UpdateUserEmail(c *gin.Context) {
 	user, err := h.userService.UpdateEmail(c.Request.Context(), req.ID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
-			response.NotFound(c, "user not found")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrEmailVerifySend {
-			response.BadRequest(c, "please send email verify, firstly")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrVerification {
-			response.BadRequest(c, "verification failed")
+			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrUserExists {
-			response.NotFound(c, "email exists")
+		if err == service.ErrEmailExists {
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrInvalidPassword {
-			response.BadRequest(c, "invalid password")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -237,17 +251,17 @@ func (h *Handler) UpdateUserEmail(c *gin.Context) {
 // @Security Bearer
 // @Param id path string true "用户ID"
 // @Success 200 {object} response.Response
-// @Failure 401 {object} response.Response
-// @Failure 403 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users/{id} [delete]
 func (h *Handler) DeleteUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.DeleteUserRequest](c)
 
 	if err := h.userService.Delete(c.Request.Context(), req.ID); err != nil {
 		if err == service.ErrUserNotFound {
-			response.NotFound(c, "user not found")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -265,8 +279,9 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 // @Produce json
 // @Param request body dto.LoginRequest true "登录信息"
 // @Success 200 {object} response.Response{data=dto.LoginResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4006 {object} response.Response "用户名或密码错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.LoginRequest](c)
@@ -274,7 +289,7 @@ func (h *Handler) Login(c *gin.Context) {
 	loginResp, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrUserNotFound || err == service.ErrInvalidPassword {
-			response.BadRequest(c, "invalid username or password")
+			response.PushError(c, service.ErrInvalidPassword)
 			return
 		}
 		response.InternalError(c, err)
@@ -293,7 +308,8 @@ func (h *Handler) Login(c *gin.Context) {
 // @Param page query int false "页码" default(1)
 // @Param page_size query int false "每页数量" default(10)
 // @Success 200 {object} response.Response{data=map[string]interface{}}
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users [get]
 func (h *Handler) ListUsers(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.ListUsersRequest](c)
@@ -319,9 +335,9 @@ func (h *Handler) ListUsers(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body dto.EmailVerifyRequest true "邮箱信息"
-// @Success 200 {object} response.Response{data=dto.EmailVerifyResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Success 200 {object} response.Response{data=dto.EmailVerifyResponse} "发送成功"
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 500 {object} response.Response "服务器内部出错"
 // @Router /api/v1/auth/email/verify [post]
 func (h *Handler) EmailVerify(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.EmailVerifyRequest](c)
@@ -347,10 +363,13 @@ func (h *Handler) EmailVerify(c *gin.Context) {
 // @Param id path string true "用户ID"
 // @Param avatar formData file true "头像文件（仅支持 jpeg/png，尺寸必须为 180x180）"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
-// @Failure 400 {object} response.Response
-// @Failure 401 {object} response.Response
-// @Failure 403 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4005 {object} response.Response "文件大小超出"
+// @Failure 4011 {object} response.Response "文件类型出错"
+// @Failure 4012 {object} response.Response "图片不合规"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/users/{id}/avatar [post]
 func (h *Handler) UploadAvatar(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UploadAvatarRequest](c)
@@ -358,19 +377,19 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 	user, err := h.userService.UpdateAvatar(c.Request.Context(), req.ID, req.Avatar)
 	if err != nil {
 		if err == service.ErrUserNotFound {
-			response.NotFound(c, "user not found")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrFileType {
-			response.BadRequest(c, "file type is invalid")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrImage {
-			response.BadRequest(c, "image is invalid")
+			response.PushError(c, err)
 			return
 		}
 		if err == service.ErrSizeExceed {
-			response.BadRequest(c, "size exceed")
+			response.PushError(c, err)
 		}
 		response.InternalError(c, err)
 		return

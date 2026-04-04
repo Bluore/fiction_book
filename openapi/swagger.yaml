@@ -252,7 +252,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 发送成功
           schema:
             allOf:
             - $ref: '#/definitions/response.Response'
@@ -261,11 +261,11 @@ paths:
                   $ref: '#/definitions/dto.EmailVerifyResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部出错
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取邮箱验证码
@@ -296,11 +296,15 @@ paths:
                   $ref: '#/definitions/dto.LoginResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4006":
+          description: 用户名或密码错误
           schema:
             $ref: '#/definitions/response.Response'
       summary: 用户登录
@@ -331,11 +335,19 @@ paths:
                   $ref: '#/definitions/dto.BookResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4009":
+          description: 书籍未找到
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取书籍
@@ -366,15 +378,19 @@ paths:
                   $ref: '#/definitions/dto.BookResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
-        "409":
-          description: 书籍已存在
+        "401":
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4008":
+          description: 书籍已存在
           schema:
             $ref: '#/definitions/response.Response'
       summary: 创建书籍
@@ -418,8 +434,12 @@ paths:
                 data:
                   $ref: '#/definitions/dto.BookListResponse'
               type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取书籍列表
@@ -449,6 +469,22 @@ paths:
                 data:
                   $ref: '#/definitions/dto.BookChapterResponse'
               type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4009":
+          description: 书籍未找到
+          schema:
+            $ref: '#/definitions/response.Response'
       summary: 创建书籍章节
       tags:
       - 章节管理
@@ -481,8 +517,12 @@ paths:
                   additionalProperties: true
                   type: object
               type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取用户列表
@@ -512,11 +552,27 @@ paths:
                   $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4003":
+          description: 验证码验证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4004":
+          description: 验证码未发送
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4007":
+          description: 用户已存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4013":
+          description: 邮箱已存在
           schema:
             $ref: '#/definitions/response.Response'
       summary: 创建用户
@@ -540,20 +596,20 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.Response'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
         "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -583,12 +639,16 @@ paths:
                 data:
                   $ref: '#/definitions/dto.UserResponse'
               type: object
-        "404":
-          description: Not Found
+        "400":
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取用户信息
@@ -623,19 +683,19 @@ paths:
                   $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -672,19 +732,31 @@ paths:
                   $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "403":
-          description: Forbidden
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4005":
+          description: 文件大小超出
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4011":
+          description: 文件类型出错
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4012":
+          description: 图片不合规
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -722,19 +794,31 @@ paths:
                   $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4003":
+          description: 验证码验证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4004":
+          description: 验证码未发送
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4013":
+          description: 邮箱已存在
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -772,19 +856,27 @@ paths:
                   $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
-          description: Bad Request
+          description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: Not Found
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4003":
+          description: 验证码验证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4004":
+          description: 验证码未发送
           schema:
             $ref: '#/definitions/response.Response'
       security:

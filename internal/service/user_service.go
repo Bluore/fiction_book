@@ -27,6 +27,7 @@ import (
 
 var (
 	ErrUserExists      = errors.New("user already exists")
+	ErrEmailExists     = errors.New("email already exists")
 	ErrUserNotFound    = errors.New("user not found")
 	ErrInvalidPassword = errors.New("invalid password")
 	ErrVerification    = errors.New("verification failed")
@@ -89,7 +90,7 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 		return nil, err
 	}
 	if exist != nil {
-		return nil, ErrUserExists
+		return nil, ErrEmailExists
 	}
 
 	user.Email = req.Email
@@ -150,7 +151,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 		return nil, err
 	}
 	if existingUser != nil {
-		return nil, ErrUserExists
+		return nil, ErrEmailExists
 	}
 
 	// 加密密码

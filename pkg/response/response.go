@@ -1,6 +1,7 @@
 package response
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ func BadRequest(c *gin.Context, message string) {
 
 // Unauthorized 401 未授权
 func Unauthorized(c *gin.Context) {
-	Error(c, http.StatusUnauthorized, "unauthorized")
+	Error(c, http.StatusUnauthorized, "身份验证失败，请重新登录")
 }
 
 // Forbidden 403 禁止访问
@@ -53,5 +54,22 @@ func NotFound(c *gin.Context, message string) {
 // InternalError 500 内部错误
 func InternalError(c *gin.Context, _ error) {
 	// 生产环境不要暴露详细错误信息
-	Error(c, http.StatusInternalServerError, "internal server error")
+	Error(c, http.StatusInternalServerError, "服务器内部出错")
+}
+
+type errorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+// PushError 格式化推送Error
+func PushError(c *gin.Context, err error) {
+	errList := getErrorList()
+	for key, resp := range *errList {
+		if errors.Is(err, key) {
+			Error(c, resp.Code, resp.Message)
+			return
+		}
+	}
+	InternalError(c, err)
 }

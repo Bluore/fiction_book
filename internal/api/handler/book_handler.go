@@ -5,8 +5,9 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
-	"github.com/gin-gonic/gin"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CreateBook 创建书籍
@@ -17,9 +18,10 @@ import (
 // @Produce json
 // @Param request body dto.CreateBookRequest true "创建书籍请求"
 // @Success 200 {object} response.Response{data=dto.BookResponse}
-// @Failure 400 {object} response.Response
-// @Failure 409 {object} response.Response "书籍已存在"
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4008 {object} response.Response "书籍已存在"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/books/create [post]
 func (h *Handler) CreateBook(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreateBookRequest](c)
@@ -30,7 +32,7 @@ func (h *Handler) CreateBook(c *gin.Context) {
 	book, err := h.bookService.Create(c.Request.Context(), req)
 	if err != nil {
 		if err == service.ErrBookExists {
-			response.BadRequest(c, "Book already exists")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -47,8 +49,10 @@ func (h *Handler) CreateBook(c *gin.Context) {
 // @Produce json
 // @Param request body dto.GetBookRequest true "获取书籍请求"
 // @Success 200 {object} response.Response{data=dto.BookResponse}
-// @Failure 400 {object} response.Response
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4009 {object} response.Response "书籍未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/books/{id} [get]
 func (h *Handler) GetBook(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetBookRequest](c)
@@ -56,7 +60,7 @@ func (h *Handler) GetBook(c *gin.Context) {
 	book, err := h.bookService.GetByID(c.Request.Context(), req.ID)
 	if err != nil {
 		if err == service.ErrBookNotFound {
-			response.BadRequest(c, "Book not found")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
@@ -76,7 +80,8 @@ func (h *Handler) GetBook(c *gin.Context) {
 // @Param sort_key query string false "排序字段 (browse_amount|bookshelf_amount|new_update|new_push)" default(browse_amount)
 // @Param sort_order query string false "排序方向 (asc|desc)" default(desc)
 // @Success 200 {object} response.Response{data=dto.BookListResponse}
-// @Failure 500 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/books/list [get]
 func (h *Handler) BookList(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.ListBooksRequest](c).ToStandard()

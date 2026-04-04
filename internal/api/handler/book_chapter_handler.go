@@ -17,6 +17,10 @@ import (
 // @Produce json
 // @Param request body dto.CreatBookChapterRequest true "创建章节请求"
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4009 {object} response.Response "书籍未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/create [post]
 func (h *Handler) AddBookChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreatBookChapterRequest](c)
@@ -24,7 +28,7 @@ func (h *Handler) AddBookChapter(c *gin.Context) {
 	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), req.BookID, req)
 	if err != nil {
 		if err == service.ErrBookNotFound {
-			response.BadRequest(c, "Book not found")
+			response.PushError(c, err)
 			return
 		}
 		response.InternalError(c, err)
