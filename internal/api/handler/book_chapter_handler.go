@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
@@ -56,6 +57,40 @@ func (h *Handler) GuestGetBookChapter(c *gin.Context) {
 	bookChapter, err := h.bookChapterService.GuestGetChapter(c.Request.Context(), req.ChapterID)
 	if err != nil {
 		if err == service.ErrBookNotFound {
+			response.InternalError(c, err)
+			return
+		}
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, bookChapter)
+}
+
+// GetBookChapter 获取章节内容(认证)
+// @Summary 获取章节内容（认证）
+// @Description 获取章节内容（认证）
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request path dto.GetBookChapterRequest true "获取章节请求"
+// @Success 200 {object} response.Response{data=dto.BookChapterResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 4015 {object} response.Response "该章节需要付费"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/chapters/{id} [get]
+func (h *Handler) GetBookChapter(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookChapterRequest](c)
+	userID, exist := c.Get("userID")
+	if !exist {
+		response.InternalError(c, errors.New("登录失败"))
+		return
+	}
+
+	bookChapter, err := h.bookChapterService.GetChapter(c.Request.Context(), userID.(string), req.ChapterID)
+	if err != nil {
+		if err == service.ErrBookNotFound || err == service.ErrUserNotFound {
 			response.InternalError(c, err)
 			return
 		}

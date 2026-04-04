@@ -60,5 +60,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4014,
 			Message: "请先完成登录",
 		},
+		service.ErrVIPLevel: errorResponse{
+			Code:    4015,
+			Message: "会员等级不足",
+		},
 	}
 }

@@ -11,21 +11,25 @@ import (
 
 var (
 	ErrBookChapterNotFound = errors.New("book_chapter not found")
+	ErrVIPLevel            = errors.New("the membership level is insufficient")
 )
 
 type BookChapterService interface {
 	AddByBookID(ctx context.Context, bookID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
 	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
+	GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error)
 }
 
 type bookChapterService struct {
+	userRepo        repository.UserRepository
 	bookRepo        repository.BookRepository
 	bookChapterRepo repository.BookChapterRepository
 	cfg             *config.Config
 }
 
-func NewBookChapterService(bookRepo repository.BookRepository, bookChapterRepo repository.BookChapterRepository, cfg *config.Config) BookChapterService {
+func NewBookChapterService(userRepo repository.UserRepository, bookRepo repository.BookRepository, bookChapterRepo repository.BookChapterRepository, cfg *config.Config) BookChapterService {
 	return &bookChapterService{
+		userRepo:        userRepo,
 		bookRepo:        bookRepo,
 		bookChapterRepo: bookChapterRepo,
 		cfg:             cfg,
@@ -89,4 +93,75 @@ func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 		return nil, ErrUserNotLogin
 	}
 	return toBookChapterResponse(bookChapter, book), nil
+}
+
+func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error) {
+	user, err := b.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	bookChapter, err := b.bookChapterRepo.GetByID(ctx, bookID)
+	if err != nil {
+		return nil, err
+	}
+	if bookChapter == nil {
+		return nil, ErrBookChapterNotFound
+	}
+
+	book, err := b.bookRepo.GetByID(ctx, bookChapter.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
+
+	// todo 先检查是否购买
+
+	// todo vip获取和比较
+	if VIPStrToLevle(book.VIPLevel) > VIPStrToLevle("vip_0") {
+		return nil, ErrVIPLevel
+	}
+
+	return toBookChapterResponse(bookChapter, book), nil
+}
+
+func VIPStrToLevle(vipStr string) int {
+	switch vipStr {
+	case "":
+		return -1
+	case "vip_0":
+		return 0
+	case "vip_1":
+		return 1
+	case "vip_2":
+		return 2
+	case "vip_3":
+		return 3
+	case "off":
+		return 999
+	default:
+		return 0
+	}
+}
+
+func VIPLevelToStr(vipLevel int) string {
+	switch vipLevel {
+	case -1:
+		return ""
+	case 0:
+		return "vip_0"
+	case 1:
+		return "vip_1"
+	case 2:
+		return "vip_2"
+	case 3:
+		return "vip_3"
+	default:
+		return "off"
+	}
 }

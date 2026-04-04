@@ -32,9 +32,10 @@ func ProvideBookService(
 }
 
 func ProvideBookChapterService(
+	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	bookChapterRepo repository.BookChapterRepository,
 	cfg *config.Config,
 ) service.BookChapterService {
-	return service.NewBookChapterService(bookRepo, bookChapterRepo, cfg)
+	return service.NewBookChapterService(userRepo, bookRepo, bookChapterRepo, cfg)
 }
