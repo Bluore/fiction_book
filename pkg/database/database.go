@@ -56,6 +56,9 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&model.BookChapter{}); err != nil {
 		return nil, err
 	}
+	if err := db.AutoMigrate(&model.UserAsset{}); err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }

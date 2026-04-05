@@ -67,6 +67,12 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			users.POST("/:id/avatar", middleware.Auth(cfg), middleware.Validation(&dto.UploadAvatarRequest{}), h.UploadAvatar)
 			users.PUT("/:id/password", middleware.Validation(&dto.UpdateUserPasswordRequest{}), h.UpdateUserPassword)
 			users.PUT("/:id/email", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserEmailRequest{}), h.UpdateUserEmail)
+
+			assets := users.Group("/:id/assets")
+			{
+				assets.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserAssetRequest{}), h.GetUserAsset)
+			}
+
 		}
 
 		// 书籍模块

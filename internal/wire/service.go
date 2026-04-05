@@ -19,9 +19,10 @@ var ServiceSet = wire.NewSet(
 // ProvideUserService 提供用户服务
 func ProvideUserService(
 	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
 	cfg *config.Config,
 ) service.UserService {
-	return service.NewUserService(userRepo, cfg)
+	return service.NewUserService(userRepo, userAssetRepo, cfg)
 }
 
 // ProvideBookService 提供书籍服务

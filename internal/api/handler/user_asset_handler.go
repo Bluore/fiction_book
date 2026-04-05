@@ -1,1 +1,33 @@
 package handler
+
+import (
+	"fiction-book/internal/api/middleware"
+	"fiction-book/internal/dto"
+	"fiction-book/pkg/response"
+
+	"github.com/gin-gonic/gin"
+)
+
+// GetUserAsset 获取用户资产
+// @Summary 获取用户资产（认证）
+// @Description 获取指定用户的资产信息，包括金币、VIP标识和VIP等级
+// @Tags 资产管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "用户ID"
+// @Success 200 {object} response.Response{data=dto.UserAssetResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4011 {object} response.Response "用户不存在"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/users/{id}/assets [get]
+func (h *Handler) GetUserAsset(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetUserAssetRequest](c)
+
+	userAsset, err := h.userAssetRepository.GetByID(c.Request.Context(), req.ID)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, userAsset)
+}

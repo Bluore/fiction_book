@@ -13,9 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
-
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -23,6 +20,9 @@ import (
 	"fiction-book/pkg/email"
 	"fiction-book/pkg/jwt"
 	"fiction-book/pkg/redis"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -55,15 +55,21 @@ type UserService interface {
 }
 
 type userService struct {
-	userRepo repository.UserRepository
-	cfg      *config.Config
+	userRepo      repository.UserRepository
+	userAssetRepo repository.UserAssetRepository
+	cfg           *config.Config
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, cfg *config.Config) UserService {
+func NewUserService(
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	cfg *config.Config,
+) UserService {
 	return &userService{
-		userRepo: userRepo,
-		cfg:      cfg,
+		userRepo:      userRepo,
+		userAssetRepo: userAssetRepo,
+		cfg:           cfg,
 	}
 }
 
@@ -171,6 +177,11 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	// 创建用户资产
+	if err := s.userAssetRepo.CreateUserAsset(ctx, user.ID); err != nil {
 		return nil, err
 	}
 
