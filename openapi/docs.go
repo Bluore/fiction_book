@@ -1737,9 +1737,6 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
-                },
-                "verify": {
-                    "type": "string"
                 }
             }
         },

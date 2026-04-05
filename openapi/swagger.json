@@ -1731,9 +1731,6 @@
                 },
                 "username": {
                     "type": "string"
-                },
-                "verify": {
-                    "type": "string"
                 }
             }
         },

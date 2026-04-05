@@ -82,7 +82,6 @@ type UserResponse struct {
 	Description  string `json:"description"`
 	ProfileImage string `json:"profile_image"`
 	CoverImage   string `json:"cover_image"`
-	Verify       string `json:"verify"`
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
 }

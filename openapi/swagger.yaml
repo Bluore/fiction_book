@@ -234,8 +234,6 @@ definitions:
         type: string
       username:
         type: string
-      verify:
-        type: string
     type: object
   response.Response:
     properties:
