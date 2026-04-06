@@ -14,6 +14,7 @@ var ServiceSet = wire.NewSet(
 	ProvideBookService,
 	ProvideBookChapterService,
 	ProvideUserAssetService,
+	ProvideUserPurchasedBookService,
 )
 
 // ProvideUserService 提供用户服务
@@ -50,4 +51,14 @@ func ProvideUserAssetService(
 	cfg *config.Config,
 ) service.UserAssetService {
 	return service.NewUserAssetService(userRepo, userAssetRepo, cfg)
+}
+
+// ProvideUserPurchasedBookService  提供用户已购买的书籍仓库
+func ProvideUserPurchasedBookService(
+	userRepo repository.UserRepository,
+	userPurchasedBookRepo repository.UserPurchasedBookRepository,
+	cfg *config.Config,
+) service.UserPurchasedBookService {
+	return service.NewUserPurchasedBookService(userRepo, userPurchasedBookRepo, cfg)
+
 }
