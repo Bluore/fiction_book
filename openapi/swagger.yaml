@@ -126,6 +126,19 @@ definitions:
     required:
     - id
     type: object
+  dto.GetUserPurchasedBookResponse:
+    properties:
+      active_at:
+        type: string
+      book_id:
+        type: string
+      purchased_at:
+        type: string
+      purchased_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -1073,6 +1086,97 @@ paths:
       summary: 更新用户密码
       tags:
       - 用户管理
+  /api/v1/users/{id}/purchases:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定用户已购买的所有书籍列表（认证）
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
+                  type: array
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 获取用户已购买的书籍列表
+      tags:
+      - 资产管理
+  /api/v1/users/{id}/purchases/{book_id}:
+    get:
+      consumes:
+      - application/json
+      description: 检查指定用户是否已购买指定书籍（认证）
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 书籍ID
+        in: path
+        name: book_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4016":
+          description: 没有购买这本书籍的记录
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 判断用户是否已购买本书籍
+      tags:
+      - 资产管理
   /health:
     get:
       consumes:

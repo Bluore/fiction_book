@@ -72,6 +72,11 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			{
 				assets.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserAssetRequest{}), h.GetUserAsset)
 			}
+			purchases := users.Group("/:id/purchases")
+			{
+				purchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedBookRequest{}), h.GetUserPurchasedBook)
+				purchases.GET("/:book_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedBookRequest{}), h.CheckUserPurchasedBook)
+			}
 
 		}
 

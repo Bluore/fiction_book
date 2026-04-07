@@ -64,5 +64,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4015,
 			Message: "会员等级不足",
 		},
+		service.ErrUserPurchasedBookNotFound: errorResponse{
+			Code:    4016,
+			Message: "没有购买此书籍的记录",
+		},
 	}
 }
