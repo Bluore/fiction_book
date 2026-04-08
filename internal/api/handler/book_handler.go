@@ -12,7 +12,7 @@ import (
 
 // CreateBook 创建书籍
 // @Summary 创建书籍
-// @Description 创建一本新书籍
+// @Description 创建一本新书籍（需要认证）
 // @Tags 书籍管理
 // @Accept json
 // @Produce json

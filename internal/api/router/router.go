@@ -78,15 +78,22 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 				purchases.GET("/:book_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedBookRequest{}), h.CheckUserPurchasedBook)
 			}
 
+			chapterPurchases := users.Group("/:id/chapters/purchases")
+			{
+				chapterPurchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedChapterRequest{}), h.GetUserPurchasedChapter)
+				chapterPurchases.GET("/:chapter_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedChapterRequest{}), h.CheckUserPurchasedChapter)
+			}
+
 		}
 
 		// 书籍模块
 		books := v1.Group("/books")
 		{
-			books.POST("/create", middleware.Validation(&dto.CreateBookRequest{}), h.CreateBook)
+			books.POST("/create", middleware.Auth(cfg), middleware.Validation(&dto.CreateBookRequest{}), h.CreateBook)
 			books.GET("/:id", middleware.Validation(&dto.GetBookRequest{}), h.GetBook)
 			books.GET("/list", middleware.Validation(&dto.ListBooksRequest{}), h.BookList)
 		}
+
 		// 书籍章节模块
 		bookChapters := v1.Group("/chapters")
 		{

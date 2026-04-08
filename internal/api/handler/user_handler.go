@@ -15,12 +15,13 @@ import (
 
 // Handler 处理器结构
 type Handler struct {
-	userService              service.UserService
-	bookService              service.BookService
-	bookChapterService       service.BookChapterService
-	userAssetRepository      service.UserAssetService
-	userPurchasedBookService service.UserPurchasedBookService
-	cfg                      *config.Config
+	userService                 service.UserService
+	bookService                 service.BookService
+	bookChapterService          service.BookChapterService
+	userAssetRepository         service.UserAssetService
+	userPurchasedBookService    service.UserPurchasedBookService
+	userPurchasedChapterService service.UserPurchasedChapterService
+	cfg                         *config.Config
 }
 
 // NewHandler 创建处理器实例
@@ -30,15 +31,17 @@ func NewHandler(
 	bookChapterService service.BookChapterService,
 	userAssetService service.UserAssetService,
 	userPurchasedBookService service.UserPurchasedBookService,
+	userPurchasedChapterService service.UserPurchasedChapterService,
 	cfg *config.Config,
 ) *Handler {
 	return &Handler{
-		userService:              userService,
-		bookService:              bookService,
-		bookChapterService:       bookChapterService,
-		userAssetRepository:      userAssetService,
-		userPurchasedBookService: userPurchasedBookService,
-		cfg:                      cfg,
+		userService:                 userService,
+		bookService:                 bookService,
+		bookChapterService:          bookChapterService,
+		userAssetRepository:         userAssetService,
+		userPurchasedBookService:    userPurchasedBookService,
+		userPurchasedChapterService: userPurchasedChapterService,
+		cfg:                         cfg,
 	}
 }
 
