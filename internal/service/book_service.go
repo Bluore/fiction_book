@@ -176,57 +176,78 @@ func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) 
 }
 
 func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string, req *dto.BuyBookRequest) (*dto.GetUserPurchasedBookResponse, error) {
+	err := s.db.Transaction(func(db *gorm.DB) error {
+		// 获取书籍信息
+		book, err := s.bookRepo.GetByID(ctx, bookID)
+		if err != nil {
+			return err
+		}
+		if book == nil {
+			return ErrBookNotFound
+		}
 
-	book, err := s.bookRepo.GetByID(ctx, bookID)
+		// 获取用户资产
+		userAsset, err := s.userAssetRepo.GetByID(ctx, db, userID)
+		if err != nil {
+			return err
+		}
+		if userAsset == nil {
+			return ErrUserNotFound
+		}
+
+		if req.Price != book.Price {
+			return ErrParam
+		}
+
+		// 判断是否已经购买
+		exist, _, err := s.purchasedBookRepo.CheckPurchasedBook(ctx, userID, bookID)
+		if err != nil {
+			return err
+		}
+		if exist {
+			return ErrBookAlreadyBuy
+		}
+
+		// 判断资产是否足够
+		if userAsset.Gold < book.Price {
+			return ErrSufficientFunds
+		}
+
+		// 获取资产
+		userAssetNow, err := s.userAssetRepo.SubGoldByID(ctx, db, userID, book.Price)
+		if err != nil {
+			return err
+		}
+		if userAssetNow == nil {
+			return ErrUserNotFound
+		}
+		if userAsset.Gold-userAssetNow.Gold != book.Price {
+			return errors.New("资产扣费失败")
+		}
+
+		// 添加已购买书籍
+		purchasedBook := &model.UserPurchasedBook{
+			ID:       uuid.New().String(),
+			UserID:   userID,
+			BookID:   bookID,
+			ActiveAt: time.Now().Add(time.Hour * 24 * 30 * 12 * 3),
+		}
+		err = s.purchasedBookRepo.AddPurchasedBook(ctx, purchasedBook)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if book == nil {
-		return nil, ErrBookNotFound
-	}
 
-	userAsset, err := s.userAssetRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	if userAsset == nil {
-		return nil, ErrUserNotFound
-	}
-
-	if req.Price != book.Price {
-		return nil, ErrParam
-	}
-
-	exist, _, err := s.purchasedBookRepo.CheckPurchasedBook(ctx, userID, bookID)
-	if err != nil {
-		return nil, err
-	}
-	if exist {
-		return nil, ErrBookAlreadyBuy
-	}
-
-	if userAsset.Gold < book.Price {
-		return nil, ErrSufficientFunds
-	}
-
-	userAssetNow, err := s.userAssetRepo.SubGoldByID(ctx, userID, book.Price)
-	if err != nil {
-		return nil, err
-	}
-	if userAssetNow == nil {
-		return nil, ErrUserNotFound
-	}
-
-	purchasedBook := &model.UserPurchasedBook{
-		ID:       uuid.New().String(),
-		UserID:   userID,
-		BookID:   bookID,
-		ActiveAt: time.Now().Add(time.Hour * 24 * 30 * 12 * 3),
-	}
-	err = s.purchasedBookRepo.AddPurchasedBook(ctx, purchasedBook)
+	// 获取购买信息
+	_, purchased, err := s.purchasedBookRepo.CheckPurchasedBook(ctx, userID, bookID)
 	if err != nil {
 		return nil, err
 	}
 
-	return toUserPurchasedBookResponse(purchasedBook), nil
+	return toUserPurchasedBookResponse(purchased), nil
 }

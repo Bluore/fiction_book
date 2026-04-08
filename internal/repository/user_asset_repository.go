@@ -17,12 +17,12 @@ var (
 )
 
 type UserAssetRepository interface {
-	GetByID(ctx context.Context, id string) (*model.UserAsset, error)
-	UpdateByID(ctx context.Context, id string, data *model.UserAsset) error
-	AddGoldByID(ctx context.Context, id string, gold int64) (*model.UserAsset, error)
-	SubGoldByID(ctx context.Context, id string, gold int64) (*model.UserAsset, error)
-	GetGoldByID(ctx context.Context, id string) (int64, error)
-	CreateUserAsset(ctx context.Context, id string) error
+	GetByID(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error)
+	UpdateByID(ctx context.Context, db *gorm.DB, id string, data *model.UserAsset) error
+	AddGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error)
+	SubGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error)
+	GetGoldByID(ctx context.Context, db *gorm.DB, id string) (int64, error)
+	CreateUserAsset(ctx context.Context, db *gorm.DB, id string) error
 }
 
 type userAssetRepository struct {
@@ -33,9 +33,9 @@ func NewUserAssetRepository(db *gorm.DB) UserAssetRepository {
 	return &userAssetRepository{db: db}
 }
 
-func (u userAssetRepository) GetByID(ctx context.Context, id string) (*model.UserAsset, error) {
+func (u userAssetRepository) GetByID(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error) {
 	var userAsset model.UserAsset
-	err := u.db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
+	err := db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -45,18 +45,18 @@ func (u userAssetRepository) GetByID(ctx context.Context, id string) (*model.Use
 	return &userAsset, nil
 }
 
-func (u userAssetRepository) UpdateByID(ctx context.Context, id string, data *model.UserAsset) error {
-	return u.db.WithContext(ctx).Where("id = ?", id).Save(data).Error
+func (u userAssetRepository) UpdateByID(ctx context.Context, db *gorm.DB, id string, data *model.UserAsset) error {
+	return db.WithContext(ctx).Where("id = ?", id).Save(data).Error
 }
 
-func (u userAssetRepository) AddGoldByID(ctx context.Context, id string, gold int64) (*model.UserAsset, error) {
+func (u userAssetRepository) AddGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error) {
 	// 不允许增加负资产
 	if gold < 0 {
 		return nil, errors.New("forbidden gold value negative")
 	}
 
 	var userAsset model.UserAsset
-	err := u.db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
+	err := db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -73,21 +73,21 @@ func (u userAssetRepository) AddGoldByID(ctx context.Context, id string, gold in
 		return nil, ErrGoldNegative
 	}
 
-	err = u.db.WithContext(ctx).Save(&userAsset).Error
+	err = db.WithContext(ctx).Save(&userAsset).Error
 	if err != nil {
 		return nil, err
 	}
 	return &userAsset, nil
 }
 
-func (u userAssetRepository) SubGoldByID(ctx context.Context, id string, gold int64) (*model.UserAsset, error) {
+func (u userAssetRepository) SubGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error) {
 	// 不允许减少负数
 	if gold < 0 {
 		return nil, errors.New("forbidden gold value negative")
 	}
 
 	var userAsset model.UserAsset
-	err := u.db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
+	err := db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -105,23 +105,23 @@ func (u userAssetRepository) SubGoldByID(ctx context.Context, id string, gold in
 		return nil, ErrGoldNegative
 	}
 
-	err = u.db.WithContext(ctx).Save(&userAsset).Error
+	err = db.WithContext(ctx).Save(&userAsset).Error
 	if err != nil {
 		return nil, err
 	}
 	return &userAsset, nil
 }
 
-func (u userAssetRepository) GetGoldByID(ctx context.Context, id string) (int64, error) {
-	userAsset, err := u.GetByID(ctx, id)
+func (u userAssetRepository) GetGoldByID(ctx context.Context, db *gorm.DB, id string) (int64, error) {
+	userAsset, err := u.GetByID(ctx, db, id)
 	if userAsset == nil || err != nil {
 		return 0, err
 	}
 	return userAsset.Gold, err
 }
 
-func (u userAssetRepository) CreateUserAsset(ctx context.Context, id string) error {
-	exist, err := u.GetByID(ctx, id)
+func (u userAssetRepository) CreateUserAsset(ctx context.Context, db *gorm.DB, id string) error {
+	exist, err := u.GetByID(ctx, db, id)
 	if err != nil {
 		return err
 	}
@@ -134,12 +134,12 @@ func (u userAssetRepository) CreateUserAsset(ctx context.Context, id string) err
 		Gold:     0,
 		VIPLevel: "vip_0",
 	}
-	err = u.db.WithContext(ctx).Save(userAsset).Error
+	err = db.WithContext(ctx).Save(userAsset).Error
 	if err != nil {
 		return err
 	}
 
-	exist, err = u.GetByID(ctx, id)
+	exist, err = u.GetByID(ctx, db, id)
 	if err != nil {
 		return err
 	}

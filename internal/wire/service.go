@@ -23,9 +23,15 @@ var ServiceSet = wire.NewSet(
 func ProvideUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	db *gorm.DB,
 	cfg *config.Config,
 ) service.UserService {
-	return service.NewUserService(userRepo, userAssetRepo, cfg)
+	return service.NewUserService(
+		userRepo,
+		userAssetRepo,
+		db,
+		cfg,
+	)
 }
 
 // ProvideBookService 提供书籍服务
@@ -61,9 +67,15 @@ func ProvideBookChapterService(
 func ProvideUserAssetService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	db *gorm.DB,
 	cfg *config.Config,
 ) service.UserAssetService {
-	return service.NewUserAssetService(userRepo, userAssetRepo, cfg)
+	return service.NewUserAssetService(
+		userRepo,
+		userAssetRepo,
+		db,
+		cfg,
+	)
 }
 
 // ProvideUserPurchasedBookService  提供用户已购买的书籍仓库

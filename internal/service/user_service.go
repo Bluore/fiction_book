@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 var (
@@ -57,6 +58,7 @@ type UserService interface {
 type userService struct {
 	userRepo      repository.UserRepository
 	userAssetRepo repository.UserAssetRepository
+	db            *gorm.DB
 	cfg           *config.Config
 }
 
@@ -64,11 +66,13 @@ type userService struct {
 func NewUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	db *gorm.DB,
 	cfg *config.Config,
 ) UserService {
 	return &userService{
 		userRepo:      userRepo,
 		userAssetRepo: userAssetRepo,
+		db:            db,
 		cfg:           cfg,
 	}
 }
@@ -181,7 +185,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	}
 
 	// 创建用户资产
-	if err := s.userAssetRepo.CreateUserAsset(ctx, user.ID); err != nil {
+	if err := s.userAssetRepo.CreateUserAsset(ctx, s.db, user.ID); err != nil {
 		return nil, err
 	}
 
