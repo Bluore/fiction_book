@@ -58,13 +58,17 @@ import time
 
 BASE_URL = "http://localhost:9929"
 
+HANDER = {
+    "Authorization": "Bearer ",
+}
+
 # 10本小说配置（每本3章）
 BOOKS = [
     {
         "name": "苍穹剑仙传",
         "description": "一个平凡少年偶得神秘剑诀，踏上修仙之路，历经磨难终成一代剑仙。",
         "cover_image": "https://example.com/covers/cangqiong.jpg",
-        "price": 29.9,
+        "price": 299,
         "vip_level": "vip_1",
         "chapters": [
             {
@@ -169,7 +173,7 @@ BOOKS = [
         "name": "都市狂少",
         "description": "他是都市中的传奇少年，身世成谜，背景通天，却甘愿做一个普通人。",
         "cover_image": "https://example.com/covers/city.jpg",
-        "price": 19.9,
+        "price": 199,
         "vip_level": "",
         "chapters": [
             {
@@ -308,7 +312,7 @@ BOOKS = [
         "name": "龙武破天",
         "description": "上古真龙陨落，血脉传承，少年觉醒龙魂，誓要破天而出。",
         "cover_image": "https://example.com/covers/longwu.jpg",
-        "price": 39.9,
+        "price": 399,
         "vip_level": "vip_2",
         "chapters": [
             {
@@ -435,7 +439,7 @@ BOOKS = [
         "name": "重生之盛世医妃",
         "description": "她是现代医学天才，一朝穿越成古代不受宠的妃子，且看她如何逆袭人生。",
         "cover_image": "https://example.com/covers/yiwen.jpg",
-        "price": 24.9,
+        "price": 249,
         "vip_level": "vip_1",
         "chapters": [
             {
@@ -588,7 +592,7 @@ BOOKS = [
         "name": "星际探险记",
         "description": "公元2750年，人类终于迈出了太阳系。一艘探险飞船，承载着人类的希望与梦想。",
         "cover_image": "https://example.com/covers/star.jpg",
-        "price": 34.9,
+        "price": 349,
         "vip_level": "vip_2",
         "chapters": [
             {
@@ -709,7 +713,7 @@ BOOKS = [
         "name": "暗夜追凶",
         "description": "雨夜，一起离奇的命案。一名退休刑警重出江湖，誓要揭开真相。",
         "cover_image": "https://example.com/covers/thriller.jpg",
-        "price": 15.9,
+        "price": 159,
         "vip_level": "",
         "chapters": [
             {
@@ -838,7 +842,7 @@ BOOKS = [
         "name": "大明锦衣卫",
         "description": "他是明朝最神秘的锦衣卫，身怀绝技，游走于庙堂与江湖之间。",
         "cover_image": "https://example.com/covers/ming.jpg",
-        "price": 28.9,
+        "price": 289,
         "vip_level": "vip_1",
         "chapters": [
             {
@@ -973,7 +977,7 @@ BOOKS = [
         "name": "全职高手的虚拟人生",
         "description": "当游戏与现实融合，他将如何在虚拟世界中登顶巅峰？",
         "cover_image": "https://example.com/covers/game.jpg",
-        "price": 22.9,
+        "price": 229,
         "vip_level": "",
         "chapters": [
             {
@@ -1116,7 +1120,7 @@ BOOKS = [
         "name": "江湖风云录",
         "description": "一把快刀，一壶浊酒，一段江湖传奇。看他如何刀斩不平事，剑指不公平。",
         "cover_image": "https://example.com/covers/jianghu.jpg",
-        "price": 26.9,
+        "price": 269,
         "vip_level": "vip_1",
         "chapters": [
             {
@@ -1257,7 +1261,7 @@ BOOKS = [
         "name": "猫与咖啡馆",
         "description": "一家开在小镇角落的咖啡馆，一只神秘的橘猫，一段温馨治愈的故事。",
         "cover_image": "https://example.com/covers/catcafe.jpg",
-        "price": 12.9,
+        "price": 129,
         "vip_level": "",
         "chapters": [
             {
@@ -1378,7 +1382,7 @@ BOOKS = [
 def create_book(book_data):
     """创建书籍"""
     url = f"{BASE_URL}/api/v1/books/create"
-    response = requests.post(url, json=book_data)
+    response = requests.post(url, json=book_data, headers=HANDER)
     return response.json()
 
 
@@ -1390,7 +1394,7 @@ def create_chapter(book_id, chapter_num, title, content):
         "title": title,
         "content": content
     }
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, headers=HANDER)
     return response.json()
 
 

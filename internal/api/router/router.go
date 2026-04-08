@@ -102,5 +102,12 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			bookChapters.GET("/:id", middleware.Auth(cfg), middleware.Validation(&dto.GetBookChapterRequest{}), h.GetBookChapter)
 			bookChapters.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateBookChapterRequest{}), h.UpdateBookChapter)
 		}
+
+		// 消费模块
+		buys := v1.Group("/buy")
+		{
+			buys.POST("/book", middleware.Auth(cfg), middleware.Validation(&dto.BuyBookRequest{}), h.BuyBook)
+		}
+
 	}
 }

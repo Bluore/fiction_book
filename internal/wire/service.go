@@ -2,6 +2,7 @@ package wire
 
 import (
 	"github.com/google/wire"
+	"gorm.io/gorm"
 
 	"fiction-book/internal/repository"
 	"fiction-book/internal/service"
@@ -30,9 +31,20 @@ func ProvideUserService(
 // ProvideBookService 提供书籍服务
 func ProvideBookService(
 	bookRepo repository.BookRepository,
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	purchasedBookRepo repository.UserPurchasedBookRepository,
+	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookService {
-	return service.NewBookService(bookRepo, cfg)
+	return service.NewBookService(
+		bookRepo,
+		userRepo,
+		userAssetRepo,
+		purchasedBookRepo,
+		db,
+		cfg,
+	)
 }
 
 // ProvideBookChapterService 提供章节仓库

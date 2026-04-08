@@ -20,7 +20,7 @@ import (
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
-// @Failure 4009 {object} response.Response "书籍未找到"
+// @Failure 4001 {object} response.Response "书籍未找到"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/create [post]
 func (h *Handler) AddBookChapter(c *gin.Context) {
@@ -47,7 +47,7 @@ func (h *Handler) AddBookChapter(c *gin.Context) {
 // @Param request path dto.GetBookChapterRequest true "获取章节请求"
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
-// @Failure 4009 {object} response.Response "书籍未找到"
+// @Failure 4001 {object} response.Response "书籍未找到"
 // @Failure 4014 {object} response.Response "该章节需要先完成登录"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/{id}/guest [get]

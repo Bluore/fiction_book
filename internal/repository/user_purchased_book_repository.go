@@ -11,6 +11,8 @@ import (
 type UserPurchasedBookRepository interface {
 	GetListByUserID(ctx context.Context, userID string) (*[]model.UserPurchasedBook, error)
 	CheckPurchasedBook(ctx context.Context, userID, BookID string) (bool, *model.UserPurchasedBook, error)
+	AddPurchasedBook(ctx context.Context, book *model.UserPurchasedBook) error
+	DeletePurchasedBook(ctx context.Context, PurchasedBookID string) error
 }
 
 type userPurchasedBookRepository struct {
@@ -45,4 +47,12 @@ func (r userPurchasedBookRepository) CheckPurchasedBook(ctx context.Context, use
 		return false, nil, err
 	}
 	return true, &user, nil
+}
+
+func (r userPurchasedBookRepository) AddPurchasedBook(ctx context.Context, book *model.UserPurchasedBook) error {
+	return r.db.WithContext(ctx).Create(book).Error
+}
+
+func (r userPurchasedBookRepository) DeletePurchasedBook(ctx context.Context, PurchasedBookID string) error {
+	return r.db.WithContext(ctx).Delete(&model.UserPurchasedBook{}, "id = ?", PurchasedBookID).Error
 }

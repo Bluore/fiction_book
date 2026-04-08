@@ -10,7 +10,7 @@ type CreateBookRequest struct {
 	CoverImage  string    `json:"cover_image" binding:"required"`
 	OwnerId     string    `json:"owner_id"`
 	VIPLevel    string    `json:"vip_level"`
-	Price       float64   `json:"price"`
+	Price       int64     `json:"price"`
 	PushAt      time.Time `json:"push_at"`
 }
 
@@ -21,7 +21,7 @@ type BookResponse struct {
 	CoverImage      string    `json:"cover_image"`
 	OwnerID         string    `json:"owner_id"`
 	VIPLevel        string    `json:"vip_level"`
-	Price           float64   `json:"price"`
+	Price           int64     `json:"price"`
 	PushAt          time.Time `json:"push_at"`
 	BrowseAmount    uint64    `json:"browse_amount"`
 	BookshelfAmount uint64    `json:"bookshelf_amount"`
@@ -105,4 +105,9 @@ func (p *ListBooksRequest) ToStandard() *ListBooksRequest {
 		p.SortOrder = SortDesc
 	}
 	return p
+}
+
+type BuyBookRequest struct {
+	BookID string `uri:"book_id"`
+	Price  int64  `uri:"price"`
 }

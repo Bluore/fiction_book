@@ -7,13 +7,18 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 var (
-	ErrBookExists   = errors.New("book already exists")
-	ErrBookNotFound = errors.New("book not found")
+	ErrBookExists      = errors.New("book already exists")
+	ErrBookNotFound    = errors.New("book not found")
+	ErrParam           = errors.New("invalid param")
+	ErrSufficientFunds = errors.New("sufficient funds")
+	ErrBookAlreadyBuy  = errors.New("book already buy")
 )
 
 // BookService 书籍服务接口
@@ -22,18 +27,34 @@ type BookService interface {
 	GetByID(ctx context.Context, id string) (*dto.BookResponse, error)
 	List(ctx context.Context, page int, size int) (*dto.BookListResponse, error)
 	ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error)
+	BuyBook(ctx context.Context, userID string, bookID string, req *dto.BuyBookRequest) (*dto.GetUserPurchasedBookResponse, error)
 }
 
 type bookService struct {
-	bookRepo repository.BookRepository
-	cfg      *config.Config
+	bookRepo          repository.BookRepository
+	userRepo          repository.UserRepository
+	userAssetRepo     repository.UserAssetRepository
+	purchasedBookRepo repository.UserPurchasedBookRepository
+	db                *gorm.DB
+	cfg               *config.Config
 }
 
 // NewBookService 创建书籍服务实例
-func NewBookService(bookRepo repository.BookRepository, cfg *config.Config) BookService {
+func NewBookService(
+	bookRepo repository.BookRepository,
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	purchasedBookRepo repository.UserPurchasedBookRepository,
+	db *gorm.DB,
+	cfg *config.Config,
+) BookService {
 	return &bookService{
-		bookRepo: bookRepo,
-		cfg:      cfg,
+		bookRepo:          bookRepo,
+		userRepo:          userRepo,
+		userAssetRepo:     userAssetRepo,
+		purchasedBookRepo: purchasedBookRepo,
+		db:                db,
+		cfg:               cfg,
 	}
 }
 
@@ -152,4 +173,60 @@ func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) 
 			Count: count,
 		},
 	}, nil
+}
+
+func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string, req *dto.BuyBookRequest) (*dto.GetUserPurchasedBookResponse, error) {
+
+	book, err := s.bookRepo.GetByID(ctx, bookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
+
+	userAsset, err := s.userAssetRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if userAsset == nil {
+		return nil, ErrUserNotFound
+	}
+
+	if req.Price != book.Price {
+		return nil, ErrParam
+	}
+
+	exist, _, err := s.purchasedBookRepo.CheckPurchasedBook(ctx, userID, bookID)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		return nil, ErrBookAlreadyBuy
+	}
+
+	if userAsset.Gold < book.Price {
+		return nil, ErrSufficientFunds
+	}
+
+	userAssetNow, err := s.userAssetRepo.SubGoldByID(ctx, userID, book.Price)
+	if err != nil {
+		return nil, err
+	}
+	if userAssetNow == nil {
+		return nil, ErrUserNotFound
+	}
+
+	purchasedBook := &model.UserPurchasedBook{
+		ID:       uuid.New().String(),
+		UserID:   userID,
+		BookID:   bookID,
+		ActiveAt: time.Now().Add(time.Hour * 24 * 30 * 12 * 3),
+	}
+	err = s.purchasedBookRepo.AddPurchasedBook(ctx, purchasedBook)
+	if err != nil {
+		return nil, err
+	}
+
+	return toUserPurchasedBookResponse(purchasedBook), nil
 }

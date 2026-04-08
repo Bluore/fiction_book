@@ -36,9 +36,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4008,
 			Message: "书籍已存在",
 		},
-		service.ErrBookNotFound: errorResponse{
+		service.ErrBookAlreadyBuy: errorResponse{
 			Code:    4009,
-			Message: "书籍未找到",
+			Message: "书籍已购买",
 		},
 		service.ErrBookChapterNotFound: errorResponse{
 			Code:    4010,
@@ -67,6 +67,14 @@ func getErrorList() *map[error]errorResponse {
 		service.ErrUserPurchasedBookNotFound: errorResponse{
 			Code:    4016,
 			Message: "没有购买此书籍的记录",
+		},
+		service.ErrParam: errorResponse{
+			Code:    4017,
+			Message: "参数错误",
+		},
+		service.ErrSufficientFunds: errorResponse{
+			Code:    4018,
+			Message: "你的余额不足了，充钱使你变得强大",
 		},
 	}
 }
