@@ -5,6 +5,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
+	"fiction-book/pkg/transmit"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,8 +29,13 @@ func (h *Handler) CreateBook(c *gin.Context) {
 	if req.PushAt.IsZero() {
 		req.PushAt = time.Now()
 	}
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	book, err := h.bookService.Create(c.Request.Context(), req)
+	book, err := h.bookService.Create(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrBookExists {
 			response.PushError(c, err)

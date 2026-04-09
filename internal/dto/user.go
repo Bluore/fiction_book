@@ -13,7 +13,6 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest 更新用户请求
 type UpdateUserRequest struct {
-	ID          string  `uri:"id" binding:"required"`
 	Username    *string `json:"username" binding:"omitempty,username"`
 	Age         *int    `json:"age" binding:"omitempty,gte=0,lte=130"`
 	Description *string `json:"description" binding:"omitempty,min=1"`
@@ -21,14 +20,12 @@ type UpdateUserRequest struct {
 
 // UpdateUserPasswordRequest 更新用户密码请求
 type UpdateUserPasswordRequest struct {
-	ID       string `uri:"id" binding:"required"`
 	Password string `json:"password" binding:"required,min=6"`
 	Verify   string `json:"verify" binding:"required,len=6"`
 }
 
 // UpdateUserEmailRequest 更新用户邮箱请求
 type UpdateUserEmailRequest struct {
-	ID       string `uri:"id" binding:"required"`
 	Password string `json:"password" binding:"required,min=6"`
 	Email    string `json:"email" binding:"required,email"`
 	Verify   string `json:"verify" binding:"required,len=6"`
@@ -41,7 +38,6 @@ type GetUserRequest struct {
 
 // DeleteUserRequest 删除用户请求
 type DeleteUserRequest struct {
-	ID string `uri:"id" binding:"required"`
 }
 
 // ListUsersRequest 用户列表请求
@@ -98,6 +94,5 @@ type EmailVerifyResponse struct {
 
 // UploadAvatarRequest 上传头像请求
 type UploadAvatarRequest struct {
-	ID     string                `uri:"id" binding:"required"`
 	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
 }

@@ -4,6 +4,7 @@ import (
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/pkg/response"
+	"fiction-book/pkg/transmit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,16 +16,19 @@ import (
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Success 200 {object} response.Response{data=[]dto.GetUserPurchasedChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "未授权"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id}/chapters/purchases [get]
+// @Router /api/v1/purchases/chapters [get]
 func (h *Handler) GetUserPurchasedChapter(c *gin.Context) {
-	req := middleware.MustGetRequest[dto.GetUserPurchasedChapterRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	purchasedChapter, err := h.userPurchasedChapterService.GetListPurchasedChapterByUserID(c.Request.Context(), req.UserID)
+	purchasedChapter, err := h.userPurchasedChapterService.GetListPurchasedChapterByUserID(c.Request.Context(), userID)
 	if err != nil {
 		response.PushError(c, err)
 		return
@@ -39,18 +43,22 @@ func (h *Handler) GetUserPurchasedChapter(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Param chapter_id path string true "章节ID"
 // @Success 200 {object} response.Response{data=dto.GetUserPurchasedChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "未授权"
 // @Failure 4016 {object} response.Response "没有购买本章节的记录"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id}/chapters/purchases/{chapter_id} [get]
+// @Router /api/v1/purchases/chapters{chapter_id} [get]
 func (h *Handler) CheckUserPurchasedChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CheckUserPurchasedChapterRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	purchasedChapter, err := h.userPurchasedChapterService.GetPurchasedChapterByUserIDAndChapterID(c.Request.Context(), req.UserID, req.ChapterID)
+	purchasedChapter, err := h.userPurchasedChapterService.GetPurchasedChapterByUserIDAndChapterID(c.Request.Context(), userID, req.ChapterID)
 	if err != nil {
 		response.PushError(c, err)
 		return

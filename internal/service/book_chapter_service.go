@@ -12,10 +12,11 @@ import (
 var (
 	ErrBookChapterNotFound = errors.New("book_chapter not found")
 	ErrVIPLevel            = errors.New("the membership level is insufficient")
+	ErrPermission          = errors.New("user permission denied")
 )
 
 type BookChapterService interface {
-	AddByBookID(ctx context.Context, bookID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
+	AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
 	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
 	GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error)
 	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
@@ -37,8 +38,8 @@ func NewBookChapterService(userRepo repository.UserRepository, bookRepo reposito
 	}
 }
 
-func (b bookChapterService) AddByBookID(ctx context.Context, bookID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error) {
-	book, err := b.bookRepo.GetByID(ctx, bookID)
+func (b bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error) {
+	book, err := b.bookRepo.GetByID(ctx, req.BookID)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,11 @@ func (b bookChapterService) AddByBookID(ctx context.Context, bookID string, req 
 		return nil, ErrBookNotFound
 	}
 
-	bookInfo, err := b.bookChapterRepo.AddByBookID(ctx, bookID, *req.Title, *req.Content)
+	if book.OwnerID != userID {
+		return nil, ErrPermission
+	}
+
+	bookInfo, err := b.bookChapterRepo.AddByBookID(ctx, req.BookID, *req.Title, *req.Content)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
+	"fiction-book/pkg/transmit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,8 +26,13 @@ import (
 // @Router /api/v1/chapters/create [post]
 func (h *Handler) AddBookChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreatBookChapterRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), req.BookID, req)
+	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrBookNotFound {
 			response.PushError(c, err)

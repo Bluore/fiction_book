@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"errors"
+	"fiction-book/pkg/transmit"
 	_ "image/jpeg"
 	_ "image/png"
 
@@ -11,6 +13,10 @@ import (
 	"fiction-book/internal/service"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/response"
+)
+
+var (
+	ErrGetParam = errors.New("get param error")
 )
 
 // Handler 处理器结构
@@ -137,18 +143,23 @@ func (h *Handler) GetUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Param request body dto.UpdateUserRequest true "更新信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4017 {object} response.Response "服务器内部错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id} [put]
+// @Router /api/v1/users/information [put]
 func (h *Handler) UpdateUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	user, err := h.userService.Update(c.Request.Context(), req.ID, req)
+	user, err := h.userService.Update(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
 			response.PushError(c, err)
@@ -168,7 +179,6 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Param request body dto.UpdateUserPasswordRequest true "更新信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Failure 400 {object} response.Response "参数错误"
@@ -177,11 +187,16 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 // @Failure 4003 {object} response.Response "验证码验证失败"
 // @Failure 4004 {object} response.Response "验证码未发送"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id}/password [put]
+// @Router /api/v1/users/password [put]
 func (h *Handler) UpdateUserPassword(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserPasswordRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	user, err := h.userService.UpdatePassword(c.Request.Context(), req.ID, req)
+	user, err := h.userService.UpdatePassword(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
 			response.PushError(c, err)
@@ -209,7 +224,6 @@ func (h *Handler) UpdateUserPassword(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Param request body dto.UpdateUserEmailRequest true "更新信息"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Failure 400 {object} response.Response "参数错误"
@@ -219,11 +233,16 @@ func (h *Handler) UpdateUserPassword(c *gin.Context) {
 // @Failure 4004 {object} response.Response "验证码未发送"
 // @Failure 4013 {object} response.Response "邮箱已存在"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id}/email [put]
+// @Router /api/v1/users/email [put]
 func (h *Handler) UpdateUserEmail(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateUserEmailRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	user, err := h.userService.UpdateEmail(c.Request.Context(), req.ID, req)
+	user, err := h.userService.UpdateEmail(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrUserNotFound {
 			response.PushError(c, err)
@@ -258,17 +277,20 @@ func (h *Handler) UpdateUserEmail(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Success 200 {object} response.Response
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 4002 {object} response.Response "用户未找到"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id} [delete]
+// @Router /api/v1/users/delete [delete]
 func (h *Handler) DeleteUser(c *gin.Context) {
-	req := middleware.MustGetRequest[dto.DeleteUserRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	if err := h.userService.Delete(c.Request.Context(), req.ID); err != nil {
+	if err := h.userService.Delete(c.Request.Context(), userID); err != nil {
 		if err == service.ErrUserNotFound {
 			response.PushError(c, err)
 			return
@@ -369,7 +391,6 @@ func (h *Handler) EmailVerify(c *gin.Context) {
 // @Accept multipart/form-data
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Param avatar formData file true "头像文件（仅支持 jpeg/png，尺寸必须为 180x180）"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Failure 400 {object} response.Response "参数错误"
@@ -379,11 +400,16 @@ func (h *Handler) EmailVerify(c *gin.Context) {
 // @Failure 4011 {object} response.Response "文件类型出错"
 // @Failure 4012 {object} response.Response "图片不合规"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id}/avatar [post]
+// @Router /api/v1/users/avatar [post]
 func (h *Handler) UploadAvatar(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UploadAvatarRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	user, err := h.userService.UpdateAvatar(c.Request.Context(), req.ID, req.Avatar)
+	user, err := h.userService.UpdateAvatar(c.Request.Context(), userID, req.Avatar)
 	if err != nil {
 		if err == service.ErrUserNotFound {
 			response.PushError(c, err)

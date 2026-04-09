@@ -62,27 +62,11 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			users.POST("", middleware.Validation(&dto.CreateUserRequest{}), h.CreateUser)
 			users.GET("", middleware.Validation(&dto.ListUsersRequest{}), h.ListUsers)
 			users.GET("/:id", middleware.Validation(&dto.GetUserRequest{}), h.GetUser)
-			users.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserRequest{}), h.UpdateUser)
-			users.DELETE("/:id", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteUserRequest{}), h.DeleteUser)
-			users.POST("/:id/avatar", middleware.Auth(cfg), middleware.Validation(&dto.UploadAvatarRequest{}), h.UploadAvatar)
-			users.PUT("/:id/password", middleware.Validation(&dto.UpdateUserPasswordRequest{}), h.UpdateUserPassword)
-			users.PUT("/:id/email", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserEmailRequest{}), h.UpdateUserEmail)
-
-			assets := users.Group("/:id/assets")
-			{
-				assets.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserAssetRequest{}), h.GetUserAsset)
-			}
-			purchases := users.Group("/:id/purchases")
-			{
-				purchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedBookRequest{}), h.GetUserPurchasedBook)
-				purchases.GET("/:book_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedBookRequest{}), h.CheckUserPurchasedBook)
-			}
-
-			chapterPurchases := users.Group("/:id/chapters/purchases")
-			{
-				chapterPurchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedChapterRequest{}), h.GetUserPurchasedChapter)
-				chapterPurchases.GET("/:chapter_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedChapterRequest{}), h.CheckUserPurchasedChapter)
-			}
+			users.PUT("/information", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserRequest{}), h.UpdateUser)
+			users.DELETE("/delete", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteUserRequest{}), h.DeleteUser)
+			users.POST("/avatar", middleware.Auth(cfg), middleware.Validation(&dto.UploadAvatarRequest{}), h.UploadAvatar)
+			users.PUT("/password", middleware.Validation(&dto.UpdateUserPasswordRequest{}), h.UpdateUserPassword)
+			users.PUT("/email", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserEmailRequest{}), h.UpdateUserEmail)
 
 		}
 
@@ -109,5 +93,21 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			buys.POST("/book", middleware.Auth(cfg), middleware.Validation(&dto.BuyBookRequest{}), h.BuyBook)
 		}
 
+		assets := v1.Group("/assets")
+		{
+			assets.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserAssetRequest{}), h.GetUserAsset)
+		}
+
+		purchases := v1.Group("/purchases/book")
+		{
+			purchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedBookRequest{}), h.GetUserPurchasedBook)
+			purchases.GET("/:book_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedBookRequest{}), h.CheckUserPurchasedBook)
+		}
+
+		chapterPurchases := v1.Group("/purchases/chapters")
+		{
+			chapterPurchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedChapterRequest{}), h.GetUserPurchasedChapter)
+			chapterPurchases.GET("/:chapter_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedChapterRequest{}), h.CheckUserPurchasedChapter)
+		}
 	}
 }

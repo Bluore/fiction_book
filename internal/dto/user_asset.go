@@ -1,7 +1,6 @@
 package dto
 
 type GetUserAssetRequest struct {
-	ID string `uri:"id" binding:"required"`
 }
 
 type UserAssetResponse struct {

@@ -1,6 +1,8 @@
 package response
 
-import "fiction-book/internal/service"
+import (
+	"fiction-book/internal/service"
+)
 
 func getErrorList() *map[error]errorResponse {
 	return &map[error]errorResponse{
@@ -76,5 +78,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4018,
 			Message: "你的余额不足了，充钱使你变得强大",
 		},
+		//handler.ErrGetParam: errorResponse{
+		//	Code:    4019,
+		//	Message: "中间件获取数据失败",
+		//},
 	}
 }

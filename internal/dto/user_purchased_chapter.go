@@ -3,11 +3,9 @@ package dto
 import "time"
 
 type GetUserPurchasedChapterRequest struct {
-	UserID string `uri:"id"`
 }
 
 type CheckUserPurchasedChapterRequest struct {
-	UserID    string `uri:"id"`
 	ChapterID string `uri:"chapter_id"`
 }
 

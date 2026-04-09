@@ -81,13 +81,12 @@ definitions:
         type: string
       name:
         type: string
-      owner_id:
-        type: string
       price:
         type: integer
       push_at:
         type: string
       vip_level:
+        description: OwnerId     string    `json:"owner_id"`
         type: string
     required:
     - cover_image
@@ -195,8 +194,6 @@ definitions:
     properties:
       email:
         type: string
-      id:
-        type: string
       password:
         minLength: 6
         type: string
@@ -204,21 +201,17 @@ definitions:
         type: string
     required:
     - email
-    - id
     - password
     - verify
     type: object
   dto.UpdateUserPasswordRequest:
     properties:
-      id:
-        type: string
       password:
         minLength: 6
         type: string
       verify:
         type: string
     required:
-    - id
     - password
     - verify
     type: object
@@ -231,12 +224,8 @@ definitions:
       description:
         minLength: 1
         type: string
-      id:
-        type: string
       username:
         type: string
-    required:
-    - id
     type: object
   dto.UserAssetResponse:
     properties:
@@ -291,6 +280,40 @@ info:
   title: fiction_book swagger
   version: "1.0"
 paths:
+  /api/v1/assets:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定用户的资产信息，包括金币、VIP标识和VIP等级
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserAssetResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4011":
+          description: 用户不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 获取用户资产（认证）
+      tags:
+      - 资产管理
   /api/v1/auth/email/verify:
     post:
       consumes:
@@ -742,6 +765,166 @@ paths:
       summary: 创建书籍章节
       tags:
       - 章节管理
+  /api/v1/purchases/book:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定用户已购买的所有书籍列表（认证）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
+                  type: array
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 获取用户已购买的书籍列表
+      tags:
+      - 资产管理
+  /api/v1/purchases/book/{book_id}:
+    get:
+      consumes:
+      - application/json
+      description: 检查指定用户是否已购买指定书籍（认证）
+      parameters:
+      - description: 书籍ID
+        in: path
+        name: book_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4016":
+          description: 没有购买这本书籍的记录
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 判断用户是否已购买本书籍
+      tags:
+      - 资产管理
+  /api/v1/purchases/chapters:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定用户已购买的所有章节列表（认证）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.GetUserPurchasedChapterResponse'
+                  type: array
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 获取用户已购买的章节列表
+      tags:
+      - 资产管理
+  /api/v1/purchases/chapters{chapter_id}:
+    get:
+      consumes:
+      - application/json
+      description: 检查指定用户是否已购买指定章节（认证）
+      parameters:
+      - description: 章节ID
+        in: path
+        name: chapter_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.GetUserPurchasedChapterResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4016":
+          description: 没有购买本章节的记录
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 判断用户是否已购买本章节
+      tags:
+      - 资产管理
   /api/v1/users:
     get:
       consumes:
@@ -833,44 +1016,6 @@ paths:
       tags:
       - 用户管理
   /api/v1/users/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: 删除用户（需要认证和管理员权限）
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Response'
-        "400":
-          description: 参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 登录已失效
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "4002":
-          description: 用户未找到
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - Bearer: []
-      summary: 删除用户
-      tags:
-      - 用户管理
     get:
       consumes:
       - application/json
@@ -908,106 +1053,12 @@ paths:
       summary: 获取用户信息
       tags:
       - 用户管理
-    put:
-      consumes:
-      - application/json
-      description: 更新用户信息（需要认证）
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 更新信息
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.UserResponse'
-              type: object
-        "400":
-          description: 参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 登录已失效
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "4002":
-          description: 用户未找到
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - Bearer: []
-      summary: 更新用户信息
-      tags:
-      - 用户管理
-  /api/v1/users/{id}/assets:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定用户的资产信息，包括金币、VIP标识和VIP等级
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.UserAssetResponse'
-              type: object
-        "400":
-          description: 参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "4011":
-          description: 用户不存在
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - Bearer: []
-      summary: 获取用户资产（认证）
-      tags:
-      - 资产管理
-  /api/v1/users/{id}/avatar:
+  /api/v1/users/avatar:
     post:
       consumes:
       - multipart/form-data
       description: 上传并修改用户头像（需要认证，只能修改自己的头像）
       parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
       - description: 头像文件（仅支持 jpeg/png，尺寸必须为 180x180）
         in: formData
         name: avatar
@@ -1058,108 +1109,45 @@ paths:
       summary: 上传头像
       tags:
       - 用户管理
-  /api/v1/users/{id}/chapters/purchases:
-    get:
+  /api/v1/users/delete:
+    delete:
       consumes:
       - application/json
-      description: 获取指定用户已购买的所有章节列表（认证）
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
+      description: 删除用户（需要认证和管理员权限）
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.GetUserPurchasedChapterResponse'
-                  type: array
-              type: object
+            $ref: '#/definitions/response.Response'
         "400":
           description: 参数错误
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: 未授权
+          description: 登录已失效
           schema:
             $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
             $ref: '#/definitions/response.Response'
-      security:
-      - Bearer: []
-      summary: 获取用户已购买的章节列表
-      tags:
-      - 资产管理
-  /api/v1/users/{id}/chapters/purchases/{chapter_id}:
-    get:
-      consumes:
-      - application/json
-      description: 检查指定用户是否已购买指定章节（认证）
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 章节ID
-        in: path
-        name: chapter_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.GetUserPurchasedChapterResponse'
-              type: object
-        "400":
-          description: 参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "4016":
-          description: 没有购买本章节的记录
+        "4002":
+          description: 用户未找到
           schema:
             $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
-      summary: 判断用户是否已购买本章节
+      summary: 删除用户
       tags:
-      - 资产管理
-  /api/v1/users/{id}/email:
+      - 用户管理
+  /api/v1/users/email:
     put:
       consumes:
       - application/json
       description: 更新用户信息（需要认证新的邮箱）
       parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
       - description: 更新信息
         in: body
         name: request
@@ -1211,17 +1199,61 @@ paths:
       summary: 更新用户邮箱
       tags:
       - 用户管理
-  /api/v1/users/{id}/password:
+  /api/v1/users/information:
+    put:
+      consumes:
+      - application/json
+      description: 更新用户信息（需要认证）
+      parameters:
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4017":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 更新用户信息
+      tags:
+      - 用户管理
+  /api/v1/users/password:
     put:
       consumes:
       - application/json
       description: 更新用户信息
       parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
       - description: 更新信息
         in: body
         name: request
@@ -1269,97 +1301,6 @@ paths:
       summary: 更新用户密码
       tags:
       - 用户管理
-  /api/v1/users/{id}/purchases:
-    get:
-      consumes:
-      - application/json
-      description: 获取指定用户已购买的所有书籍列表（认证）
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
-                  type: array
-              type: object
-        "400":
-          description: 参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - Bearer: []
-      summary: 获取用户已购买的书籍列表
-      tags:
-      - 资产管理
-  /api/v1/users/{id}/purchases/{book_id}:
-    get:
-      consumes:
-      - application/json
-      description: 检查指定用户是否已购买指定书籍（认证）
-      parameters:
-      - description: 用户ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 书籍ID
-        in: path
-        name: book_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
-              type: object
-        "400":
-          description: 参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "4016":
-          description: 没有购买这本书籍的记录
-          schema:
-            $ref: '#/definitions/response.Response'
-      security:
-      - Bearer: []
-      summary: 判断用户是否已购买本书籍
-      tags:
-      - 资产管理
   /health:
     get:
       consumes:

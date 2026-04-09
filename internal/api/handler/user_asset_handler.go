@@ -1,9 +1,8 @@
 package handler
 
 import (
-	"fiction-book/internal/api/middleware"
-	"fiction-book/internal/dto"
 	"fiction-book/pkg/response"
+	"fiction-book/pkg/transmit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,16 +14,19 @@ import (
 // @Accept json
 // @Produce json
 // @Security Bearer
-// @Param id path string true "用户ID"
 // @Success 200 {object} response.Response{data=dto.UserAssetResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 4011 {object} response.Response "用户不存在"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/users/{id}/assets [get]
+// @Router /api/v1/assets [get]
 func (h *Handler) GetUserAsset(c *gin.Context) {
-	req := middleware.MustGetRequest[dto.GetUserAssetRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	userAsset, err := h.userAssetRepository.GetByID(c.Request.Context(), req.ID)
+	userAsset, err := h.userAssetRepository.GetByID(c.Request.Context(), userID)
 	if err != nil {
 		response.PushError(c, err)
 		return

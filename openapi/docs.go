@@ -23,6 +23,64 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/assets": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取指定用户的资产信息，包括金币、VIP标识和VIP等级",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产管理"
+                ],
+                "summary": "获取用户资产（认证）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserAssetResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4011": {
+                        "description": "用户不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/email/verify": {
             "post": {
                 "description": "向指定邮箱发送验证码",
@@ -757,6 +815,274 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/purchases/book": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取指定用户已购买的所有书籍列表（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产管理"
+                ],
+                "summary": "获取用户已购买的书籍列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.GetUserPurchasedBookResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/purchases/book/{book_id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "检查指定用户是否已购买指定书籍（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产管理"
+                ],
+                "summary": "判断用户是否已购买本书籍",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "书籍ID",
+                        "name": "book_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserPurchasedBookResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4016": {
+                        "description": "没有购买这本书籍的记录",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/purchases/chapters": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取指定用户已购买的所有章节列表（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产管理"
+                ],
+                "summary": "获取用户已购买的章节列表",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/dto.GetUserPurchasedChapterResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/purchases/chapters{chapter_id}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "检查指定用户是否已购买指定章节（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "资产管理"
+                ],
+                "summary": "判断用户是否已购买本章节",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "章节ID",
+                        "name": "chapter_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserPurchasedChapterResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4016": {
+                        "description": "没有购买本章节的记录",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "description": "获取用户列表（分页）",
@@ -901,275 +1227,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{id}": {
-            "get": {
-                "description": "根据用户ID获取用户详细信息",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "用户管理"
-                ],
-                "summary": "获取用户信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "4002": {
-                        "description": "用户未找到",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "更新用户信息（需要认证）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "用户管理"
-                ],
-                "summary": "更新用户信息",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "更新信息",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "4002": {
-                        "description": "用户未找到",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "登录已失效",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "删除用户（需要认证和管理员权限）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "用户管理"
-                ],
-                "summary": "删除用户",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "4002": {
-                        "description": "用户未找到",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "登录已失效",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/{id}/assets": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "获取指定用户的资产信息，包括金币、VIP标识和VIP等级",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "资产管理"
-                ],
-                "summary": "获取用户资产（认证）",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.UserAssetResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "4011": {
-                        "description": "用户不存在",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/{id}/avatar": {
+        "/api/v1/users/avatar": {
             "post": {
                 "security": [
                     {
@@ -1188,13 +1246,6 @@ const docTemplate = `{
                 ],
                 "summary": "上传头像",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "file",
                         "description": "头像文件（仅支持 jpeg/png，尺寸必须为 180x180）",
@@ -1267,14 +1318,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{id}/chapters/purchases": {
-            "get": {
+        "/api/v1/users/delete": {
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "description": "获取指定用户已购买的所有章节列表（认证）",
+                "description": "删除用户（需要认证和管理员权限）",
                 "consumes": [
                     "application/json"
                 ],
@@ -1282,38 +1333,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "资产管理"
+                    "用户管理"
                 ],
-                "summary": "获取用户已购买的章节列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "删除用户",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/dto.GetUserPurchasedChapterResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
@@ -1322,8 +1349,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "4002": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "401": {
-                        "description": "未授权",
+                        "description": "登录已失效",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -1337,87 +1370,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{id}/chapters/purchases/{chapter_id}": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "检查指定用户是否已购买指定章节（认证）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "资产管理"
-                ],
-                "summary": "判断用户是否已购买本章节",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "章节ID",
-                        "name": "chapter_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.GetUserPurchasedChapterResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "4016": {
-                        "description": "没有购买本章节的记录",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/{id}/email": {
+        "/api/v1/users/email": {
             "put": {
                 "security": [
                     {
@@ -1436,13 +1389,6 @@ const docTemplate = `{
                 ],
                 "summary": "更新用户邮箱",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "更新信息",
                         "name": "request",
@@ -1517,7 +1463,88 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{id}/password": {
+        "/api/v1/users/information": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "更新用户信息（需要认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户管理"
+                ],
+                "summary": "更新用户信息",
+                "parameters": [
+                    {
+                        "description": "更新信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UserResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4002": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4017": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/password": {
             "put": {
                 "security": [
                     {
@@ -1536,13 +1563,6 @@ const docTemplate = `{
                 ],
                 "summary": "更新用户密码",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "description": "更新信息",
                         "name": "request",
@@ -1611,14 +1631,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/users/{id}/purchases": {
+        "/api/v1/users/{id}": {
             "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "获取指定用户已购买的所有书籍列表（认证）",
+                "description": "根据用户ID获取用户详细信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -1626,9 +1641,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "资产管理"
+                    "用户管理"
                 ],
-                "summary": "获取用户已购买的书籍列表",
+                "summary": "获取用户信息",
                 "parameters": [
                     {
                         "type": "string",
@@ -1650,10 +1665,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/dto.GetUserPurchasedBookResponse"
-                                            }
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -1666,88 +1678,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/users/{id}/purchases/{book_id}": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "检查指定用户是否已购买指定书籍（认证）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "资产管理"
-                ],
-                "summary": "判断用户是否已购买本书籍",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "用户ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "书籍ID",
-                        "name": "book_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.GetUserPurchasedBookResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "4016": {
-                        "description": "没有购买这本书籍的记录",
+                    "4002": {
+                        "description": "用户未找到",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -1929,9 +1861,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "owner_id": {
-                    "type": "string"
-                },
                 "price": {
                     "type": "integer"
                 },
@@ -1939,6 +1868,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "vip_level": {
+                    "description": "OwnerId     string    ` + "`" + `json:\"owner_id\"` + "`" + `",
                     "type": "string"
                 }
             }
@@ -2094,15 +2024,11 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "email",
-                "id",
                 "password",
                 "verify"
             ],
             "properties": {
                 "email": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "string"
                 },
                 "password": {
@@ -2117,14 +2043,10 @@ const docTemplate = `{
         "dto.UpdateUserPasswordRequest": {
             "type": "object",
             "required": [
-                "id",
                 "password",
                 "verify"
             ],
             "properties": {
-                "id": {
-                    "type": "string"
-                },
                 "password": {
                     "type": "string",
                     "minLength": 6
@@ -2136,9 +2058,6 @@ const docTemplate = `{
         },
         "dto.UpdateUserRequest": {
             "type": "object",
-            "required": [
-                "id"
-            ],
             "properties": {
                 "age": {
                     "type": "integer",
@@ -2148,9 +2067,6 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "minLength": 1
-                },
-                "id": {
-                    "type": "string"
                 },
                 "username": {
                     "type": "string"

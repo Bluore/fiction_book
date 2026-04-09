@@ -23,7 +23,7 @@ var (
 
 // BookService 书籍服务接口
 type BookService interface {
-	Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error)
+	Create(ctx context.Context, userID string, req *dto.CreateBookRequest) (*dto.BookResponse, error)
 	GetByID(ctx context.Context, id string) (*dto.BookResponse, error)
 	List(ctx context.Context, page int, size int) (*dto.BookListResponse, error)
 	ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error)
@@ -58,7 +58,7 @@ func NewBookService(
 	}
 }
 
-func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*dto.BookResponse, error) {
+func (s *bookService) Create(ctx context.Context, userID string, req *dto.CreateBookRequest) (*dto.BookResponse, error) {
 	existingBook, err := s.bookRepo.GetByName(ctx, req.Name)
 	if err != nil {
 		return nil, err
@@ -69,7 +69,7 @@ func (s *bookService) Create(ctx context.Context, req *dto.CreateBookRequest) (*
 
 	book := &model.Book{
 		ID:              uuid.New().String(),
-		OwnerID:         req.OwnerId,
+		OwnerID:         userID,
 		Name:            req.Name,
 		Description:     req.Description,
 		VIPLevel:        req.VIPLevel,
@@ -114,6 +114,7 @@ func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse
 	return toBookResponse(book), nil
 }
 
+// List 列出所有的书籍
 func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookListResponse, error) {
 	books, err := s.bookRepo.List(ctx, page, size)
 	if err != nil {
@@ -143,6 +144,7 @@ func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookLi
 	return bookListResponse, nil
 }
 
+// ListBooks 根据1排行列举书籍
 func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error) {
 	req.ToStandard()
 	books, err := s.bookRepo.ListWithOption(ctx, repository.BookListOption{
