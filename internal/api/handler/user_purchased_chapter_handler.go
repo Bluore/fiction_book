@@ -49,7 +49,7 @@ func (h *Handler) GetUserPurchasedChapter(c *gin.Context) {
 // @Failure 401 {object} response.Response "未授权"
 // @Failure 4016 {object} response.Response "没有购买本章节的记录"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/purchases/chapters{chapter_id} [get]
+// @Router /api/v1/purchases/chapters/{chapter_id} [get]
 func (h *Handler) CheckUserPurchasedChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CheckUserPurchasedChapterRequest](c)
 	userID := transmit.GetStr(c, "userID")

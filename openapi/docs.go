@@ -365,13 +365,11 @@ const docTemplate = `{
                 "summary": "获取书籍",
                 "parameters": [
                     {
-                        "description": "获取书籍请求",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.GetBookRequest"
-                        }
+                        "type": "string",
+                        "description": "书籍ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1010,7 +1008,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/purchases/chapters{chapter_id}": {
+        "/api/v1/purchases/chapters/{chapter_id}": {
             "get": {
                 "security": [
                     {
@@ -1916,17 +1914,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.GetBookRequest": {
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
                     "type": "string"
                 }
             }

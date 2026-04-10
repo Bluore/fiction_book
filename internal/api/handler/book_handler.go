@@ -53,7 +53,7 @@ func (h *Handler) CreateBook(c *gin.Context) {
 // @Tags 书籍管理
 // @Accept json
 // @Produce json
-// @Param request body dto.GetBookRequest true "获取书籍请求"
+// @Param id path string true "书籍ID"
 // @Success 200 {object} response.Response{data=dto.BookResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"

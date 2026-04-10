@@ -143,7 +143,7 @@ func (u userAssetRepository) CreateUserAsset(ctx context.Context, db *gorm.DB, i
 	if err != nil {
 		return err
 	}
-	if exist != nil {
+	if exist == nil {
 		return errors.New("user_asset create failed")
 	}
 	return nil
