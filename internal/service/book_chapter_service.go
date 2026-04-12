@@ -55,26 +55,26 @@ func (b bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 	if err != nil {
 		return nil, err
 	}
-	return toBookChapterInfoResponse(bookInfo, book), nil
+	return toBookChapterInfoResponse(b.cfg, bookInfo, book), nil
 
 }
 
-func toBookChapterInfoResponse(info *model.BookChapterInfo, book *model.Book) *dto.BookChapterInfoResponse {
+func toBookChapterInfoResponse(cfg *config.Config, info *model.BookChapterInfo, book *model.Book) *dto.BookChapterInfoResponse {
 	return &dto.BookChapterInfoResponse{
 		ChapterID: info.ID,
 		Title:     info.Title,
 		Order:     info.Order,
-		Book:      toBookResponse(book),
+		Book:      toBookResponse(cfg, book),
 	}
 }
 
-func toBookChapterResponse(info *model.BookChapter, book *model.Book) *dto.BookChapterResponse {
+func toBookChapterResponse(cfg *config.Config, info *model.BookChapter, book *model.Book) *dto.BookChapterResponse {
 	return &dto.BookChapterResponse{
 		ChapterID: info.ID,
 		Title:     info.Title,
 		Content:   info.Content,
 		Order:     info.Order,
-		Book:      toBookResponse(book),
+		Book:      toBookResponse(cfg, book),
 	}
 }
 
@@ -98,7 +98,7 @@ func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 	if book.VIPLevel != "" {
 		return nil, ErrUserNotLogin
 	}
-	return toBookChapterResponse(bookChapter, book), nil
+	return toBookChapterResponse(b.cfg, bookChapter, book), nil
 }
 
 func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error) {
@@ -133,7 +133,7 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookI
 		return nil, ErrVIPLevel
 	}
 
-	return toBookChapterResponse(bookChapter, book), nil
+	return toBookChapterResponse(b.cfg, bookChapter, book), nil
 }
 
 func VIPStrToLevle(vipStr string) int {
@@ -202,6 +202,6 @@ func (b bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBo
 		return nil, ErrBookNotFound
 	}
 
-	return toBookChapterResponse(cur, book), nil
+	return toBookChapterResponse(b.cfg, cur, book), nil
 
 }

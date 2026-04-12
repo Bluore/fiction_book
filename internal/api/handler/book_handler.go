@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
@@ -130,4 +131,34 @@ func (h *Handler) BuyBook(c *gin.Context) {
 		return
 	}
 	response.Success(c, purchasedBook)
+}
+
+// UploadBookCoverImage 上传书籍封面
+// @Summary 上传书籍封面（验证）
+// @Description 用户上传指定书籍的封面图片，支持jpg格式
+// @Tags 书籍管理
+// @Accept multipart/form-data
+// @Produce json
+// @Security Bearer
+// @Param id path string true "书籍ID"
+// @Param cover_image formData file true "封面图片文件（仅支持 jpg，尺寸必须为 368X460）"
+// @Success 200 {object} dto.UploadBookCoverResponse "封面URL"
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 401 {object} response.Response "用户未登录"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/books/{id}/cover [post]
+func (h *Handler) UploadBookCoverImage(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.UploadBookCoverRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, errors.New("user id is empty"))
+		return
+	}
+
+	res, err := h.bookService.UploadBookCover(c.Request.Context(), userID, req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
 }

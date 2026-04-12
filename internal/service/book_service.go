@@ -7,6 +7,8 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/parameter"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,6 +30,7 @@ type BookService interface {
 	List(ctx context.Context, page int, size int) (*dto.BookListResponse, error)
 	ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error)
 	BuyBook(ctx context.Context, userID string, bookID string, req *dto.BuyBookRequest) (*dto.GetUserPurchasedBookResponse, error)
+	UploadBookCover(ctx context.Context, userID string, req *dto.UploadBookCoverRequest) (*dto.UploadBookCoverResponse, error)
 }
 
 type bookService struct {
@@ -83,15 +86,15 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 	if err != nil {
 		return nil, err
 	}
-	return toBookResponse(book), nil
+	return toBookResponse(s.cfg, book), nil
 }
 
-func toBookResponse(book *model.Book) *dto.BookResponse {
+func toBookResponse(cfg *config.Config, book *model.Book) *dto.BookResponse {
 	return &dto.BookResponse{
 		ID:              book.ID,
 		Name:            book.Name,
 		Description:     book.Description,
-		CoverImage:      book.CoverImage,
+		CoverImage:      getImageUrl(cfg, book.CoverImage, "/upload/book_cover/"),
 		OwnerID:         book.OwnerID,
 		VIPLevel:        book.VIPLevel,
 		Price:           book.Price,
@@ -103,6 +106,13 @@ func toBookResponse(book *model.Book) *dto.BookResponse {
 	}
 }
 
+func getImageUrl(cfg *config.Config, path string, prefix string) string {
+	if path == "" {
+		return fmt.Sprintf("%s%s%s", cfg.Server.Website, prefix, "default.jpg")
+	}
+	return fmt.Sprintf("%s%s", cfg.Server.Website, path)
+}
+
 func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse, error) {
 	book, err := s.bookRepo.GetByID(ctx, id)
 	if err != nil {
@@ -111,7 +121,7 @@ func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse
 	if book == nil {
 		return nil, ErrBookNotFound
 	}
-	return toBookResponse(book), nil
+	return toBookResponse(s.cfg, book), nil
 }
 
 // List 列出所有的书籍
@@ -128,7 +138,7 @@ func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookLi
 
 	var bookResponses []*dto.BookResponse
 	for _, book := range books {
-		bookResponses = append(bookResponses, toBookResponse(book))
+		bookResponses = append(bookResponses, toBookResponse(s.cfg, book))
 	}
 
 	pageCount := &dto.PageListResponse{
@@ -164,7 +174,7 @@ func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) 
 
 	var bookResponses []*dto.BookResponse
 	for _, book := range books {
-		bookResponses = append(bookResponses, toBookResponse(book))
+		bookResponses = append(bookResponses, toBookResponse(s.cfg, book))
 	}
 
 	return &dto.BookListResponse{
@@ -252,4 +262,49 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 	}
 
 	return toUserPurchasedBookResponse(purchased), nil
+}
+
+func (s *bookService) UploadBookCover(ctx context.Context, userID string, req *dto.UploadBookCoverRequest) (*dto.UploadBookCoverResponse, error) {
+	book, err := s.bookRepo.GetByID(ctx, req.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
+
+	if book.OwnerID != userID {
+		return nil, ErrPermission
+	}
+
+	imgId := getFileID(book.CoverImage, "/upload/book_cover/")
+	if imgId == "" {
+		return nil, errors.New("book_cover_id decode error")
+	}
+
+	uploadOut, err := uploadImage(&parameter.UploadImageIn{
+		Avatar:     req.CoverImage,
+		ImageId:    imgId,
+		ImagePath:  "/upload/book_cover/",
+		SizeWidth:  368,
+		SizeHeight: 460,
+		SizeFile:   10 * 1024 * 1024,
+		AcceptType: map[string]bool{
+			"jpg": true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	book.CoverImage = uploadOut.FilePath
+	err = s.bookRepo.Update(ctx, book)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.UploadBookCoverResponse{
+		BookID: book.ID,
+		Url:    fmt.Sprintf("%s%s", s.cfg.Server.Website, uploadOut.FilePath),
+	}, nil
 }

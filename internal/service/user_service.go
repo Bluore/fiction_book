@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fiction-book/pkg/logger"
+	"fiction-book/pkg/parameter"
 	"fmt"
 	"image"
 	"io"
@@ -387,19 +388,6 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 }
 
 func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error) {
-	// 判断图像大小
-	if avatar.Size > 2*1024*1024 {
-		return nil, ErrSizeExceed
-	}
-	// 判断图像类型
-	if len(strings.Split(avatar.Filename, ".")) > 2 {
-		return nil, ErrFileType
-	}
-	suf := strings.Split(avatar.Filename, ".")[1]
-	if suf != "png" && suf != "jpg" {
-		return nil, ErrFileType
-	}
-
 	// 获取信息
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -408,22 +396,57 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 	if user == nil {
 		return nil, ErrUserNotFound
 	}
-	var imgId string
-	if user.ProfileImage == "" {
-		imgId = uuid.New().String()
-	} else {
-		imgId = strings.TrimPrefix(user.ProfileImage, imageFilePath)
-		imgId = strings.Split(imgId, ".")[0]
 
-		_, err := uuid.Parse(imgId)
-		if err != nil {
-			return nil, err
-		}
+	// 获取ID
+	imgId := getFileID(user.ProfileImage, imageFilePath)
+	if imgId == "" {
+		return nil, errors.New("imageID decode error")
 	}
-	path := fmt.Sprintf("%s%s.%s", imageFilePath, imgId, suf)
+
+	// 上传图片
+	uploadOut, err := uploadImage(&parameter.UploadImageIn{
+		Avatar:     avatar,
+		ImageId:    imgId,
+		ImagePath:  imageFilePath,
+		SizeWidth:  180,
+		SizeHeight: 180,
+		SizeFile:   2 * 1024 * 1024,
+		AcceptType: map[string]bool{
+			"png": true,
+			"jpg": true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 更新数据库
+	user.ProfileImage = uploadOut.FilePath
+	err = s.userRepo.Update(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.toUserResponse(user), nil
+}
+
+func uploadImage(in *parameter.UploadImageIn) (*parameter.UploadImageOut, error) {
+	// 判断图像大小
+	if in.Avatar.Size > in.SizeFile {
+		return nil, ErrSizeExceed
+	}
+	// 判断图像类型
+	if len(strings.Split(in.Avatar.Filename, ".")) > 2 {
+		return nil, ErrFileType
+	}
+	suf := strings.Split(in.Avatar.Filename, ".")[1]
+	if _, ok := in.AcceptType[suf]; !ok {
+		return nil, ErrFileType
+	}
+	path := fmt.Sprintf("%s%s.%s", in.ImagePath, in.ImageId, suf)
 
 	// 打开图像
-	src, err := avatar.Open()
+	src, err := in.Avatar.Open()
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +464,7 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 	}
 
 	// 判断图像像素大小
-	if img.Bounds().Dx() != 180 || img.Bounds().Dy() != 180 {
+	if img.Bounds().Dx() != in.SizeWidth || img.Bounds().Dy() != in.SizeHeight {
 		return nil, ErrImage
 	}
 
@@ -467,12 +490,23 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 		return nil, err
 	}
 
-	// 更新数据库
-	user.ProfileImage = path
-	err = s.userRepo.Update(ctx, user)
-	if err != nil {
-		return nil, err
-	}
+	return &parameter.UploadImageOut{
+		FilePath: path,
+	}, nil
+}
 
-	return s.toUserResponse(user), nil
+func getFileID(path string, prefix string) string {
+	var imgId string
+	if path == "" {
+		imgId = uuid.New().String()
+	} else {
+		imgId = strings.TrimPrefix(path, prefix)
+		imgId = strings.Split(imgId, ".")[0]
+
+		_, err := uuid.Parse(imgId)
+		if err != nil {
+			return ""
+		}
+	}
+	return imgId
 }

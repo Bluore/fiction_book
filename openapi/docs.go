@@ -418,6 +418,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/books/{id}/cover": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "用户上传指定书籍的封面图片，支持jpg格式",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "书籍管理"
+                ],
+                "summary": "上传书籍封面（验证）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "书籍ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "封面图片文件（仅支持 jpg，尺寸必须为 368X460）",
+                        "name": "cover_image",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "封面URL",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "用户未登录",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/buy/book": {
             "post": {
                 "security": [
@@ -2056,6 +2118,17 @@ const docTemplate = `{
                     "minLength": 1
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UploadBookCoverResponse": {
+            "type": "object",
+            "properties": {
+                "book_id": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }

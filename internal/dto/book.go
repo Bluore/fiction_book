@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"mime/multipart"
 	"time"
 )
 
@@ -110,4 +111,14 @@ func (p *ListBooksRequest) ToStandard() *ListBooksRequest {
 type BuyBookRequest struct {
 	BookID string `uri:"book_id"`
 	Price  int64  `uri:"price"`
+}
+
+type UploadBookCoverRequest struct {
+	BookID     string                `uri:"id" binding:"required"`
+	CoverImage *multipart.FileHeader `form:"cover_image" binding:"required"`
+}
+
+type UploadBookCoverResponse struct {
+	BookID string `json:"book_id"`
+	Url    string `json:"url"`
 }

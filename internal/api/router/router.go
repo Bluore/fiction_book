@@ -76,6 +76,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			books.POST("/create", middleware.Auth(cfg), middleware.Validation(&dto.CreateBookRequest{}), h.CreateBook)
 			books.GET("/:id", middleware.Validation(&dto.GetBookRequest{}), h.GetBook)
 			books.GET("/list", middleware.Validation(&dto.ListBooksRequest{}), h.BookList)
+			books.POST("/:id/cover", middleware.Auth(cfg), middleware.Validation(&dto.UploadBookCoverRequest{}), h.UploadBookCoverImage)
 		}
 
 		// 书籍章节模块
