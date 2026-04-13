@@ -45,21 +45,20 @@ type PageListResponse struct {
 }
 
 type PageListRequest struct {
-	Page int `json:"page"`
-	Size int `json:"size"`
+	Page int `form:"page"`
+	Size int `form:"size"`
 }
 
-func (p *PageListRequest) ToStandard() *PageListRequest {
+func (p *PageListRequest) ToStandard() {
 	if p.Page < 1 {
 		p.Page = 1
 	}
 	if p.Size < 1 {
 		p.Size = 10
 	}
-	if p.Page > 100 {
-		p.Page = 100
+	if p.Size > 100 {
+		p.Size = 100
 	}
-	return p
 }
 
 // BookSortKey 排序字段枚举
