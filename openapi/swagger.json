@@ -458,8 +458,38 @@
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "4001": {
+                        "description": "书籍未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4005": {
+                        "description": "文件大小超出",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "401": {
                         "description": "用户未登录",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4011": {
+                        "description": "文件类型出错",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4012": {
+                        "description": "图片不合规",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4020": {
+                        "description": "你没有该书籍的所有权",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }

@@ -145,6 +145,11 @@ func (h *Handler) BuyBook(c *gin.Context) {
 // @Success 200 {object} dto.UploadBookCoverResponse "封面URL"
 // @Failure 400 {object} response.Response "请求参数错误"
 // @Failure 401 {object} response.Response "用户未登录"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4005 {object} response.Response "文件大小超出"
+// @Failure 4011 {object} response.Response "文件类型出错"
+// @Failure 4012 {object} response.Response "图片不合规"
+// @Failure 4020 {object} response.Response "你没有该书籍的所有权"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/books/{id}/cover [post]
 func (h *Handler) UploadBookCoverImage(c *gin.Context) {

@@ -82,5 +82,9 @@ func getErrorList() *map[error]errorResponse {
 		//	Code:    4019,
 		//	Message: "中间件获取数据失败",
 		//},
+		service.ErrPermission: errorResponse{
+			Code:    4020,
+			Message: "缺失对应权限",
+		},
 	}
 }
