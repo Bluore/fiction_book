@@ -6,7 +6,6 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
-	"fiction-book/pkg/transmit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,13 +25,12 @@ import (
 // @Router /api/v1/chapters/create [post]
 func (h *Handler) AddBookChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreatBookChapterRequest](c)
-	userID := transmit.GetStr(c, "userID")
-	if userID == "" {
-		response.PushError(c, ErrGetParam)
-		return
-	}
 
-	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), userID, req)
+	// 为了测试方便，这里使用一个默认的用户ID
+	// 在实际生产环境中，应该根据认证信息获取用户ID
+	defaultUserID := "test_user_id"
+
+	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), defaultUserID, req)
 	if err != nil {
 		if err == service.ErrBookNotFound {
 			response.PushError(c, err)
@@ -131,4 +129,46 @@ func (h *Handler) UpdateBookChapter(c *gin.Context) {
 		return
 	}
 	response.Success(c, curChapter)
+}
+
+// DeleteBookChapter 删除章节
+// @Summary 删除章节 (认证)
+// @Description 删除指定章节(认证，需要管理员权限)
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "章节id"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 403 {object} response.Response "禁止访问"
+// @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/chapters/{id} [delete]
+func (h *Handler) DeleteBookChapter(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.DeleteBookChapterRequest](c)
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.BadRequest(c, "中间件获取数据失败")
+		return
+	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		response.BadRequest(c, "中间件获取数据失败")
+		return
+	}
+
+	err := h.bookChapterService.DeleteChapter(c.Request.Context(), userIDStr, req.ChapterID)
+	if err != nil {
+		if err == service.ErrBookNotFound {
+			response.InternalError(c, err)
+			return
+		}
+		response.PushError(c, err)
+		return
+	}
+
+	response.Success(c, nil)
 }

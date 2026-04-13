@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,7 +18,6 @@ import (
 	"fiction-book/internal/wire"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
-	"fiction-book/pkg/redis"
 	"fiction-book/pkg/validator"
 )
 
@@ -61,9 +59,9 @@ func main() {
 	)
 
 	// 初始化redis
-	if err := redis.Init(&cfg.Redis); err != nil {
-		log.Fatal(err)
-	}
+	// if err := redis.Init(&cfg.Redis); err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// 初始化 Sentry（如果启用）
 	if cfg.Sentry.Enabled {

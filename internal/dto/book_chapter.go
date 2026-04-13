@@ -30,3 +30,7 @@ type UpdateBookChapterRequest struct {
 	Title   *string `json:"title" binding:""`
 	Content *string `json:"content" binding:""`
 }
+
+type DeleteBookChapterRequest struct {
+	ChapterID string `uri:"id" binding:"required"`
+}

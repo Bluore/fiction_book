@@ -1,0 +1,30 @@
+### 创建章节
+POST http://localhost:8080/api/v1/chapters/create
+Content-Type: application/json
+
+{
+  "book_id": "your_book_id",
+  "title": "测试章节",
+  "content": "这是一个测试章节的内容"
+}
+
+### 获取章节（游客）
+GET http://localhost:8080/api/v1/chapters/{chapter_id}/guest
+
+### 获取章节（认证）
+GET http://localhost:8080/api/v1/chapters/{chapter_id}
+Authorization: Bearer {your_token}
+
+### 更新章节
+PUT http://localhost:8080/api/v1/chapters/{chapter_id}
+Authorization: Bearer {your_token}
+Content-Type: application/json
+
+{
+  "title": "更新后的章节标题",
+  "content": "更新后的章节内容"
+}
+
+### 删除章节（需要管理员权限）
+DELETE http://localhost:8080/api/v1/chapters/{chapter_id}
+Authorization: Bearer {admin_token}

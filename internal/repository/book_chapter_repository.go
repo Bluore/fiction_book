@@ -94,7 +94,7 @@ func (b bookChapterRepository) CountByBookID(ctx context.Context, bookID string)
 }
 
 func (b bookChapterRepository) Delete(ctx context.Context, id string) error {
-	return b.db.WithContext(ctx).Where("id = ?", id).Delete(&model.BookChapter{}).Error
+	return b.db.WithContext(ctx).Unscoped().Where("id = ?", id).Delete(&model.BookChapter{}).Error
 }
 
 func (b bookChapterRepository) Update(ctx context.Context, id string, bookChapter *model.BookChapter) error {

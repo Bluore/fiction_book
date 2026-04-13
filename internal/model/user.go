@@ -16,6 +16,7 @@ type User struct {
 	Description  string         `json:"description" gorm:"type:text"`
 	ProfileImage string         `json:"profile_image" gorm:"type:varchar(255)"`
 	CoverImage   string         `json:"cover_image" gorm:"type:varchar(255)"`
+	Role         string         `json:"role" gorm:"type:varchar(20);default:'user'"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`

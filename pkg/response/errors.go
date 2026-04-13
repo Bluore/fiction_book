@@ -75,12 +75,8 @@ func getErrorList() *map[error]errorResponse {
 			Message: "参数错误",
 		},
 		service.ErrSufficientFunds: errorResponse{
-			Code:    4018,
-			Message: "你的余额不足了，充钱使你变得强大",
-		},
-		//handler.ErrGetParam: errorResponse{
-		//	Code:    4019,
-		//	Message: "中间件获取数据失败",
-		//},
+		Code:    4018,
+		Message: "你的余额不足了，充钱使你变得强大",
+	},
 	}
 }

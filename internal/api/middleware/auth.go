@@ -33,6 +33,7 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 		// 将用户信息存入上下文
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("userRole", claims.Role)
 		c.Next()
 	}
 }
@@ -56,19 +57,18 @@ func AdminOnly(allowedRoles ...string) gin.HandlerFunc {
 		
 		// 从上下文获取用户角色（需要在 Auth 中间件中设置）
 		role, exists := c.Get("userRole")
+		var userRole string
 		if !exists {
-			// 如果没有设置角色，默认拒绝访问
-			// 实际项目中可以从数据库/缓存查询用户角色
-			response.Forbidden(c, "permission denied: role not found")
-			c.Abort()
-			return
-		}
-		
-		userRole, ok := role.(string)
-		if !ok {
-			response.Forbidden(c, "permission denied: invalid role type")
-			c.Abort()
-			return
+			// 如果没有设置角色，默认为 user
+			userRole = "user"
+		} else {
+			var ok bool
+			userRole, ok = role.(string)
+			if !ok {
+				response.Forbidden(c, "permission denied: invalid role type")
+				c.Abort()
+				return
+			}
 		}
 		
 		// 检查用户角色是否在允许列表中

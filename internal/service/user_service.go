@@ -173,12 +173,18 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	}
 
 	// 创建用户
+	role := "user"
+	// 在 debug 模式下，如果用户名为 admin，则创建管理员账号
+	if s.cfg.Server.Mode == "debug" && req.Username == "admin" {
+		role = "admin"
+	}
 	user := &model.User{
 		ID:       uuid.New().String(),
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashedPassword, // pragma: allowlist secret
 		Age:      req.Age,
+		Role:     role,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -284,7 +290,7 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	}
 
 	// 生成 JWT token
-	token, err := jwt.GenerateToken(user.ID, user.Username, s.cfg.JWT.Secret, s.cfg.JWT.Expire) // pragma: allowlist secret
+	token, err := jwt.GenerateToken(user.ID, user.Username, user.Role, s.cfg.JWT.Secret, s.cfg.JWT.Expire) // pragma: allowlist secret
 	if err != nil {
 		return nil, err
 	}
