@@ -110,5 +110,11 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			chapterPurchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedChapterRequest{}), h.GetUserPurchasedChapter)
 			chapterPurchases.GET("/:chapter_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedChapterRequest{}), h.CheckUserPurchasedChapter)
 		}
+
+		bookshelf := v1.Group("/bookshelf")
+		{
+			bookshelf.GET("/:user_id", middleware.Auth(cfg), middleware.Validation(&dto.ListUserBookshelfRequest{}), h.ListUserBookshelf)
+			bookshelf.POST("/add", middleware.Auth(cfg), middleware.Validation(&dto.CreateUserBookshelfRequest{}), h.CreateUserBookshelf)
+		}
 	}
 }
