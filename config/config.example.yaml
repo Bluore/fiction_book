@@ -9,9 +9,9 @@ database:
   driver: mysql
   host: localhost
   port: 3306
-  database: fictbook
-  username: root
-  password: Gzh815218 # pragma: allowlist secret - 生产环境建议使用环境变量 ${DB_PASSWORD}
+  database: database
+  username: username
+  password: password # pragma: allowlist secret - 生产环境建议使用环境变量 ${DB_PASSWORD}
   max_open_conns: 25
   max_idle_conns: 10
   conn_max_lifetime: 300 # 秒

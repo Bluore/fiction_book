@@ -48,10 +48,9 @@ func (b bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 		return nil, ErrBookNotFound
 	}
 
-	// 为了测试方便，暂时移除权限检查
-	// if book.OwnerID != userID {
-	// 	return nil, ErrPermission
-	// }
+	if book.OwnerID != userID {
+		return nil, ErrPermission
+	}
 
 	bookInfo, err := b.bookChapterRepo.AddByBookID(ctx, req.BookID, *req.Title, *req.Content)
 	if err != nil {

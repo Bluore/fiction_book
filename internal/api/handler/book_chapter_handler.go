@@ -6,6 +6,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
+	"fiction-book/pkg/transmit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,12 +26,13 @@ import (
 // @Router /api/v1/chapters/create [post]
 func (h *Handler) AddBookChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.CreatBookChapterRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
 
-	// 为了测试方便，这里使用一个默认的用户ID
-	// 在实际生产环境中，应该根据认证信息获取用户ID
-	defaultUserID := "test_user_id"
-
-	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), defaultUserID, req)
+	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrBookNotFound {
 			response.PushError(c, err)

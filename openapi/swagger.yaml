@@ -769,6 +769,52 @@ paths:
       tags:
       - 消费管理
   /api/v1/chapters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定章节(认证，需要管理员权限)
+      parameters:
+      - description: 章节id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 禁止访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4001":
+          description: 书籍未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4010":
+          description: 章节未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 删除章节 (认证)
+      tags:
+      - 章节管理
     get:
       consumes:
       - application/json
