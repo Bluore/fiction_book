@@ -18,6 +18,7 @@ var ServiceSet = wire.NewSet(
 	ProvideUserPurchasedBookService,
 	ProvideUserPurchasedChapterService,
 	ProvideUserBookshelfService,
+	ProvideUserHistoryService,
 )
 
 // ProvideUserService 提供用户服务
@@ -113,4 +114,15 @@ func ProvideUserBookshelfService(
 		db,
 		cfg,
 	)
+}
+
+// ProvideUserHistoryService 提供用户访问书籍历史服务
+func ProvideUserHistoryService(
+	userRepo repository.UserRepository,
+	userHistoryRepo repository.UserHistoryRepository,
+	bookRepo repository.BookRepository,
+	db *gorm.DB,
+	cfg *config.Config,
+) service.UserHistoryService {
+	return service.NewUserHistoryService(userRepo, userHistoryRepo, bookRepo, db, cfg)
 }

@@ -28,6 +28,7 @@ type Handler struct {
 	userPurchasedBookService    service.UserPurchasedBookService
 	userPurchasedChapterService service.UserPurchasedChapterService
 	userBookshelfService        service.UserBookshelfService
+	userHistoryService          service.UserHistoryService
 	cfg                         *config.Config
 }
 
@@ -40,6 +41,7 @@ func NewHandler(
 	userPurchasedBookService service.UserPurchasedBookService,
 	userPurchasedChapterService service.UserPurchasedChapterService,
 	userBookshelfService service.UserBookshelfService,
+	userHistoryService service.UserHistoryService,
 	cfg *config.Config,
 ) *Handler {
 	return &Handler{
@@ -50,6 +52,7 @@ func NewHandler(
 		userPurchasedBookService:    userPurchasedBookService,
 		userPurchasedChapterService: userPurchasedChapterService,
 		userBookshelfService:        userBookshelfService,
+		userHistoryService:          userHistoryService,
 		cfg:                         cfg,
 	}
 }

@@ -22,6 +22,7 @@ func ProvideHandler(
 	userPurchasedBookService service.UserPurchasedBookService,
 	userPurchasedChapterService service.UserPurchasedChapterService,
 	userBookshelfService service.UserBookshelfService,
+	userHistoryService service.UserHistoryService,
 	cfg *config.Config,
 ) *handler.Handler {
 	return handler.NewHandler(
@@ -32,6 +33,7 @@ func ProvideHandler(
 		userPurchasedBookService,
 		userPurchasedChapterService,
 		userBookshelfService,
+		userHistoryService,
 		cfg,
 	)
 }
