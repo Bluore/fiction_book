@@ -10,8 +10,8 @@ type UserHistoryResponse struct {
 }
 
 type ListUserHistoryRequest struct {
-	UserID string `url:"user_id"`
-	PageListResponse
+	UserID string `uri:"user_id"`
+	PageListRequest
 }
 
 type ListUserHistoryResponse struct {

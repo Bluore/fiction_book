@@ -39,6 +39,15 @@ func NewUserHistoryService(
 }
 
 func (s userHistoryService) GetUserHistoryList(ctx context.Context, req *dto.ListUserHistoryRequest) (*dto.ListUserHistoryResponse, error) {
+	// 先判断是否存在该用户
+	user, err := s.userRepo.GetByID(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
 	books, err := s.userHistoryRepo.ListByUserID(ctx, s.db, req.UserID, req.Page, req.Size)
 	if err != nil {
 		return nil, err
