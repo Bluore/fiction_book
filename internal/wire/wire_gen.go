@@ -38,7 +38,9 @@ func InitializeApp() (*App, error) {
 	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, db, config)
 	userHistoryRepository := ProvideUserHistoryRepository(db)
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
-	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, config)
+	orderRepository := ProvideOrderRepository(db)
+	orderService := ProvideOrderService(userRepository, orderRepository, db, config)
+	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, config)
 	app := NewApp(handler)
 	return app, nil
 }
