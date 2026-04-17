@@ -82,5 +82,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4020,
 			Message: "缺失对应权限",
 		},
+		service.ErrOrderNotFound: errorResponse{
+			Code:    4021,
+			Message: "订单没找到",
+		},
 	}
 }

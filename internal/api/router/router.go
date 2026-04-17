@@ -95,23 +95,27 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			buys.POST("/book", middleware.Auth(cfg), middleware.Validation(&dto.BuyBookRequest{}), h.BuyBook)
 		}
 
+		// 资产管理
 		assets := v1.Group("/assets")
 		{
 			assets.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserAssetRequest{}), h.GetUserAsset)
 		}
 
+		// 书籍购买管理
 		purchases := v1.Group("/purchases/book")
 		{
 			purchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedBookRequest{}), h.GetUserPurchasedBook)
 			purchases.GET("/:book_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedBookRequest{}), h.CheckUserPurchasedBook)
 		}
 
+		// 章节购买管理
 		chapterPurchases := v1.Group("/purchases/chapters")
 		{
 			chapterPurchases.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserPurchasedChapterRequest{}), h.GetUserPurchasedChapter)
 			chapterPurchases.GET("/:chapter_id", middleware.Auth(cfg), middleware.Validation(&dto.CheckUserPurchasedChapterRequest{}), h.CheckUserPurchasedChapter)
 		}
 
+		// 书架管理
 		bookshelf := v1.Group("/bookshelf")
 		{
 			bookshelf.GET("/:user_id", middleware.Auth(cfg), middleware.Validation(&dto.ListUserBookshelfRequest{}), h.ListUserBookshelf)
@@ -121,6 +125,14 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		history := v1.Group("/history")
 		{
 			history.GET("/:user_id", middleware.Auth(cfg), middleware.Validation(&dto.ListUserHistoryRequest{}), h.ListUserHistory)
+		}
+
+		// 订单管理
+		orders := v1.Group("/orders")
+		{
+			orders.GET("/:id", middleware.Auth(cfg), middleware.Validation(&dto.GetOrderRequest{}), h.GetOrderByID)
+			orders.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetOrderListRequest{}), h.GetOrderList)
+			orders.POST("/create/gold", middleware.Auth(cfg), middleware.Validation(&dto.CreateOrderRequest{}), h.CreateOrder)
 		}
 	}
 }
