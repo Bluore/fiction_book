@@ -69,7 +69,21 @@ func (s userBookshelfService) GetUserBookshelfList(ctx context.Context, req *dto
 }
 
 func (s userBookshelfService) CreateUserBookshelf(ctx context.Context, userID string, req *dto.CreateUserBookshelfRequest) error {
-	return s.userBookshelfRepo.CreateByUserIDAndBookID(ctx, s.db, userID, req.BookID)
+	err := s.db.Transaction(func(db *gorm.DB) error {
+		_, err := s.bookRepo.IncreaseOfBookShelf(ctx, db, req.BookID)
+		if err != nil {
+			return err
+		}
+		err = s.userBookshelfRepo.CreateByUserIDAndBookID(ctx, s.db, userID, req.BookID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func toUserBookshelfResponse(_ *config.Config, in *model.UserBookshelf) *dto.UserBookshelfResponse {

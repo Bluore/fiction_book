@@ -19,6 +19,8 @@ type BookRepository interface {
 	Update(ctx context.Context, model *model.Book) error
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context) (int, error)
+	IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
+	ReduceOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 }
 
 type bookRepository struct {
@@ -134,4 +136,35 @@ func (r *bookRepository) Count(ctx context.Context) (int, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.Book{}).Count(&count).Error
 	return int(count), err
+}
+
+func (r *bookRepository) IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error) {
+	var book model.Book
+	err := db.WithContext(ctx).Where("id = ?", shelfID).First(&book).Error
+	if err != nil {
+		//if err == gorm.ErrRecordNotFound {
+		//	return 0, nil
+		//}
+		return 0, err
+	}
+	book.BookshelfAmount += 1
+	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).Update("bookshelf_amount", book.BookshelfAmount).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(book.BookshelfAmount), nil
+}
+
+func (r *bookRepository) ReduceOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error) {
+	var book model.Book
+	err := db.WithContext(ctx).Where("id = ?", shelfID).First(&book).Error
+	if err != nil {
+		return 0, err
+	}
+	book.BookshelfAmount -= 1
+	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).Update("bookshelf_amount", book.BookshelfAmount).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(book.BookshelfAmount), nil
 }
