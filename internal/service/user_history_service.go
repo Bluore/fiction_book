@@ -40,7 +40,7 @@ func NewUserHistoryService(
 
 func (s userHistoryService) GetUserHistoryList(ctx context.Context, req *dto.ListUserHistoryRequest) (*dto.ListUserHistoryResponse, error) {
 	// 先判断是否存在该用户
-	user, err := s.userRepo.GetByID(ctx, req.UserID)
+	user, err := s.userRepo.GetByID(ctx, s.db, req.UserID)
 	if err != nil {
 		return nil, err
 	}

@@ -80,7 +80,7 @@ func NewUserService(
 
 func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.UpdateUserEmailRequest) (*dto.UserResponse, error) {
 	// 获取用户信息
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 		return nil, err
 	}
 
-	exist, err := s.userRepo.GetByEmail(ctx, req.Email)
+	exist, err := s.userRepo.GetByEmail(ctx, s.db, req.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 	}
 
 	user.Email = req.Email
-	err = s.userRepo.Update(ctx, user)
+	err = s.userRepo.Update(ctx, s.db, user)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 
 func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.UpdateUserPasswordRequest) (*dto.UserResponse, error) {
 	// 获取用户信息
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.Up
 	}
 	user.Password = hashPwd
 
-	err = s.userRepo.Update(ctx, user)
+	err = s.userRepo.Update(ctx, s.db, user)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	}
 
 	// 检查用户名是否已存在
-	existingUser, err := s.userRepo.GetByUsername(ctx, req.Username)
+	existingUser, err := s.userRepo.GetByUsername(ctx, s.db, req.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	}
 
 	// 检查邮箱是否已存在
-	existingUser, err = s.userRepo.GetByEmail(ctx, req.Email)
+	existingUser, err = s.userRepo.GetByEmail(ctx, s.db, req.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 		Role:     role,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
+	if err := s.userRepo.Create(ctx, s.db, user); err != nil {
 		return nil, err
 	}
 
@@ -226,7 +226,7 @@ func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer s
 }
 
 func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 }
 
 func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +256,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 		user.Description = *req.Description
 	}
 
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
 	}
 
@@ -264,7 +264,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 }
 
 func (s *userService) Delete(ctx context.Context, id string) error {
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return err
 	}
@@ -272,11 +272,11 @@ func (s *userService) Delete(ctx context.Context, id string) error {
 		return ErrUserNotFound
 	}
 
-	return s.userRepo.Delete(ctx, id)
+	return s.userRepo.Delete(ctx, s.db, id)
 }
 
 func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
-	user, err := s.userRepo.GetByUsername(ctx, req.Username)
+	user, err := s.userRepo.GetByUsername(ctx, s.db, req.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +304,7 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 
 func (s *userService) List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error) {
 	offset := (page - 1) * pageSize
-	users, err := s.userRepo.List(ctx, offset, pageSize)
+	users, err := s.userRepo.List(ctx, s.db, offset, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +395,7 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 
 func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error) {
 	// 获取信息
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userRepo.GetByID(ctx, s.db, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +428,7 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 
 	// 更新数据库
 	user.ProfileImage = uploadOut.FilePath
-	err = s.userRepo.Update(ctx, user)
+	err = s.userRepo.Update(ctx, s.db, user)
 	if err != nil {
 		return nil, err
 	}

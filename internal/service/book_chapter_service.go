@@ -7,6 +7,8 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -27,14 +29,22 @@ type bookChapterService struct {
 	userRepo        repository.UserRepository
 	bookRepo        repository.BookRepository
 	bookChapterRepo repository.BookChapterRepository
+	db              *gorm.DB
 	cfg             *config.Config
 }
 
-func NewBookChapterService(userRepo repository.UserRepository, bookRepo repository.BookRepository, bookChapterRepo repository.BookChapterRepository, cfg *config.Config) BookChapterService {
+func NewBookChapterService(
+	userRepo repository.UserRepository,
+	bookRepo repository.BookRepository,
+	bookChapterRepo repository.BookChapterRepository,
+	db *gorm.DB,
+	cfg *config.Config,
+) BookChapterService {
 	return &bookChapterService{
 		userRepo:        userRepo,
 		bookRepo:        bookRepo,
 		bookChapterRepo: bookChapterRepo,
+		db:              db,
 		cfg:             cfg,
 	}
 }
@@ -103,7 +113,7 @@ func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 }
 
 func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error) {
-	user, err := b.userRepo.GetByID(ctx, userID)
+	user, err := b.userRepo.GetByID(ctx, b.db, userID)
 	if err != nil {
 		return nil, err
 	}
