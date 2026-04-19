@@ -69,6 +69,7 @@ const (
 	SortByBookshelfAmount BookSortKey = "bookshelf_amount"
 	SortByNewUpdate       BookSortKey = "new_update"
 	SortByNewPush         BookSortKey = "new_push"
+	SortByThermal         BookSortKey = "thermal"
 )
 
 // SortOrder 排序方向
@@ -122,4 +123,8 @@ type UploadBookCoverRequest struct {
 type UploadBookCoverResponse struct {
 	BookID string `json:"book_id"`
 	Url    string `json:"url"`
+}
+
+type GetBookListByThermalRequest struct {
+	PageListRequest
 }

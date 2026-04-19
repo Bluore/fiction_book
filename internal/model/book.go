@@ -18,6 +18,7 @@ type Book struct {
 	BrowseAmount    uint64         `json:"browse_amount" gorm:"type:integer;not null;default:0"`
 	BookshelfAmount uint64         `json:"bookshelf_amount" gorm:"type:integer;not null;default:0"`
 	PushedAt        time.Time      `json:"pushed_at" gorm:"type:timestamp;not null"`
+	ThermalValue    uint64         `json:"thermal_value" gorm:"type:integer;not null;default:0"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
 	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
@@ -26,4 +27,8 @@ type Book struct {
 // TableName 指定表名
 func (Book) TableName() string {
 	return "book"
+}
+
+func (m *Book) CalculateThermal() {
+	m.ThermalValue = m.BookshelfAmount*10 + m.BrowseAmount
 }

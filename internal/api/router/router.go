@@ -118,7 +118,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		// 书架管理
 		bookshelf := v1.Group("/bookshelf")
 		{
-			bookshelf.GET("/:user_id", middleware.Auth(cfg), middleware.Validation(&dto.ListUserBookshelfRequest{}), h.ListUserBookshelf)
+			bookshelf.GET("/:user_id", middleware.Validation(&dto.ListUserBookshelfRequest{}), h.ListUserBookshelf)
 			bookshelf.POST("/add", middleware.Auth(cfg), middleware.Validation(&dto.CreateUserBookshelfRequest{}), h.CreateUserBookshelf)
 		}
 		//历史管理

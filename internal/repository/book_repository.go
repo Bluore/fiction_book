@@ -62,6 +62,7 @@ func MapSortKeyToColumn(sortKey dto.BookSortKey, order dto.SortOrder) string {
 		dto.SortByBookshelfAmount: "bookshelf_amount",
 		dto.SortByNewUpdate:       "updated_at",
 		dto.SortByNewPush:         "pushed_at",
+		dto.SortByThermal:         "thermal_value",
 	}
 	col, ok := columnMap[sortKey]
 	if !ok {
@@ -161,7 +162,10 @@ func (r *bookRepository) IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, s
 		return 0, err
 	}
 	book.BookshelfAmount += 1
-	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).Update("bookshelf_amount", book.BookshelfAmount).Error
+	book.CalculateThermal()
+	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).
+		Update("bookshelf_amount", book.BookshelfAmount).
+		Update("thermal_value", book.ThermalValue).Error
 	if err != nil {
 		return 0, err
 	}
@@ -175,7 +179,10 @@ func (r *bookRepository) ReduceOfBookShelf(ctx context.Context, db *gorm.DB, she
 		return 0, err
 	}
 	book.BookshelfAmount -= 1
-	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).Update("bookshelf_amount", book.BookshelfAmount).Error
+	book.CalculateThermal()
+	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).
+		Update("bookshelf_amount", book.BookshelfAmount).
+		Update("thermal_value", book.ThermalValue).Error
 	if err != nil {
 		return 0, err
 	}
