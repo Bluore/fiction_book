@@ -154,14 +154,15 @@ func (s *bookService) List(ctx context.Context, page int, size int) (*dto.BookLi
 	return bookListResponse, nil
 }
 
-// ListBooks 根据1排行列举书籍
+// ListBooks 根据排行列举书籍
 func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error) {
-	req.ToStandard()
 	books, err := s.bookRepo.ListWithOption(ctx, repository.BookListOption{
-		Page:      req.Page,
-		Size:      req.Size,
-		SortKey:   req.SortKey,
-		SortOrder: req.SortOrder,
+		Page:          req.Page,
+		Size:          req.Size,
+		SortKey:       req.SortKey,
+		SortOrder:     req.SortOrder,
+		PushStartTime: req.PushStartTime,
+		PushEndTime:   req.PushEndTime,
 	})
 	if err != nil {
 		return nil, err
@@ -175,6 +176,9 @@ func (s *bookService) ListBooks(ctx context.Context, req *dto.ListBooksRequest) 
 	var bookResponses []*dto.BookResponse
 	for _, book := range books {
 		bookResponses = append(bookResponses, toBookResponse(s.cfg, book))
+	}
+	if len(bookResponses) == 0 {
+		bookResponses = make([]*dto.BookResponse, 0)
 	}
 
 	return &dto.BookListResponse{

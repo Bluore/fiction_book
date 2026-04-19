@@ -86,12 +86,15 @@ func (h *Handler) GetBook(c *gin.Context) {
 // @Param size query int false "每页数量" default(10)
 // @Param sort_key query string false "排序字段 (browse_amount|bookshelf_amount|new_update|new_push)" default(browse_amount)
 // @Param sort_order query string false "排序方向 (asc|desc)" default(desc)
+// @Param push_start_time query string false "书籍创建开始时间  (RFC格式)"
+// @Param push_end_time query string false "书籍创建结束时间"
 // @Success 200 {object} response.Response{data=dto.BookListResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/books/list [get]
 func (h *Handler) BookList(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.ListBooksRequest](c).ToStandard()
+	req.ToStandard()
 
 	booklist, err := h.bookService.ListBooks(c.Request.Context(), req)
 	if err != nil {

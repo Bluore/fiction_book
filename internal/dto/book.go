@@ -81,10 +81,12 @@ const (
 
 // ListBooksRequest 带排序的分页请求
 type ListBooksRequest struct {
-	Page      int         `form:"page"`
-	Size      int         `form:"size"`
-	SortKey   BookSortKey `form:"sort_key"`
-	SortOrder SortOrder   `form:"sort_order"`
+	Page          int         `form:"page"`
+	Size          int         `form:"size"`
+	SortKey       BookSortKey `form:"sort_key"`
+	SortOrder     SortOrder   `form:"sort_order"`
+	PushStartTime time.Time   `form:"push_start_time"`
+	PushEndTime   time.Time   `form:"push_end_time"`
 }
 
 func (p *ListBooksRequest) ToStandard() *ListBooksRequest {

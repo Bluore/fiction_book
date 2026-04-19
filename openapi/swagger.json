@@ -308,6 +308,18 @@
                         "description": "排序方向 (asc|desc)",
                         "name": "sort_order",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "书籍创建开始时间  (RFC格式)",
+                        "name": "push_start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "书籍创建结束时间",
+                        "name": "push_end_time",
+                        "in": "query"
                     }
                 ],
                 "responses": {

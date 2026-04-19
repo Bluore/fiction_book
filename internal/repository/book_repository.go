@@ -4,6 +4,7 @@ import (
 	"context"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -46,10 +47,12 @@ func (r *bookRepository) GetByID(ctx context.Context, id string) (*model.Book, e
 
 // BookListOption 通用列表查询选项
 type BookListOption struct {
-	Page      int
-	Size      int
-	SortKey   dto.BookSortKey
-	SortOrder dto.SortOrder
+	Page          int
+	Size          int
+	SortKey       dto.BookSortKey
+	SortOrder     dto.SortOrder
+	PushStartTime time.Time
+	PushEndTime   time.Time
 }
 
 // MapSortKeyToColumn 将 SortKey 映射为 GORM Order 字符串
@@ -106,11 +109,21 @@ func (r *bookRepository) List(ctx context.Context, page int, size int) ([]*model
 func (r *bookRepository) ListWithOption(ctx context.Context, opt BookListOption) ([]*model.Book, error) {
 	var books []*model.Book
 	orderClause := MapSortKeyToColumn(opt.SortKey, opt.SortOrder)
-	err := r.db.WithContext(ctx).
+	tx := r.db.WithContext(ctx).
 		Order(orderClause).
 		Limit(opt.Size).
-		Offset((opt.Page - 1) * opt.Size).
-		Find(&books).Error
+		Offset((opt.Page - 1) * opt.Size)
+
+	if opt.PushStartTime != (time.Time{}) {
+		tx = tx.Where("created_at >= ?", opt.PushStartTime)
+	}
+
+	if opt.PushEndTime != (time.Time{}) {
+		tx = tx.Where("created_at <= ?", opt.PushEndTime)
+	}
+
+	err := tx.Find(&books).Error
+
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
