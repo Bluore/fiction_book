@@ -19,7 +19,7 @@ import (
 	"fiction-book/internal/wire"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
-	"fiction-book/pkg/redis"
+	"fiction-book/pkg/redisclient"
 	"fiction-book/pkg/validator"
 )
 
@@ -34,7 +34,7 @@ import (
 // @license.name GNU
 // @license.url https://opensource.org/license/gpl-3.0
 
-// @host localhost:8080
+// @host localhost:9929
 // @BasePath /
 
 // @securityDefinitions.apikey Bearer
@@ -61,7 +61,7 @@ func main() {
 	)
 
 	// 初始化redis
-	if err := redis.Init(&cfg.Redis); err != nil {
+	if err := redisclient.Init(&cfg.Redis); err != nil {
 		log.Fatal(err)
 	}
 

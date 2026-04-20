@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
+	"fiction-book/pkg/redisclient"
 	"fmt"
 	"image"
 	"io"
@@ -20,7 +21,6 @@ import (
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/email"
 	"fiction-book/pkg/jwt"
-	"fiction-book/pkg/redis"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -205,7 +205,7 @@ func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer s
 	}
 
 	// 验证码是否正确
-	rVerify, err := redis.Get(
+	rVerify, err := redisclient.Get(
 		ctx,
 		fmt.Sprintf("email:verify:%s", emailVer),
 	)
@@ -215,7 +215,7 @@ func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer s
 	if pwdVer != rVerify {
 		return ErrVerification
 	}
-	err = redis.Delete(
+	err = redisclient.Delete(
 		ctx,
 		fmt.Sprintf("email:verify:%s", emailVer),
 	)
@@ -369,7 +369,7 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 	}
 
 	// redis添加记录
-	err = redis.SetWithExpiration(
+	err = redisclient.SetWithExpiration(
 		ctx,
 		fmt.Sprintf("email:verify:%s",
 			receiver),

@@ -6,7 +6,11 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/constant"
+	"fiction-book/pkg/redisclient"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -78,6 +82,40 @@ func (s userBookshelfService) CreateUserBookshelf(ctx context.Context, userID st
 		if err != nil {
 			return err
 		}
+
+		// redis中增加热力值
+		_, err = redisclient.Get(ctx, constant.RedisIsUserBookshelf5Min(userID))
+		if err != nil && err != redis.Nil {
+			return err
+		}
+		if err == redis.Nil {
+			client, err := redisclient.GetClient()
+			if err != nil {
+				return err
+			}
+			// 热力值限流
+			client.Set(ctx, constant.RedisIsUserBookshelf5Min(userID), true, time.Duration(5*time.Minute))
+
+			// 如果排行榜没有字段则创建书籍
+			bookRankErr := client.Get(ctx, constant.RedisBookshelfThermalDaily(time.Now())).Err()
+			if bookRankErr == redis.Nil {
+				bookshelfArgs := redis.Z{Score: 0, Member: userID}
+				client.ZAdd(ctx, constant.RedisBookshelfThermalDaily(time.Now()), bookshelfArgs)
+			}
+
+			// 排行榜增加权值
+			client.ZIncrBy(ctx, constant.RedisBookshelfThermalDaily(time.Now()), 10, userID)
+
+			// 如果没有过期时间则设置过期时间
+			expRes := client.TTL(ctx, constant.RedisBookshelfThermalDaily(time.Now()))
+			if expRes.Err() != nil {
+				return expRes.Err()
+			}
+			if expRes.Val() == -1 {
+				client.Expire(ctx, constant.RedisBookshelfThermalDaily(time.Now()), time.Duration(3*24*time.Hour))
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
