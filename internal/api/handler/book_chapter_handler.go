@@ -17,6 +17,7 @@ import (
 // @Tags 章节管理
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param request body dto.CreatBookChapterRequest true "创建章节请求"
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"

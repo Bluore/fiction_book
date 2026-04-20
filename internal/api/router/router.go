@@ -82,7 +82,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		// 书籍章节模块
 		bookChapters := v1.Group("/chapters")
 		{
-			bookChapters.POST("/create", middleware.Validation(&dto.CreatBookChapterRequest{}), h.AddBookChapter)
+			bookChapters.POST("/create", middleware.Auth(cfg), middleware.Validation(&dto.CreatBookChapterRequest{}), h.AddBookChapter)
 			bookChapters.GET("/:id/guest", middleware.Validation(&dto.GetBookChapterRequest{}), h.GuestGetBookChapter)
 			bookChapters.GET("/:id", middleware.Auth(cfg), middleware.Validation(&dto.GetBookChapterRequest{}), h.GetBookChapter)
 			bookChapters.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateBookChapterRequest{}), h.UpdateBookChapter)

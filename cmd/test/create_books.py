@@ -1411,7 +1411,7 @@ def main():
 
         # 从响应中获取book_id
         book_id = None
-        if book_response.get("code") == 0 and book_response.get("data"):
+        if book_response.get("code") == 200 and book_response.get("data"):
             book_id = book_response["data"].get("id")
 
         if not book_id:

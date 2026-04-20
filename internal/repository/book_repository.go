@@ -22,6 +22,7 @@ type BookRepository interface {
 	Count(ctx context.Context) (int, error)
 	IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 	ReduceOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
+	IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 }
 
 type bookRepository struct {
@@ -182,6 +183,23 @@ func (r *bookRepository) ReduceOfBookShelf(ctx context.Context, db *gorm.DB, she
 	book.CalculateThermal()
 	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).
 		Update("bookshelf_amount", book.BookshelfAmount).
+		Update("thermal_value", book.ThermalValue).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(book.BookshelfAmount), nil
+}
+
+func (r *bookRepository) IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB, shelfID string) (int, error) {
+	var book model.Book
+	err := db.WithContext(ctx).Where("id = ?", shelfID).First(&book).Error
+	if err != nil {
+		return 0, err
+	}
+	book.BrowseAmount += 1
+	book.CalculateThermal()
+	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).
+		Update("browse_amount", book.BookshelfAmount).
 		Update("thermal_value", book.ThermalValue).Error
 	if err != nil {
 		return 0, err

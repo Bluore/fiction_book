@@ -7,7 +7,13 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/constant"
+	"fiction-book/pkg/logger"
+	"fiction-book/pkg/redisclient"
+	"fmt"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -144,7 +150,63 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookI
 		return nil, ErrVIPLevel
 	}
 
+	// 数据库添加数据
+	_, err = b.bookRepo.IncreaseOfBrowseAmount(ctx, b.db, book.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 向redis里面添加热力值
+	err = b.addThermalDaily(ctx, userID, bookID)
+	if err != nil {
+		logger.Error(fmt.Sprintf("addThermalDaily error: %v", err))
+	}
+
 	return toBookChapterResponse(b.cfg, bookChapter, book), nil
+}
+
+// 向redis里面添加热力值
+func (b bookChapterService) addThermalDaily(ctx context.Context, userID string, bookID string) error {
+	client, err := redisclient.GetClient()
+	if err != nil {
+		logger.Error(fmt.Sprint("redis client is nil:%v", err))
+		return err
+	}
+	getBrowseAmountErr := client.Get(ctx, constant.RedisIsUserBrowse5Min(userID)).Err()
+	if getBrowseAmountErr != nil && getBrowseAmountErr != redis.Nil {
+		return getBrowseAmountErr
+	}
+	if getBrowseAmountErr == redis.Nil {
+		// 热力值限流
+		client.Set(ctx, constant.RedisIsUserBrowse5Min(userID), true, time.Duration(5*time.Minute))
+
+		// 如果排行榜没有字段则创建书籍
+		bookRankErr := client.ZScore(ctx, constant.RedisBookThermalDaily(time.Now()), bookID).Err()
+		if bookRankErr != nil && bookRankErr != redis.Nil {
+			return bookRankErr
+		}
+		if bookRankErr == redis.Nil {
+			bookshelfArgs := redis.Z{Score: 0, Member: bookID}
+			client.ZAdd(ctx, constant.RedisBookThermalDaily(time.Now()), bookshelfArgs)
+		}
+
+		// 排行榜增加权值
+		incrBookScoreErr := client.ZIncrBy(ctx, constant.RedisBookThermalDaily(time.Now()), 1, bookID).Err()
+		if incrBookScoreErr != nil {
+			return incrBookScoreErr
+		}
+
+		// 如果没有过期时间则设置过期时间
+		expRes := client.TTL(ctx, constant.RedisBookThermalDaily(time.Now()))
+		if expRes.Err() != nil {
+			logger.Error(fmt.Sprintf("redis:set book thermal daily ttl fail:%v", expRes.Err()))
+			return expRes.Err()
+		}
+		if expRes.Val() == -1 {
+			client.Expire(ctx, constant.RedisBookThermalDaily(time.Now()), time.Duration(3*24*time.Hour))
+		}
+	}
+	return nil
 }
 
 func VIPStrToLevle(vipStr string) int {
