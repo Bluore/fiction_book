@@ -774,6 +774,11 @@ const docTemplate = `{
         },
         "/api/v1/chapters/create": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "为书籍创建一章章节",
                 "consumes": [
                     "application/json"
@@ -829,6 +834,57 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/chapters/thermal/daily": {
+            "get": {
+                "description": "榜单每5分钟刷新，缓存优化",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "书籍管理"
+                ],
+                "summary": "获取每日热度榜单",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "封面URL",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }

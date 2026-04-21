@@ -1058,9 +1058,45 @@ paths:
           description: 书籍未找到
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
       summary: 创建书籍章节
       tags:
       - 章节管理
+  /api/v1/chapters/thermal/daily:
+    get:
+      consumes:
+      - application/json
+      description: 榜单每5分钟刷新，缓存优化
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 封面URL
+          schema:
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取每日热度榜单
+      tags:
+      - 书籍管理
   /api/v1/history/{user_id}:
     get:
       consumes:

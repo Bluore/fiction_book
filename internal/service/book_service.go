@@ -7,11 +7,15 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/constant"
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
+	"fiction-book/pkg/redisclient"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -31,6 +35,7 @@ type BookService interface {
 	ListBooks(ctx context.Context, req *dto.ListBooksRequest) (*dto.BookListResponse, error)
 	BuyBook(ctx context.Context, userID string, bookID string, req *dto.BuyBookRequest) (*dto.GetUserPurchasedBookResponse, error)
 	UploadBookCover(ctx context.Context, userID string, req *dto.UploadBookCoverRequest) (*dto.UploadBookCoverResponse, error)
+	GetBookListByThermalDaily(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -311,4 +316,67 @@ func (s *bookService) UploadBookCover(ctx context.Context, userID string, req *d
 		BookID: book.ID,
 		Url:    fmt.Sprintf("%s%s", s.cfg.Server.Website, uploadOut.FilePath),
 	}, nil
+}
+
+func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error) {
+	bookListResponse := make([]*dto.BookResponse, 0)
+	pageResponse := dto.PageListResponse{
+		Page:  req.Page,
+		Size:  req.Size,
+		Count: -1,
+	}
+	res := &dto.BookListResponse{
+		Books:            bookListResponse,
+		PageListResponse: pageResponse,
+	}
+
+	client, err := redisclient.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	rankOffsetStart := int64((req.Page - 1) * req.Size)
+	rankOffsetEnd := int64(req.Page*req.Size - 1)
+
+	// 当前页数的排行榜缓存失效时
+	var rankRes *redis.StringSliceCmd
+	rankOffsetExist := client.Exists(ctx, constant.RedisBookThermalDailyTotal).Val()
+	if rankOffsetExist == 1 {
+		rankRes = client.ZRange(ctx, constant.RedisBookThermalDailyTotal, rankOffsetStart, rankOffsetEnd)
+	} else {
+		// 当整合排行榜缓存失效时
+		unionStore := &redis.ZStore{
+			Keys: []string{
+				constant.RedisBookThermalDaily(time.Now()),
+				constant.RedisBookThermalDaily(time.Now().Add(-24 * time.Hour)),
+			},
+		}
+		unionStoreRes := client.ZUnionStore(ctx, constant.RedisBookThermalDailyTotal, unionStore)
+		if unionStoreRes.Err() != nil {
+			return nil, unionStoreRes.Err()
+		}
+		rankRes = client.ZRange(ctx, constant.RedisBookThermalDailyTotal, rankOffsetStart, rankOffsetEnd)
+
+		client.Expire(ctx, constant.RedisBookThermalDailyTotal, 5*time.Minute)
+	}
+	if rankRes.Err() != nil {
+		return nil, rankRes.Err()
+	}
+	if len(rankRes.Val()) == 0 {
+		return res, nil
+	}
+
+	for _, bookRecord := range rankRes.Val() {
+		book, err := s.bookRepo.GetByID(ctx, bookRecord)
+		if err != nil {
+			return nil, err
+		}
+		if book == nil {
+			logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
+			continue
+		}
+		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
+	}
+	res.Books = bookListResponse
+
+	return res, nil
 }

@@ -26,7 +26,7 @@ var (
 type BookChapterService interface {
 	AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
 	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
-	GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error)
+	GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error)
 	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
 	DeleteChapter(ctx context.Context, userID string, chapterID string) error
 }
@@ -118,7 +118,7 @@ func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 	return toBookChapterResponse(b.cfg, bookChapter, book), nil
 }
 
-func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookID string) (*dto.BookChapterResponse, error) {
+func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error) {
 	user, err := b.userRepo.GetByID(ctx, b.db, userID)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookI
 		return nil, ErrUserNotFound
 	}
 
-	bookChapter, err := b.bookChapterRepo.GetByID(ctx, bookID)
+	bookChapter, err := b.bookChapterRepo.GetByID(ctx, bookChapterID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookI
 	}
 
 	// 向redis里面添加热力值
-	err = b.addThermalDaily(ctx, userID, bookID)
+	err = b.addThermalDaily(ctx, userID, bookChapter.BookID)
 	if err != nil {
 		logger.Error(fmt.Sprintf("addThermalDaily error: %v", err))
 	}

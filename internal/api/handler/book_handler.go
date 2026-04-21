@@ -170,3 +170,27 @@ func (h *Handler) UploadBookCoverImage(c *gin.Context) {
 	}
 	response.Success(c, res)
 }
+
+// GetBookListThermalDaily 获取每日热度榜单
+// @Summary 获取每日热度榜单
+// @Description 榜单每5分钟刷新，缓存优化
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param size query int false "每页数量" default(10)
+// @Success 200 {object} dto.UploadBookCoverResponse "封面URL"
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/chapters/thermal/daily [get]
+func (h *Handler) GetBookListThermalDaily(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookListByThermalDaily](c)
+	req.ToStandard()
+
+	res, err := h.bookService.GetBookListByThermalDaily(c.Request.Context(), req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}

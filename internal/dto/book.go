@@ -128,3 +128,7 @@ type UploadBookCoverResponse struct {
 type GetBookListByThermalRequest struct {
 	PageListRequest
 }
+
+type GetBookListByThermalDaily struct {
+	PageListRequest
+}
