@@ -50,6 +50,15 @@ func refreshBookCatch(ctx context.Context, book *model.Book) error {
 	return nil
 }
 
+func deleteBookCatch(ctx context.Context, book *model.Book) error {
+	client, err := redisclient.GetClient()
+	if err != nil {
+		return err
+	}
+	client.Del(ctx, constant.RedisBook(book.ID))
+	return nil
+}
+
 func (r *bookRepository) GetByID(ctx context.Context, id string) (*model.Book, error) {
 	var book model.Book
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&book).Error
@@ -159,10 +168,16 @@ func (r *bookRepository) Create(ctx context.Context, model *model.Book) error {
 }
 
 func (r *bookRepository) Update(ctx context.Context, model *model.Book) error {
-	return r.db.WithContext(ctx).Save(&model).Error
+	err := r.db.WithContext(ctx).Save(&model).Error
+	if err != nil {
+		return err
+	}
+	_ = refreshBookCatch(ctx, model)
+	return nil
 }
 
 func (r *bookRepository) Delete(ctx context.Context, id string) error {
+	_ = deleteBookCatch(ctx, &model.Book{ID: id})
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Book{}).Error
 }
 
@@ -189,6 +204,9 @@ func (r *bookRepository) IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, s
 	if err != nil {
 		return 0, err
 	}
+
+	_ = refreshBookCatch(ctx, &book)
+
 	return int(book.BookshelfAmount), nil
 }
 
@@ -206,6 +224,9 @@ func (r *bookRepository) ReduceOfBookShelf(ctx context.Context, db *gorm.DB, she
 	if err != nil {
 		return 0, err
 	}
+
+	_ = refreshBookCatch(ctx, &book)
+
 	return int(book.BookshelfAmount), nil
 }
 
@@ -223,5 +244,8 @@ func (r *bookRepository) IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB
 	if err != nil {
 		return 0, err
 	}
+
+	_ = refreshBookCatch(ctx, &book)
+
 	return int(book.BookshelfAmount), nil
 }

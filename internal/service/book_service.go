@@ -367,6 +367,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 			Rev:   true,
 		})
 
+		// 设置排行榜缓存时间
 		client.Expire(ctx, constant.RedisBookThermalDailyTotal, 5*time.Minute)
 	}
 	if rankRes.Err() != nil {
@@ -376,9 +377,12 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 		return res, nil
 	}
 
+	// 逐行获取
 	for _, bookRecord := range rankRes.Val() {
+		// 尝试通过缓存获取
 		bookCatchRes := client.Get(ctx, constant.RedisBook(bookRecord))
 		if bookCatchRes.Err() != nil {
+			// 当缓存未命中
 			book, err := s.bookRepo.GetByID(ctx, bookRecord)
 			if err != nil {
 				return nil, err
@@ -389,6 +393,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 			}
 			bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 		} else {
+			// 当缓存命中
 			var bookDecode model.Book
 			err = json.Unmarshal([]byte(bookCatchRes.Val()), &bookDecode)
 			if err != nil {
