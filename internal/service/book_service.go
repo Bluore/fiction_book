@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fiction-book/internal/catch"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -44,6 +44,7 @@ type bookService struct {
 	userRepo          repository.UserRepository
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
+	bookCatch         catch.BookCatch
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -54,6 +55,7 @@ func NewBookService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
+	bookCatch catch.BookCatch,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookService {
@@ -62,6 +64,7 @@ func NewBookService(
 		userRepo:          userRepo,
 		userAssetRepo:     userAssetRepo,
 		purchasedBookRepo: purchasedBookRepo,
+		bookCatch:         bookCatch,
 		db:                db,
 		cfg:               cfg,
 	}
@@ -380,10 +383,10 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	// 逐行获取
 	for _, bookRecord := range rankRes.Val() {
 		// 尝试通过缓存获取
-		bookCatchRes := client.Get(ctx, constant.RedisBook(bookRecord))
-		if bookCatchRes.Err() != nil {
+		book, bookCatchHit, _ := s.bookCatch.GetBookCatch(ctx, bookRecord)
+		if bookCatchHit == false {
 			// 当缓存未命中
-			book, err := s.bookRepo.GetByID(ctx, bookRecord)
+			book, err = s.bookRepo.GetByID(ctx, bookRecord)
 			if err != nil {
 				return nil, err
 			}
@@ -391,17 +394,9 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
-		} else {
-			// 当缓存命中
-			var bookDecode model.Book
-			err = json.Unmarshal([]byte(bookCatchRes.Val()), &bookDecode)
-			if err != nil {
-				logger.Error(fmt.Sprintf("error unmarshal book: %v", err))
-				continue
-			}
-			bookListResponse = append(bookListResponse, toBookResponse(s.cfg, &bookDecode))
+			_ = s.bookCatch.UpdateBookCatch(ctx, book)
 		}
+		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 	}
 	res.Books = bookListResponse
 

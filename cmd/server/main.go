@@ -19,7 +19,6 @@ import (
 	"fiction-book/internal/wire"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
-	"fiction-book/pkg/redisclient"
 	"fiction-book/pkg/validator"
 )
 
@@ -59,11 +58,6 @@ func main() {
 		zap.String("mode", cfg.Server.Mode),
 		zap.Int("port", cfg.Server.Port),
 	)
-
-	// 初始化redis
-	if err := redisclient.Init(&cfg.Redis); err != nil {
-		log.Fatal(err)
-	}
 
 	// 初始化 Sentry（如果启用）
 	if cfg.Sentry.Enabled {

@@ -27,7 +27,12 @@ func InitializeApp() (*App, error) {
 	userService := ProvideUserService(userRepository, userAssetRepository, db, config)
 	bookRepository := ProvideBookRepository(db)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
-	bookService := ProvideBookService(bookRepository, userRepository, userAssetRepository, userPurchasedBookRepository, db, config)
+	client, err := ProvideCatch(config)
+	if err != nil {
+		return nil, err
+	}
+	bookCatch := ProvideBookCatch(client)
+	bookService := ProvideBookService(bookRepository, userRepository, userAssetRepository, userPurchasedBookRepository, bookCatch, db, config)
 	bookChapterRepository := ProvideBookChapterRepository(db)
 	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, db, config)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)

@@ -5,7 +5,7 @@ package wire
 
 import (
 	"github.com/google/wire"
-	
+
 	"fiction-book/internal/api/handler"
 )
 
@@ -14,16 +14,19 @@ func InitializeApp() (*App, error) {
 	wire.Build(
 		// 基础设施层
 		InfraSet,
-		
+
 		// 仓储层
 		RepositorySet,
-		
+
+		// 缓存层
+		CatchSet,
+
 		// 服务层
 		ServiceSet,
-		
+
 		// Handler 层
 		HandlerSet,
-		
+
 		// App 结构
 		NewApp,
 	)
