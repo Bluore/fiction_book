@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
+	"fiction-book/pkg/constant"
+	"fiction-book/pkg/redisclient"
 	"time"
 
 	"gorm.io/gorm"
@@ -34,6 +37,19 @@ func NewBookRepository(db *gorm.DB) BookRepository {
 	return &bookRepository{db: db}
 }
 
+func refreshBookCatch(ctx context.Context, book *model.Book) error {
+	client, err := redisclient.GetClient()
+	if err != nil {
+		return err
+	}
+	bookEncode, err := json.Marshal(book)
+	if err != nil {
+		return err
+	}
+	client.Set(ctx, constant.RedisBook(book.ID), bookEncode, time.Hour)
+	return nil
+}
+
 func (r *bookRepository) GetByID(ctx context.Context, id string) (*model.Book, error) {
 	var book model.Book
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&book).Error
@@ -43,6 +59,9 @@ func (r *bookRepository) GetByID(ctx context.Context, id string) (*model.Book, e
 		}
 		return nil, err
 	}
+
+	_ = refreshBookCatch(ctx, &book)
+
 	return &book, nil
 }
 

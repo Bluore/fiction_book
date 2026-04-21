@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
@@ -341,7 +342,12 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	var rankRes *redis.StringSliceCmd
 	rankOffsetExist := client.Exists(ctx, constant.RedisBookThermalDailyTotal).Val()
 	if rankOffsetExist == 1 {
-		rankRes = client.ZRange(ctx, constant.RedisBookThermalDailyTotal, rankOffsetStart, rankOffsetEnd)
+		rankRes = client.ZRangeArgs(ctx, redis.ZRangeArgs{
+			Key:   constant.RedisBookThermalDailyTotal,
+			Start: rankOffsetStart,
+			Stop:  rankOffsetEnd,
+			Rev:   true,
+		})
 	} else {
 		// 当整合排行榜缓存失效时
 		unionStore := &redis.ZStore{
@@ -354,7 +360,12 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 		if unionStoreRes.Err() != nil {
 			return nil, unionStoreRes.Err()
 		}
-		rankRes = client.ZRange(ctx, constant.RedisBookThermalDailyTotal, rankOffsetStart, rankOffsetEnd)
+		rankRes = client.ZRangeArgs(ctx, redis.ZRangeArgs{
+			Key:   constant.RedisBookThermalDailyTotal,
+			Start: rankOffsetStart,
+			Stop:  rankOffsetEnd,
+			Rev:   true,
+		})
 
 		client.Expire(ctx, constant.RedisBookThermalDailyTotal, 5*time.Minute)
 	}
@@ -366,15 +377,26 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	}
 
 	for _, bookRecord := range rankRes.Val() {
-		book, err := s.bookRepo.GetByID(ctx, bookRecord)
-		if err != nil {
-			return nil, err
+		bookCatchRes := client.Get(ctx, constant.RedisBook(bookRecord))
+		if bookCatchRes.Err() != nil {
+			book, err := s.bookRepo.GetByID(ctx, bookRecord)
+			if err != nil {
+				return nil, err
+			}
+			if book == nil {
+				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
+				continue
+			}
+			bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
+		} else {
+			var bookDecode model.Book
+			err = json.Unmarshal([]byte(bookCatchRes.Val()), &bookDecode)
+			if err != nil {
+				logger.Error(fmt.Sprintf("error unmarshal book: %v", err))
+				continue
+			}
+			bookListResponse = append(bookListResponse, toBookResponse(s.cfg, &bookDecode))
 		}
-		if book == nil {
-			logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
-			continue
-		}
-		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 	}
 	res.Books = bookListResponse
 
