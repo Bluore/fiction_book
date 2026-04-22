@@ -52,7 +52,7 @@ func toUserAssetResponse(userAsset *model.UserAsset) *dto.UserAssetResponse {
 	return &dto.UserAssetResponse{
 		ID:       userAsset.ID,
 		Gold:     userAsset.Gold,
-		VIPLevel: VIPStrToLevle(userAsset.VIPLevel),
+		VIPLevel: VIPStrToLevel(userAsset.VIPLevel),
 		VIPMark:  userAsset.VIPLevel,
 	}
 }

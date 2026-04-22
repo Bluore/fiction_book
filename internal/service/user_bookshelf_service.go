@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fiction-book/internal/catch"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -25,6 +26,8 @@ type userBookshelfService struct {
 	userRepo          repository.UserRepository
 	bookRepo          repository.BookRepository
 	userBookshelfRepo repository.UserBookshelfRepository
+	bookCatch         catch.BookCatch
+	limitCatch        catch.LimitCatch
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -33,6 +36,8 @@ func NewUserBookshelfService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	userBookshelfRepo repository.UserBookshelfRepository,
+	bookCatch catch.BookCatch,
+	limitCatch catch.LimitCatch,
 	db *gorm.DB,
 	cfg *config.Config,
 ) UserBookshelfService {
@@ -40,6 +45,8 @@ func NewUserBookshelfService(
 		userRepo:          userRepo,
 		bookRepo:          bookRepo,
 		userBookshelfRepo: userBookshelfRepo,
+		bookCatch:         bookCatch,
+		limitCatch:        limitCatch,
 		db:                db,
 		cfg:               cfg,
 	}
@@ -99,25 +106,7 @@ func (s userBookshelfService) CreateUserBookshelf(ctx context.Context, userID st
 			// 热力值限流
 			client.Set(ctx, constant.RedisIsUserBookshelf5Min(userID), true, time.Duration(5*time.Minute))
 
-			// 如果排行榜没有字段则创建书籍
-			bookRankErr := client.Get(ctx, constant.RedisBookThermalDaily(time.Now())).Err()
-			if bookRankErr == redis.Nil {
-				bookshelfArgs := redis.Z{Score: 0, Member: userID}
-				client.ZAdd(ctx, constant.RedisBookThermalDaily(time.Now()), bookshelfArgs)
-			}
-
-			// 排行榜增加权值
-			client.ZIncrBy(ctx, constant.RedisBookThermalDaily(time.Now()), 10, userID)
-
-			// 如果没有过期时间则设置过期时间
-			expRes := client.TTL(ctx, constant.RedisBookThermalDaily(time.Now()))
-			if expRes.Err() != nil {
-				logger.Error(fmt.Sprintf("redis:set book thermal daily ttl fail:%v", expRes.Err()))
-				return nil
-			}
-			if expRes.Val() == -1 {
-				client.Expire(ctx, constant.RedisBookThermalDaily(time.Now()), time.Duration(3*24*time.Hour))
-			}
+			_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, req.BookID, 10)
 		}
 
 		return nil

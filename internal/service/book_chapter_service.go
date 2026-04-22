@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fiction-book/internal/catch"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -32,26 +33,32 @@ type BookChapterService interface {
 }
 
 type bookChapterService struct {
-	userRepo        repository.UserRepository
-	bookRepo        repository.BookRepository
-	bookChapterRepo repository.BookChapterRepository
-	db              *gorm.DB
-	cfg             *config.Config
+	userRepo         repository.UserRepository
+	bookRepo         repository.BookRepository
+	bookChapterRepo  repository.BookChapterRepository
+	bookCatch        catch.BookCatch
+	bookChapterCatch catch.BookChapterCatch
+	db               *gorm.DB
+	cfg              *config.Config
 }
 
 func NewBookChapterService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	bookChapterRepo repository.BookChapterRepository,
+	bookCatch catch.BookCatch,
+	bookChapterCatch catch.BookChapterCatch,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookChapterService {
 	return &bookChapterService{
-		userRepo:        userRepo,
-		bookRepo:        bookRepo,
-		bookChapterRepo: bookChapterRepo,
-		db:              db,
-		cfg:             cfg,
+		userRepo:         userRepo,
+		bookRepo:         bookRepo,
+		bookChapterRepo:  bookChapterRepo,
+		bookCatch:        bookCatch,
+		bookChapterCatch: bookChapterCatch,
+		db:               db,
+		cfg:              cfg,
 	}
 }
 
@@ -146,7 +153,7 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 	// todo 先检查是否购买
 
 	// todo vip获取和比较
-	if VIPStrToLevle(book.VIPLevel) > VIPStrToLevle("vip_0") {
+	if VIPStrToLevel(book.VIPLevel) > VIPStrToLevel("vip_0") {
 		return nil, ErrVIPLevel
 	}
 
@@ -179,37 +186,12 @@ func (b bookChapterService) addThermalDaily(ctx context.Context, userID string, 
 	if getBrowseAmountErr == redis.Nil {
 		// 热力值限流
 		client.Set(ctx, constant.RedisIsUserBrowse5Min(userID), true, time.Duration(5*time.Minute))
-
-		// 如果排行榜没有字段则创建书籍
-		bookRankErr := client.ZScore(ctx, constant.RedisBookThermalDaily(time.Now()), bookID).Err()
-		if bookRankErr != nil && bookRankErr != redis.Nil {
-			return bookRankErr
-		}
-		if bookRankErr == redis.Nil {
-			bookshelfArgs := redis.Z{Score: 0, Member: bookID}
-			client.ZAdd(ctx, constant.RedisBookThermalDaily(time.Now()), bookshelfArgs)
-		}
-
-		// 排行榜增加权值
-		incrBookScoreErr := client.ZIncrBy(ctx, constant.RedisBookThermalDaily(time.Now()), 1, bookID).Err()
-		if incrBookScoreErr != nil {
-			return incrBookScoreErr
-		}
-
-		// 如果没有过期时间则设置过期时间
-		expRes := client.TTL(ctx, constant.RedisBookThermalDaily(time.Now()))
-		if expRes.Err() != nil {
-			logger.Error(fmt.Sprintf("redis:set book thermal daily ttl fail:%v", expRes.Err()))
-			return expRes.Err()
-		}
-		if expRes.Val() == -1 {
-			client.Expire(ctx, constant.RedisBookThermalDaily(time.Now()), time.Duration(3*24*time.Hour))
-		}
+		_ = b.bookCatch.IncreaseBookThermalDailyCatch(ctx, bookID, 1)
 	}
 	return nil
 }
 
-func VIPStrToLevle(vipStr string) int {
+func VIPStrToLevel(vipStr string) int {
 	switch vipStr {
 	case "":
 		return -1

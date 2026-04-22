@@ -8,15 +8,12 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
-	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
-	"fiction-book/pkg/redisclient"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -334,54 +331,14 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 		PageListResponse: pageResponse,
 	}
 
-	client, err := redisclient.GetClient()
+	// 当前页数的排行榜缓存失效时
+	rankRes, err := s.bookCatch.GetBookThermalDailyCatch(ctx, req.Page, req.Size)
 	if err != nil {
 		return nil, err
 	}
-	rankOffsetStart := int64((req.Page - 1) * req.Size)
-	rankOffsetEnd := int64(req.Page*req.Size - 1)
-
-	// 当前页数的排行榜缓存失效时
-	var rankRes *redis.StringSliceCmd
-	rankOffsetExist := client.Exists(ctx, constant.RedisBookThermalDailyTotal).Val()
-	if rankOffsetExist == 1 {
-		rankRes = client.ZRangeArgs(ctx, redis.ZRangeArgs{
-			Key:   constant.RedisBookThermalDailyTotal,
-			Start: rankOffsetStart,
-			Stop:  rankOffsetEnd,
-			Rev:   true,
-		})
-	} else {
-		// 当整合排行榜缓存失效时
-		unionStore := &redis.ZStore{
-			Keys: []string{
-				constant.RedisBookThermalDaily(time.Now()),
-				constant.RedisBookThermalDaily(time.Now().Add(-24 * time.Hour)),
-			},
-		}
-		unionStoreRes := client.ZUnionStore(ctx, constant.RedisBookThermalDailyTotal, unionStore)
-		if unionStoreRes.Err() != nil {
-			return nil, unionStoreRes.Err()
-		}
-		rankRes = client.ZRangeArgs(ctx, redis.ZRangeArgs{
-			Key:   constant.RedisBookThermalDailyTotal,
-			Start: rankOffsetStart,
-			Stop:  rankOffsetEnd,
-			Rev:   true,
-		})
-
-		// 设置排行榜缓存时间
-		client.Expire(ctx, constant.RedisBookThermalDailyTotal, 5*time.Minute)
-	}
-	if rankRes.Err() != nil {
-		return nil, rankRes.Err()
-	}
-	if len(rankRes.Val()) == 0 {
-		return res, nil
-	}
 
 	// 逐行获取
-	for _, bookRecord := range rankRes.Val() {
+	for _, bookRecord := range rankRes {
 		// 尝试通过缓存获取
 		book, bookCatchHit, _ := s.bookCatch.GetBookCatch(ctx, bookRecord)
 		if bookCatchHit == false {
