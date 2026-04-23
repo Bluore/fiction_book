@@ -8,13 +8,9 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
-	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
-	"fiction-book/pkg/redisclient"
 	"fmt"
-	"time"
 
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -38,6 +34,7 @@ type bookChapterService struct {
 	bookChapterRepo  repository.BookChapterRepository
 	bookCatch        catch.BookCatch
 	bookChapterCatch catch.BookChapterCatch
+	limitCatch       catch.LimitCatch
 	db               *gorm.DB
 	cfg              *config.Config
 }
@@ -48,6 +45,7 @@ func NewBookChapterService(
 	bookChapterRepo repository.BookChapterRepository,
 	bookCatch catch.BookCatch,
 	bookChapterCatch catch.BookChapterCatch,
+	limitCatch catch.LimitCatch,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookChapterService {
@@ -57,13 +55,14 @@ func NewBookChapterService(
 		bookChapterRepo:  bookChapterRepo,
 		bookCatch:        bookCatch,
 		bookChapterCatch: bookChapterCatch,
+		limitCatch:       limitCatch,
 		db:               db,
 		cfg:              cfg,
 	}
 }
 
-func (b bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error) {
-	book, err := b.bookRepo.GetByID(ctx, req.BookID)
+func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error) {
+	book, err := s.bookRepo.GetByID(ctx, req.BookID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,11 +74,11 @@ func (b bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 		return nil, ErrPermission
 	}
 
-	bookInfo, err := b.bookChapterRepo.AddByBookID(ctx, req.BookID, *req.Title, *req.Content)
+	bookInfo, err := s.bookChapterRepo.AddByBookID(ctx, req.BookID, *req.Title, *req.Content)
 	if err != nil {
 		return nil, err
 	}
-	return toBookChapterInfoResponse(b.cfg, bookInfo, book), nil
+	return toBookChapterInfoResponse(s.cfg, bookInfo, book), nil
 
 }
 
@@ -102,8 +101,8 @@ func toBookChapterResponse(cfg *config.Config, info *model.BookChapter, book *mo
 	}
 }
 
-func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error) {
-	bookChapter, err := b.bookChapterRepo.GetByID(ctx, bookID)
+func (s bookChapterService) GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error) {
+	bookChapter, err := s.bookChapterRepo.GetByID(ctx, bookID)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +110,7 @@ func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 		return nil, ErrBookChapterNotFound
 	}
 
-	book, err := b.bookRepo.GetByID(ctx, bookChapter.BookID)
+	book, err := s.bookRepo.GetByID(ctx, bookChapter.BookID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,11 +121,11 @@ func (b bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 	if book.VIPLevel != "" {
 		return nil, ErrUserNotLogin
 	}
-	return toBookChapterResponse(b.cfg, bookChapter, book), nil
+	return toBookChapterResponse(s.cfg, bookChapter, book), nil
 }
 
-func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error) {
-	user, err := b.userRepo.GetByID(ctx, b.db, userID)
+func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error) {
+	user, err := s.userRepo.GetByID(ctx, s.db, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +133,7 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 		return nil, ErrUserNotFound
 	}
 
-	bookChapter, err := b.bookChapterRepo.GetByID(ctx, bookChapterID)
+	bookChapter, err := s.bookChapterRepo.GetByID(ctx, bookChapterID)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +141,7 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 		return nil, ErrBookChapterNotFound
 	}
 
-	book, err := b.bookRepo.GetByID(ctx, bookChapter.BookID)
+	book, err := s.bookRepo.GetByID(ctx, bookChapter.BookID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,43 +151,41 @@ func (b bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 
 	// todo 先检查是否购买
 
-	// todo vip获取和比较
+	// vip获取和比较
 	if VIPStrToLevel(book.VIPLevel) > VIPStrToLevel("vip_0") {
 		return nil, ErrVIPLevel
 	}
 
-	// 数据库添加数据
-	_, err = b.bookRepo.IncreaseOfBrowseAmount(ctx, b.db, book.ID)
-	if err != nil {
-		return nil, err
-	}
-
 	// 向redis里面添加热力值
-	err = b.addThermalDaily(ctx, userID, bookChapter.BookID)
+	err = func() error {
+		exist, _ := s.limitCatch.CheckUserBrowseBook5Min(ctx, userID, book.ID)
+		if exist {
+			return nil
+		}
+		exist, _ = s.limitCatch.CheckUserBrowse1Min(ctx, userID)
+		if exist {
+			return nil
+		}
+		// 热力值限流
+		_ = s.limitCatch.AddUserBrowseBook5Min(ctx, userID, book.ID)
+
+		_ = s.limitCatch.AddUserBrowse1Min(ctx, userID)
+
+		_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, book.ID, 10)
+
+		// 数据库添加数据
+		_, err = s.bookRepo.IncreaseOfBrowseAmount(ctx, s.db, book.ID)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}()
 	if err != nil {
 		logger.Error(fmt.Sprintf("addThermalDaily error: %v", err))
 	}
 
-	return toBookChapterResponse(b.cfg, bookChapter, book), nil
-}
-
-// 向redis里面添加热力值
-func (b bookChapterService) addThermalDaily(ctx context.Context, userID string, bookID string) error {
-	client, err := redisclient.GetClient()
-	if err != nil {
-		logger.Error(fmt.Sprint("redis client is nil:%v", err))
-		return err
-	}
-	getBrowseAmountErr := client.Get(ctx, constant.RedisIsUserBrowse5Min(userID)).Err()
-	if getBrowseAmountErr != nil && getBrowseAmountErr != redis.Nil {
-		return getBrowseAmountErr
-	}
-	if getBrowseAmountErr == redis.Nil {
-		// 热力值限流
-		client.Set(ctx, constant.RedisIsUserBrowse5Min(userID), true, time.Duration(5*time.Minute))
-		_ = b.bookCatch.IncreaseBookThermalDailyCatch(ctx, bookID, 1)
-	}
-	return nil
+	return toBookChapterResponse(s.cfg, bookChapter, book), nil
 }
 
 func VIPStrToLevel(vipStr string) int {
@@ -227,8 +224,8 @@ func VIPLevelToStr(vipLevel int) string {
 	}
 }
 
-func (b bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
-	old, err := b.bookChapterRepo.GetByID(ctx, req.ID)
+func (s bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
+	old, err := s.bookChapterRepo.GetByID(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -244,12 +241,12 @@ func (b bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBo
 		cur.Content = *req.Content
 	}
 
-	err = b.bookChapterRepo.Update(ctx, old.ID, cur)
+	err = s.bookChapterRepo.Update(ctx, old.ID, cur)
 	if err != nil {
 		return nil, err
 	}
 
-	book, err := b.bookRepo.GetByID(ctx, old.BookID)
+	book, err := s.bookRepo.GetByID(ctx, old.BookID)
 	if err != nil {
 		return nil, err
 	}
@@ -257,13 +254,13 @@ func (b bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBo
 		return nil, ErrBookNotFound
 	}
 
-	return toBookChapterResponse(b.cfg, cur, book), nil
+	return toBookChapterResponse(s.cfg, cur, book), nil
 
 }
 
-func (b bookChapterService) DeleteChapter(ctx context.Context, userID string, chapterID string) error {
+func (s bookChapterService) DeleteChapter(ctx context.Context, userID string, chapterID string) error {
 	// 检查章节是否存在
-	chapter, err := b.bookChapterRepo.GetByID(ctx, chapterID)
+	chapter, err := s.bookChapterRepo.GetByID(ctx, chapterID)
 	if err != nil {
 		return err
 	}
@@ -272,7 +269,7 @@ func (b bookChapterService) DeleteChapter(ctx context.Context, userID string, ch
 	}
 
 	// 检查书籍是否存在
-	book, err := b.bookRepo.GetByID(ctx, chapter.BookID)
+	book, err := s.bookRepo.GetByID(ctx, chapter.BookID)
 	if err != nil {
 		return err
 	}
@@ -281,5 +278,5 @@ func (b bookChapterService) DeleteChapter(ctx context.Context, userID string, ch
 	}
 
 	// 删除章节
-	return b.bookChapterRepo.Delete(ctx, chapterID)
+	return s.bookChapterRepo.Delete(ctx, chapterID)
 }

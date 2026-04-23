@@ -7,13 +7,7 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
-	"fiction-book/pkg/constant"
-	"fiction-book/pkg/logger"
-	"fiction-book/pkg/redisclient"
-	"fmt"
-	"time"
 
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -92,22 +86,14 @@ func (s userBookshelfService) CreateUserBookshelf(ctx context.Context, userID st
 			return err
 		}
 
-		// redis中增加热力值
-		_, err = redisclient.Get(ctx, constant.RedisIsUserBookshelf5Min(userID))
-		if err != nil && err != redis.Nil {
-			return err
+		exist, _ := s.limitCatch.CheckUserBookshelfBook1Hour(ctx, userID, req.BookID)
+		if exist {
+			return nil
 		}
-		if err == redis.Nil {
-			client, err := redisclient.GetClient()
-			if err != nil {
-				logger.Error(fmt.Sprint("redis client is nil:%v", err))
-				return nil
-			}
-			// 热力值限流
-			client.Set(ctx, constant.RedisIsUserBookshelf5Min(userID), true, time.Duration(5*time.Minute))
+		// 热力值限流
+		_ = s.limitCatch.AddUserBookshelfBook1Hour(ctx, userID, req.BookID)
 
-			_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, req.BookID, 10)
-		}
+		_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, req.BookID, 10)
 
 		return nil
 	})
