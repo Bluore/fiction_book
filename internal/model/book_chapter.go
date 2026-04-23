@@ -27,3 +27,7 @@ type BookChapterInfo struct {
 	Title  string `json:"title"`
 	Order  int    `json:"order"`
 }
+
+func (BookChapterInfo) TableName() string {
+	return "book_chapter"
+}

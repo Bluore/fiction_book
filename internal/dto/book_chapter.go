@@ -34,3 +34,17 @@ type UpdateBookChapterRequest struct {
 type DeleteBookChapterRequest struct {
 	ChapterID string `uri:"id" binding:"required"`
 }
+
+type GetBookChapterListRequest struct {
+	BookID string `uri:"id" binding:"required"`
+}
+
+type BookChapterCatalogueResponse struct {
+	ChapterID string `json:"chapter_id"`
+	Title     string `json:"title"`
+	Order     int    `json:"order"`
+}
+
+type GetBookChapterListResponse struct {
+	Chapters []BookChapterCatalogueResponse `json:"Chapters"`
+}

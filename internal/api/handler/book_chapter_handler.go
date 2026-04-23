@@ -175,3 +175,26 @@ func (h *Handler) DeleteBookChapter(c *gin.Context) {
 
 	response.Success(c, nil)
 }
+
+// GetBookChapterList 获取书籍章节列表
+// @Summary 获取书籍章节列表
+// @Description 获取书籍章节列表
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Param id path string true "书籍id"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/books/{id}/chapters/list [get]
+func (h *Handler) GetBookChapterList(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookChapterListRequest](c)
+
+	res, err := h.bookChapterService.GetChapterList(c, req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}

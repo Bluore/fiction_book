@@ -53,7 +53,7 @@ func (b bookChapterRepository) GetByBookIDAndOrder(ctx context.Context, id strin
 
 func (b bookChapterRepository) GetIDListByBookID(ctx context.Context, id string) (*[]model.BookChapterInfo, error) {
 	var bookChapterInfo *[]model.BookChapterInfo
-	err := b.db.WithContext(ctx).Where("book_id = ?", id).Order("`order` ESC").Find(&bookChapterInfo).Error
+	err := b.db.WithContext(ctx).Where("book_id = ?", id).Order("`order` ASC").Find(&bookChapterInfo).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

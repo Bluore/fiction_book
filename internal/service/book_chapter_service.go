@@ -26,6 +26,7 @@ type BookChapterService interface {
 	GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error)
 	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
 	DeleteChapter(ctx context.Context, userID string, chapterID string) error
+	GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error)
 }
 
 type bookChapterService struct {
@@ -279,4 +280,41 @@ func (s bookChapterService) DeleteChapter(ctx context.Context, userID string, ch
 
 	// 删除章节
 	return s.bookChapterRepo.Delete(ctx, chapterID)
+}
+
+func (s bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error) {
+	exist, err := s.bookRepo.GetByID(ctx, req.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if exist == nil {
+		return nil, ErrBookNotFound
+	}
+
+	chapterList, err := s.bookChapterRepo.GetIDListByBookID(ctx, req.BookID)
+	if err != nil {
+		return nil, err
+	}
+
+	var chapterListShow []dto.BookChapterCatalogueResponse
+	for _, chapterInfo := range *chapterList {
+		chapterListShow = append(
+			chapterListShow,
+			dto.BookChapterCatalogueResponse{
+				ChapterID: chapterInfo.ID,
+				Title:     chapterInfo.Title,
+				Order:     chapterInfo.Order,
+			},
+		)
+	}
+
+	if len(chapterListShow) == 0 {
+		chapterListShow = make([]dto.BookChapterCatalogueResponse, 0)
+	}
+
+	resp := &dto.GetBookChapterListResponse{
+		Chapters: chapterListShow,
+	}
+
+	return resp, nil
 }
