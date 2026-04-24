@@ -67,7 +67,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			users.POST("/avatar", middleware.Auth(cfg), middleware.Validation(&dto.UploadAvatarRequest{}), h.UploadAvatar)
 			users.PUT("/password", middleware.Validation(&dto.UpdateUserPasswordRequest{}), h.UpdateUserPassword)
 			users.PUT("/email", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserEmailRequest{}), h.UpdateUserEmail)
-
+			users.GET("/info", middleware.Auth(cfg), h.GetMyUserInfo)
 		}
 
 		// 书籍模块

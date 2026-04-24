@@ -6,13 +6,13 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/gin-gonic/gin"
-
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/response"
+
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -133,6 +133,39 @@ func (h *Handler) GetUser(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetUserRequest](c)
 
 	user, err := h.userService.GetByID(c.Request.Context(), req.ID)
+	if err != nil {
+		if err == service.ErrUserNotFound {
+			response.PushError(c, err)
+			return
+		}
+		response.InternalError(c, err)
+		return
+	}
+
+	response.Success(c, user)
+}
+
+// GetMyUserInfo 获取当前用户信息
+// @Summary 获取当前用户信息
+// @Description 根据当前用户获取用户详细信息（认证）
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} response.Response{data=dto.UserResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "用户未登录"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/users/info [get]
+func (h *Handler) GetMyUserInfo(c *gin.Context) {
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	user, err := h.userService.GetByID(c.Request.Context(), userID)
 	if err != nil {
 		if err == service.ErrUserNotFound {
 			response.PushError(c, err)
