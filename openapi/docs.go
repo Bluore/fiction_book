@@ -2469,7 +2469,13 @@ const docTemplate = `{
                 "order": {
                     "type": "integer"
                 },
+                "price": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }
@@ -2551,7 +2557,9 @@ const docTemplate = `{
             "required": [
                 "book_id",
                 "content",
-                "title"
+                "price",
+                "title",
+                "vip_level"
             ],
             "properties": {
                 "book_id": {
@@ -2560,7 +2568,13 @@ const docTemplate = `{
                 "content": {
                     "type": "string"
                 },
+                "price": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }

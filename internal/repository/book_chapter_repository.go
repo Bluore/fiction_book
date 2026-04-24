@@ -13,7 +13,7 @@ type BookChapterRepository interface {
 	GetByID(ctx context.Context, id string) (*model.BookChapter, error)
 	GetByBookIDAndOrder(ctx context.Context, id string, order int) (*model.BookChapter, error)
 	GetIDListByBookID(ctx context.Context, id string) (*[]model.BookChapterInfo, error)
-	AddByBookID(ctx context.Context, bookID string, title string, content string) (*model.BookChapterInfo, error)
+	AddByBookID(ctx context.Context, bookChapter *model.BookChapter) (*model.BookChapter, error)
 	CountByBookID(ctx context.Context, bookID string) (int, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, id string, bookChapter *model.BookChapter) error
@@ -63,9 +63,9 @@ func (b bookChapterRepository) GetIDListByBookID(ctx context.Context, id string)
 	return bookChapterInfo, nil
 }
 
-func (b bookChapterRepository) AddByBookID(ctx context.Context, bookID string, title string, content string) (*model.BookChapterInfo, error) {
+func (b bookChapterRepository) AddByBookID(ctx context.Context, chapter *model.BookChapter) (*model.BookChapter, error) {
 	var bookChapterInfo model.BookChapterInfo
-	err := b.db.WithContext(ctx).Model(&model.BookChapter{}).Where("book_id = ?", bookID).Order("`order` DESC").First(&bookChapterInfo).Error
+	err := b.db.WithContext(ctx).Model(&model.BookChapter{}).Where("book_id = ?", chapter.BookID).Order("`order` DESC").First(&bookChapterInfo).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			bookChapterInfo.Order = 0
@@ -74,17 +74,19 @@ func (b bookChapterRepository) AddByBookID(ctx context.Context, bookID string, t
 		}
 	}
 	bookChapter := model.BookChapter{
-		ID:      uuid.New().String(),
-		BookID:  bookID,
-		Title:   title,
-		Content: content,
-		Order:   bookChapterInfo.Order + 1,
+		ID:       uuid.New().String(),
+		BookID:   chapter.BookID,
+		Title:    chapter.Title,
+		Content:  chapter.Content,
+		Order:    bookChapterInfo.Order + 1,
+		VIPLevel: chapter.VIPLevel,
+		Price:    chapter.Price,
 	}
 	err = b.db.WithContext(ctx).Create(&bookChapter).Error
 	if err != nil {
 		return nil, err
 	}
-	return &bookChapterInfo, nil
+	return &bookChapter, nil
 }
 
 func (b bookChapterRepository) CountByBookID(ctx context.Context, bookID string) (int, error) {

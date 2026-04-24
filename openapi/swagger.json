@@ -2463,7 +2463,13 @@
                 "order": {
                     "type": "integer"
                 },
+                "price": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }
@@ -2545,7 +2551,9 @@
             "required": [
                 "book_id",
                 "content",
-                "title"
+                "price",
+                "title",
+                "vip_level"
             ],
             "properties": {
                 "book_id": {
@@ -2554,7 +2562,13 @@
                 "content": {
                     "type": "string"
                 },
+                "price": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }

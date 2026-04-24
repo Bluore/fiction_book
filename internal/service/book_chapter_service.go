@@ -11,6 +11,7 @@ import (
 	"fiction-book/pkg/logger"
 	"fmt"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +22,7 @@ var (
 )
 
 type BookChapterService interface {
-	AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error)
+	AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterResponse, error)
 	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
 	GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error)
 	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
@@ -62,7 +63,7 @@ func NewBookChapterService(
 	}
 }
 
-func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterInfoResponse, error) {
+func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterResponse, error) {
 	book, err := s.bookRepo.GetByID(ctx, req.BookID)
 	if err != nil {
 		return nil, err
@@ -75,11 +76,21 @@ func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 		return nil, ErrPermission
 	}
 
-	bookInfo, err := s.bookChapterRepo.AddByBookID(ctx, req.BookID, *req.Title, *req.Content)
+	bookChapter := &model.BookChapter{
+		ID:       uuid.New().String(),
+		BookID:   req.BookID,
+		Title:    *req.Title,
+		Content:  *req.Content,
+		VIPLevel: VIPLevelToStr(VIPStrToLevel(req.VIPLevel)),
+		Price:    int64(req.Price),
+	}
+
+	bookChapterResp, err := s.bookChapterRepo.AddByBookID(ctx, bookChapter)
 	if err != nil {
 		return nil, err
 	}
-	return toBookChapterInfoResponse(s.cfg, bookInfo, book), nil
+
+	return toBookChapterResponse(s.cfg, bookChapterResp, book), nil
 
 }
 
@@ -88,6 +99,8 @@ func toBookChapterInfoResponse(cfg *config.Config, info *model.BookChapterInfo, 
 		ChapterID: info.ID,
 		Title:     info.Title,
 		Order:     info.Order,
+		VIPLevel:  info.VIPLevel,
+		Price:     info.Price,
 		Book:      toBookResponse(cfg, book),
 	}
 }
@@ -98,6 +111,8 @@ func toBookChapterResponse(cfg *config.Config, info *model.BookChapter, book *mo
 		Title:     info.Title,
 		Content:   info.Content,
 		Order:     info.Order,
+		VIPLevel:  info.VIPLevel,
+		Price:     info.Price,
 		Book:      toBookResponse(cfg, book),
 	}
 }
@@ -304,6 +319,8 @@ func (s bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBook
 				ChapterID: chapterInfo.ID,
 				Title:     chapterInfo.Title,
 				Order:     chapterInfo.Order,
+				VIPLevel:  chapterInfo.VIPLevel,
+				Price:     chapterInfo.Price,
 			},
 		)
 	}
