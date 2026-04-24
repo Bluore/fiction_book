@@ -95,6 +95,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		buys := v1.Group("/buy")
 		{
 			buys.POST("/book", middleware.Auth(cfg), middleware.Validation(&dto.BuyBookRequest{}), h.BuyBook)
+			buys.POST("/chapter", middleware.Auth(cfg), middleware.Validation(&dto.BuyBookChapterRequest{}), h.BuyBookChapter)
 		}
 
 		// 资产管理

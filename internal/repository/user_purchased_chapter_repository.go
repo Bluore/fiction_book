@@ -11,6 +11,7 @@ import (
 type UserPurchasedChapterRepository interface {
 	GetListByUserID(ctx context.Context, userID string) (*[]model.UserPurchasedChapter, error)
 	CheckPurchasedChapter(ctx context.Context, userID, chapterID string) (bool, *model.UserPurchasedChapter, error)
+	AddPurchasedChapter(ctx context.Context, in *model.UserPurchasedChapter) error
 }
 
 type userPurchasedChapterRepository struct {
@@ -45,4 +46,8 @@ func (r userPurchasedChapterRepository) CheckPurchasedChapter(ctx context.Contex
 		return false, nil, err
 	}
 	return true, &chapter, nil
+}
+
+func (r userPurchasedChapterRepository) AddPurchasedChapter(ctx context.Context, in *model.UserPurchasedChapter) error {
+	return r.db.WithContext(ctx).Create(in).Error
 }

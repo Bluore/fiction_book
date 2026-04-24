@@ -10,6 +10,7 @@ import (
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -28,23 +29,28 @@ type BookChapterService interface {
 	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
 	DeleteChapter(ctx context.Context, userID string, chapterID string) error
 	GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error)
+	BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error
 }
 
 type bookChapterService struct {
-	userRepo         repository.UserRepository
-	bookRepo         repository.BookRepository
-	bookChapterRepo  repository.BookChapterRepository
-	bookCatch        catch.BookCatch
-	bookChapterCatch catch.BookChapterCatch
-	limitCatch       catch.LimitCatch
-	db               *gorm.DB
-	cfg              *config.Config
+	userRepo                 repository.UserRepository
+	bookRepo                 repository.BookRepository
+	bookChapterRepo          repository.BookChapterRepository
+	userPurchasedChapterRepo repository.UserPurchasedChapterRepository
+	userAssetRepo            repository.UserAssetRepository
+	bookCatch                catch.BookCatch
+	bookChapterCatch         catch.BookChapterCatch
+	limitCatch               catch.LimitCatch
+	db                       *gorm.DB
+	cfg                      *config.Config
 }
 
 func NewBookChapterService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	bookChapterRepo repository.BookChapterRepository,
+	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
+	userAssetRepo repository.UserAssetRepository,
 	bookCatch catch.BookCatch,
 	bookChapterCatch catch.BookChapterCatch,
 	limitCatch catch.LimitCatch,
@@ -52,14 +58,16 @@ func NewBookChapterService(
 	cfg *config.Config,
 ) BookChapterService {
 	return &bookChapterService{
-		userRepo:         userRepo,
-		bookRepo:         bookRepo,
-		bookChapterRepo:  bookChapterRepo,
-		bookCatch:        bookCatch,
-		bookChapterCatch: bookChapterCatch,
-		limitCatch:       limitCatch,
-		db:               db,
-		cfg:              cfg,
+		userRepo:                 userRepo,
+		bookRepo:                 bookRepo,
+		bookChapterRepo:          bookChapterRepo,
+		userPurchasedChapterRepo: userPurchasedChapterRepo,
+		userAssetRepo:            userAssetRepo,
+		bookCatch:                bookCatch,
+		bookChapterCatch:         bookChapterCatch,
+		limitCatch:               limitCatch,
+		db:                       db,
+		cfg:                      cfg,
 	}
 }
 
@@ -334,4 +342,62 @@ func (s bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBook
 	}
 
 	return resp, nil
+}
+
+func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error {
+	bookChapter, err := s.bookChapterRepo.GetByID(ctx, req.ChapterID)
+	if err != nil {
+		return err
+	}
+	if bookChapter == nil {
+		return ErrBookNotFound
+	}
+
+	if bookChapter.Price != req.Price {
+		return ErrParam
+	}
+	if bookChapter.BookID != req.BookID {
+		return ErrParam
+	}
+
+	tx := s.db.Begin()
+	purchasedChapter := &model.UserPurchasedChapter{
+		ID:        uuid.New().String(),
+		UserID:    userID,
+		ChapterID: req.ChapterID,
+		BookID:    req.BookID,
+		ActiveAt:  time.Now().Add(3 * 365 * 24 * time.Hour),
+	}
+	userAsset, err := s.userAssetRepo.GetByID(ctx, tx, userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if userAsset == nil {
+		tx.Rollback()
+		return ErrUserNotFound
+	}
+	if userAsset.Gold < req.Price {
+		tx.Rollback()
+		return ErrSufficientFunds
+	}
+
+	_, err = s.userAssetRepo.SubGoldByID(ctx, tx, userID, req.Price)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = s.userPurchasedChapterRepo.AddPurchasedChapter(ctx, purchasedChapter)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

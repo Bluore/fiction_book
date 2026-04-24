@@ -822,6 +822,99 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/buy/chapter": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "购买章节（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "消费管理"
+                ],
+                "summary": "购买章节",
+                "parameters": [
+                    {
+                        "description": "购买章节请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BuyBookChapterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "购买成功",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4001": {
+                        "description": "书籍未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4002": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4017": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4018": {
+                        "description": "余额不足",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/chapters/create": {
             "post": {
                 "security": [
@@ -884,6 +977,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4020": {
+                        "description": "缺失对应权限",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -999,6 +1098,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "4001": {
+                        "description": "书籍未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4002": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "4010": {
                         "description": "章节未找到",
                         "schema": {
@@ -1075,6 +1186,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4001": {
+                        "description": "书籍未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -1217,8 +1340,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "4010": {
+                        "description": "章节未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "4014": {
-                        "description": "该章节需要先完成登录",
+                        "description": "请先完成登录",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -2538,6 +2667,25 @@ const docTemplate = `{
                 },
                 "vip_level": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.BuyBookChapterRequest": {
+            "type": "object",
+            "required": [
+                "book_id",
+                "chapter_id",
+                "price"
+            ],
+            "properties": {
+                "book_id": {
+                    "type": "string"
+                },
+                "chapter_id": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
                 }
             }
         },

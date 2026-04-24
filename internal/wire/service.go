@@ -65,13 +65,15 @@ func ProvideBookChapterService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	bookChapterRepo repository.BookChapterRepository,
+	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
+	userAssetRepo repository.UserAssetRepository,
 	bookCatch catch.BookCatch,
 	bookChapterCatch catch.BookChapterCatch,
 	limitCatch catch.LimitCatch,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookChapterService {
-	return service.NewBookChapterService(userRepo, bookRepo, bookChapterRepo, bookCatch, bookChapterCatch, limitCatch, db, cfg)
+	return service.NewBookChapterService(userRepo, bookRepo, bookChapterRepo, userPurchasedChapterRepo, userAssetRepo, bookCatch, bookChapterCatch, limitCatch, db, cfg)
 }
 
 // ProvideUserAssetService  提供用户资产仓库

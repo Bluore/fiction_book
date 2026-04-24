@@ -23,6 +23,7 @@ import (
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4020 {object} response.Response "缺失对应权限"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/create [post]
 func (h *Handler) AddBookChapter(c *gin.Context) {
@@ -55,7 +56,8 @@ func (h *Handler) AddBookChapter(c *gin.Context) {
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 4001 {object} response.Response "书籍未找到"
-// @Failure 4014 {object} response.Response "该章节需要先完成登录"
+// @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 4014 {object} response.Response "请先完成登录"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/{id}/guest [get]
 func (h *Handler) GuestGetBookChapter(c *gin.Context) {
@@ -83,6 +85,8 @@ func (h *Handler) GuestGetBookChapter(c *gin.Context) {
 // @Param request path dto.GetBookChapterRequest true "获取章节请求"
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4002 {object} response.Response "用户未找到"
 // @Failure 4010 {object} response.Response "章节未找到"
 // @Failure 4015 {object} response.Response "该章节需要付费"
 // @Failure 500 {object} response.Response "服务器内部错误"
@@ -118,6 +122,8 @@ func (h *Handler) GetBookChapter(c *gin.Context) {
 // @Param request body dto.UpdateBookChapterRequest true "修改章节请求"
 // @Success 200 {object} response.Response{data=dto.BookChapterResponse}
 // @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4001 {object} response.Response "书籍未找到"
 // @Failure 4010 {object} response.Response "章节未找到"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/{id} [put]
@@ -197,4 +203,37 @@ func (h *Handler) GetBookChapterList(c *gin.Context) {
 		return
 	}
 	response.Success(c, res)
+}
+
+// BuyBookChapter 购买章节
+// @Summary 购买章节
+// @Description 购买章节（认证）
+// @Tags 消费管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body dto.BuyBookChapterRequest true "购买章节请求"
+// @Success 200 {object} response.Response{data=string} "购买成功"
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4017 {object} response.Response "参数错误"
+// @Failure 4018 {object} response.Response "余额不足"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/buy/chapter [post]
+func (h *Handler) BuyBookChapter(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.BuyBookChapterRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	err := h.bookChapterService.BuyBookChapter(c.Request.Context(), userID, req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, "ok")
 }

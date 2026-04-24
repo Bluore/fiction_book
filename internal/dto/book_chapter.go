@@ -56,3 +56,9 @@ type BookChapterCatalogueResponse struct {
 type GetBookChapterListResponse struct {
 	Chapters []BookChapterCatalogueResponse `json:"Chapters"`
 }
+
+type BuyBookChapterRequest struct {
+	BookID    string `json:"book_id" binding:"required"`
+	ChapterID string `json:"chapter_id" binding:"required"`
+	Price     int64  `json:"price" binding:"required"`
+}
