@@ -200,7 +200,7 @@ func (r *bookRepository) IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB
 	book.BrowseAmount += 1
 	book.CalculateThermal()
 	err = db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", book.ID).
-		Update("browse_amount", book.BookshelfAmount).
+		Update("browse_amount", book.BrowseAmount).
 		Update("thermal_value", book.ThermalValue).Error
 	if err != nil {
 		return 0, err

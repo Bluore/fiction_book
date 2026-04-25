@@ -205,7 +205,7 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 
 		_ = s.limitCatch.AddUserBrowse1Min(ctx, userID)
 
-		_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, book.ID, 10)
+		_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, book.ID, 1)
 
 		// 数据库添加数据
 		_, err = s.bookRepo.IncreaseOfBrowseAmount(ctx, s.db, book.ID)
