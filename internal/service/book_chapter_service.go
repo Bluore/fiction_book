@@ -174,11 +174,20 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 		return nil, ErrBookNotFound
 	}
 
-	// todo 先检查是否购买
-
-	// vip获取和比较
-	if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel("vip_0") {
-		return nil, ErrVIPLevel
+	// 先检查是否购买
+	existBuy, err := s.userPurchasedChapterRepo.GetByChapterIDAndUserID(ctx, bookChapterID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if existBuy == nil {
+		// 没有购买书籍则判断vip是否等级足够
+		userAsset, err := s.userAssetRepo.GetByID(ctx, s.db, userID)
+		if err != nil {
+			return nil, err
+		}
+		if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel(userAsset.VIPLevel) {
+			return nil, ErrVIPLevel
+		}
 	}
 
 	// 向redis里面添加热力值
@@ -362,7 +371,7 @@ func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, r
 	}
 
 	tx := s.db.Begin()
-	exist, err := s.userPurchasedChapterRepo.GetByBookIDAndUserID(ctx, req.ChapterID, userID)
+	exist, err := s.userPurchasedChapterRepo.GetByChapterIDAndUserID(ctx, req.ChapterID, userID)
 	if err != nil {
 		tx.Rollback()
 		return err

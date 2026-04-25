@@ -12,7 +12,7 @@ type UserPurchasedChapterRepository interface {
 	GetListByUserID(ctx context.Context, userID string) (*[]model.UserPurchasedChapter, error)
 	CheckPurchasedChapter(ctx context.Context, userID, chapterID string) (bool, *model.UserPurchasedChapter, error)
 	AddPurchasedChapter(ctx context.Context, in *model.UserPurchasedChapter) error
-	GetByBookIDAndUserID(ctx context.Context, chapterID string, userID string) (*model.UserPurchasedChapter, error)
+	GetByChapterIDAndUserID(ctx context.Context, chapterID string, userID string) (*model.UserPurchasedChapter, error)
 }
 
 type userPurchasedChapterRepository struct {
@@ -53,7 +53,7 @@ func (r userPurchasedChapterRepository) AddPurchasedChapter(ctx context.Context,
 	return r.db.WithContext(ctx).Create(in).Error
 }
 
-func (r userPurchasedChapterRepository) GetByBookIDAndUserID(ctx context.Context, chapterID string, userID string) (*model.UserPurchasedChapter, error) {
+func (r userPurchasedChapterRepository) GetByChapterIDAndUserID(ctx context.Context, chapterID string, userID string) (*model.UserPurchasedChapter, error) {
 	var chapter model.UserPurchasedChapter
 	err := r.db.WithContext(ctx).Where("chapter_id = ? AND user_id = ?", chapterID, userID).First(&chapter).Error
 	if err != nil {
