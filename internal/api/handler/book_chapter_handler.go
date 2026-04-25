@@ -218,6 +218,7 @@ func (h *Handler) GetBookChapterList(c *gin.Context) {
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 4001 {object} response.Response "书籍未找到"
 // @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4009 {object} response.Response "书籍已购买"
 // @Failure 4017 {object} response.Response "参数错误"
 // @Failure 4018 {object} response.Response "余额不足"
 // @Failure 500 {object} response.Response "服务器内部错误"

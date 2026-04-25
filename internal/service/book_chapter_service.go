@@ -362,6 +362,16 @@ func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, r
 	}
 
 	tx := s.db.Begin()
+	exist, err := s.userPurchasedChapterRepo.GetByBookIDAndUserID(ctx, req.ChapterID, userID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if exist != nil {
+		tx.Rollback()
+		return ErrBookAlreadyBuy
+	}
+
 	purchasedChapter := &model.UserPurchasedChapter{
 		ID:        uuid.New().String(),
 		UserID:    userID,
