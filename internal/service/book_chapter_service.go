@@ -30,6 +30,7 @@ type BookChapterService interface {
 	DeleteChapter(ctx context.Context, userID string, chapterID string) error
 	GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error)
 	BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error
+	GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error)
 }
 
 type bookChapterService struct {
@@ -142,7 +143,7 @@ func (s bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 		return nil, ErrBookNotFound
 	}
 
-	if book.VIPLevel != "" {
+	if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel("") {
 		return nil, ErrUserNotLogin
 	}
 	return toBookChapterResponse(s.cfg, bookChapter, book), nil
@@ -176,7 +177,7 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 	// todo 先检查是否购买
 
 	// vip获取和比较
-	if VIPStrToLevel(book.VIPLevel) > VIPStrToLevel("vip_0") {
+	if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel("vip_0") {
 		return nil, ErrVIPLevel
 	}
 
@@ -400,4 +401,40 @@ func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, r
 	}
 
 	return nil
+}
+
+func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error) {
+	bookChapter, exist, _ := s.bookChapterCatch.GetBookChapter(ctx, bookChapterID)
+	var err error
+	if !exist {
+		bookChapter, err = s.bookChapterRepo.GetByID(ctx, bookChapterID)
+		if err != nil {
+			return nil, err
+		}
+		if bookChapter == nil {
+			return nil, ErrBookChapterNotFound
+		}
+		_ = s.bookChapterCatch.UpdateBookChapter(ctx, bookChapter)
+	}
+
+	book, exist, _ := s.bookCatch.GetBookCatch(ctx, bookChapter.BookID)
+	if !exist {
+		book, err = s.bookRepo.GetByID(ctx, bookChapter.BookID)
+		if err != nil {
+			return nil, err
+		}
+		if book == nil {
+			return nil, ErrBookNotFound
+		}
+		_ = s.bookCatch.UpdateBookCatch(ctx, book)
+	}
+
+	return &dto.BookChapterInfoResponse{
+		ChapterID: bookChapter.ID,
+		Title:     bookChapter.Title,
+		Order:     bookChapter.Order,
+		VIPLevel:  bookChapter.VIPLevel,
+		Price:     bookChapter.Price,
+		Book:      toBookResponse(s.cfg, book),
+	}, nil
 }

@@ -237,3 +237,31 @@ func (h *Handler) BuyBookChapter(c *gin.Context) {
 	}
 	response.Success(c, "ok")
 }
+
+// GetBookChapterInfo 获取章节信息
+// @Summary 获取章节信息
+// @Description 获取章节信息
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Param id path string true "章节ID"
+// @Success 200 {object} response.Response{data=dto.BookChapterResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/chapters/{id}/info [get]
+func (h *Handler) GetBookChapterInfo(c *gin.Context) {
+	bookID := c.Param("id")
+	if bookID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	res, err := h.bookChapterService.GetChapterInfo(c.Request.Context(), bookID)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}

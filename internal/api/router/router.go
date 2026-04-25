@@ -89,6 +89,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			bookChapters.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateBookChapterRequest{}), h.UpdateBookChapter)
 			bookChapters.DELETE("/:id", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteBookChapterRequest{}), h.DeleteBookChapter)
 			bookChapters.GET("/thermal/daily", middleware.Validation(&dto.GetBookListByThermalDaily{}), h.GetBookListThermalDaily)
+			bookChapters.GET("/:id/info", h.GetBookChapterInfo)
 		}
 
 		// 消费模块
