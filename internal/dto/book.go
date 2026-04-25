@@ -132,3 +132,7 @@ type GetBookListByThermalRequest struct {
 type GetBookListByThermalDaily struct {
 	PageListRequest
 }
+
+type GetBookListByOwnerIDRequest struct {
+	PageListRequest
+}

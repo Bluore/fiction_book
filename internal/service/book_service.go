@@ -34,6 +34,7 @@ type BookService interface {
 	BuyBook(ctx context.Context, userID string, bookID string, req *dto.BuyBookRequest) (*dto.GetUserPurchasedBookResponse, error)
 	UploadBookCover(ctx context.Context, userID string, req *dto.UploadBookCoverRequest) (*dto.UploadBookCoverResponse, error)
 	GetBookListByThermalDaily(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
+	GetListByOwnerID(ctx context.Context, userID string, req *dto.GetBookListByOwnerIDRequest) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -357,5 +358,35 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	}
 	res.Books = bookListResponse
 
+	return res, nil
+}
+
+func (s *bookService) GetListByOwnerID(ctx context.Context, userID string, req *dto.GetBookListByOwnerIDRequest) (*dto.BookListResponse, error) {
+	bookListResponse := make([]*dto.BookResponse, 0)
+	pageResponse := dto.PageListResponse{
+		Page:  req.Page,
+		Size:  req.Size,
+		Count: -1,
+	}
+
+	bookListModel, err := s.bookRepo.GetByOwnerID(ctx, userID, req.Page, req.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, bookRecord := range bookListModel {
+		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, bookRecord))
+	}
+
+	bookListCount, err := s.bookRepo.CountByOwner(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	pageResponse.Count = bookListCount
+
+	res := &dto.BookListResponse{
+		Books:            bookListResponse,
+		PageListResponse: pageResponse,
+	}
 	return res, nil
 }

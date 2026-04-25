@@ -182,12 +182,43 @@ func (h *Handler) UploadBookCoverImage(c *gin.Context) {
 // @Success 200 {object} dto.UploadBookCoverResponse "封面URL"
 // @Failure 400 {object} response.Response "请求参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v1/chapters/thermal/daily [get]
+// @Router /api/v1/books/thermal/daily [get]
 func (h *Handler) GetBookListThermalDaily(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetBookListByThermalDaily](c)
 	req.ToStandard()
 
 	res, err := h.bookService.GetBookListByThermalDaily(c.Request.Context(), req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}
+
+// GetBookListByOwner 获取用户创作的书籍
+// @Summary 获取用户创作的书籍
+// @Description 获取书籍owner_id为该用户的书籍（认证）
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param page query int false "页码" default(1)
+// @Param size query int false "每页数量" default(10)
+// @Success 200 {object} dto.UploadBookCoverResponse "封面URL"
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 401 {object} response.Response "用户登录失效"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/books/own/list [get]
+func (h *Handler) GetBookListByOwner(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookListByOwnerIDRequest](c)
+	req.ToStandard()
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	res, err := h.bookService.GetListByOwnerID(c.Request.Context(), userID, req)
 	if err != nil {
 		response.PushError(c, err)
 		return

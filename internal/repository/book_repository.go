@@ -12,7 +12,7 @@ import (
 // BookRepository 用户仓储接口
 type BookRepository interface {
 	GetByID(ctx context.Context, id string) (*model.Book, error)
-	GetByOwnerID(ctx context.Context, ownerID string) ([]*model.Book, error)
+	GetByOwnerID(ctx context.Context, ownerID string, page, size int) ([]*model.Book, error)
 	GetByName(ctx context.Context, name string) (*model.Book, error)
 	List(ctx context.Context, page int, size int) ([]*model.Book, error)
 	ListWithOption(ctx context.Context, opt BookListOption) ([]*model.Book, error)
@@ -20,6 +20,7 @@ type BookRepository interface {
 	Update(ctx context.Context, model *model.Book) error
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context) (int, error)
+	CountByOwner(ctx context.Context, ownerID string) (int, error)
 	IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 	ReduceOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 	IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
@@ -72,12 +73,12 @@ func MapSortKeyToColumn(sortKey dto.BookSortKey, order dto.SortOrder) string {
 	return col + " " + string(order)
 }
 
-func (r *bookRepository) GetByOwnerID(ctx context.Context, ownerID string) ([]*model.Book, error) {
+func (r *bookRepository) GetByOwnerID(ctx context.Context, ownerID string, page, size int) ([]*model.Book, error) {
 	var books []*model.Book
-	err := r.db.WithContext(ctx).Where("owner_id = ?", ownerID).Find(&books).Error
+	err := r.db.WithContext(ctx).Where("owner_id = ?", ownerID).Offset((page - 1) * size).Limit(size).Find(&books).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil
+			return make([]*model.Book, 0), nil
 		}
 		return nil, err
 	}
@@ -205,4 +206,13 @@ func (r *bookRepository) IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB
 		return 0, err
 	}
 	return int(book.BookshelfAmount), nil
+}
+
+func (r *bookRepository) CountByOwner(ctx context.Context, ownerID string) (int, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.Book{}).Where("owner_id = ?", ownerID).Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }

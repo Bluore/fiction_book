@@ -78,6 +78,8 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			books.GET("/list", middleware.Validation(&dto.ListBooksRequest{}), h.BookList)
 			books.POST("/:id/cover", middleware.Auth(cfg), middleware.Validation(&dto.UploadBookCoverRequest{}), h.UploadBookCoverImage)
 			books.GET("/:id/chapters/list", middleware.Validation(&dto.GetBookChapterListRequest{}), h.GetBookChapterList)
+			books.GET("/thermal/daily", middleware.Validation(&dto.GetBookListByThermalDaily{}), h.GetBookListThermalDaily)
+			books.GET("/own/list", middleware.Auth(cfg), middleware.Validation(&dto.GetBookListByOwnerIDRequest{}), h.GetBookListByOwner)
 		}
 
 		// 书籍章节模块
@@ -88,7 +90,6 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			bookChapters.GET("/:id", middleware.Auth(cfg), middleware.Validation(&dto.GetBookChapterRequest{}), h.GetBookChapter)
 			bookChapters.PUT("/:id", middleware.Auth(cfg), middleware.Validation(&dto.UpdateBookChapterRequest{}), h.UpdateBookChapter)
 			bookChapters.DELETE("/:id", middleware.Auth(cfg), middleware.AdminOnly(), middleware.Validation(&dto.DeleteBookChapterRequest{}), h.DeleteBookChapter)
-			bookChapters.GET("/thermal/daily", middleware.Validation(&dto.GetBookListByThermalDaily{}), h.GetBookListThermalDaily)
 			bookChapters.GET("/:id/info", h.GetBookChapterInfo)
 		}
 
