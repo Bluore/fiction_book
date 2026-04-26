@@ -39,7 +39,7 @@ func InitializeApp() (*App, error) {
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)
 	limitCache := ProvideLimitCatch(client)
-	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, userPurchasedChapterRepository, userAssetRepository, bookCache, bookChapterCache, limitCache, db, config)
+	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, userPurchasedChapterRepository, userAssetRepository, bookCache, bookChapterCache, userStatCache, limitCache, db, config)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)

@@ -9,6 +9,7 @@ import (
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
+	"fiction-book/pkg/utils"
 	"fmt"
 	"time"
 
@@ -39,9 +40,10 @@ type bookChapterService struct {
 	bookChapterRepo          repository.BookChapterRepository
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository
 	userAssetRepo            repository.UserAssetRepository
-	bookCatch                cache.BookCache
-	bookChapterCatch         cache.BookChapterCache
-	limitCatch               cache.LimitCache
+	bookCache                cache.BookCache
+	bookChapterCache         cache.BookChapterCache
+	userStatCache            cache.UserStatCache
+	limitCache               cache.LimitCache
 	db                       *gorm.DB
 	cfg                      *config.Config
 }
@@ -52,9 +54,10 @@ func NewBookChapterService(
 	bookChapterRepo repository.BookChapterRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
-	bookCatch cache.BookCache,
-	bookChapterCatch cache.BookChapterCache,
-	limitCatch cache.LimitCache,
+	bookCache cache.BookCache,
+	bookChapterCache cache.BookChapterCache,
+	userStatCache cache.UserStatCache,
+	limitCache cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookChapterService {
@@ -64,9 +67,10 @@ func NewBookChapterService(
 		bookChapterRepo:          bookChapterRepo,
 		userPurchasedChapterRepo: userPurchasedChapterRepo,
 		userAssetRepo:            userAssetRepo,
-		bookCatch:                bookCatch,
-		bookChapterCatch:         bookChapterCatch,
-		limitCatch:               limitCatch,
+		bookCache:                bookCache,
+		bookChapterCache:         bookChapterCache,
+		userStatCache:            userStatCache,
+		limitCache:               limitCache,
 		db:                       db,
 		cfg:                      cfg,
 	}
@@ -192,26 +196,38 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 
 	// 向redis里面添加热力值
 	err = func() error {
-		exist, _ := s.limitCatch.CheckUserBrowseBook5Min(ctx, userID, book.ID)
+		// 阅读频次需要大于1min
+		exist, _ := s.limitCache.CheckUserBrowse1Min(ctx, userID)
 		if exist {
 			return nil
 		}
-		exist, _ = s.limitCatch.CheckUserBrowse1Min(ctx, userID)
+
+		// 用户添加对应阅读量
+		pageWords := int64(utils.CountPassageWord(bookChapter.Content))
+		addReadWordsErr := s.userStatCache.IncreaseReadWordsNum(ctx, userID, pageWords)
+		if addReadWordsErr != nil {
+			logger.Fatal(fmt.Sprintf("increase read words fail: %v", err))
+		}
+
+		// 每阅读5min记录到书籍
+		exist, _ = s.limitCache.CheckUserBrowseBook5Min(ctx, userID, book.ID)
 		if exist {
 			return nil
 		}
 		// 热力值限流
-		_ = s.limitCatch.AddUserBrowseBook5Min(ctx, userID, book.ID)
+		_ = s.limitCache.AddUserBrowseBook5Min(ctx, userID, book.ID)
 
-		_ = s.limitCatch.AddUserBrowse1Min(ctx, userID)
+		_ = s.limitCache.AddUserBrowse1Min(ctx, userID)
 
-		_ = s.bookCatch.IncreaseBookThermalDaily(ctx, book.ID, 1)
+		_ = s.bookCache.IncreaseBookThermalDaily(ctx, book.ID, 1)
 
 		// 数据库添加数据
 		_, err = s.bookRepo.IncreaseOfBrowseAmount(ctx, s.db, book.ID)
 		if err != nil {
 			return err
 		}
+
+		// todo 用户添加对应书籍数量
 
 		return nil
 	}()
@@ -423,7 +439,7 @@ func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, r
 }
 
 func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error) {
-	bookChapter, exist, _ := s.bookChapterCatch.GetBookChapter(ctx, bookChapterID)
+	bookChapter, exist, _ := s.bookChapterCache.GetBookChapter(ctx, bookChapterID)
 	var err error
 	if !exist {
 		bookChapter, err = s.bookChapterRepo.GetByID(ctx, bookChapterID)
@@ -433,10 +449,10 @@ func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID st
 		if bookChapter == nil {
 			return nil, ErrBookChapterNotFound
 		}
-		_ = s.bookChapterCatch.UpdateBookChapter(ctx, bookChapter)
+		_ = s.bookChapterCache.UpdateBookChapter(ctx, bookChapter)
 	}
 
-	book, exist, _ := s.bookCatch.GetBook(ctx, bookChapter.BookID)
+	book, exist, _ := s.bookCache.GetBook(ctx, bookChapter.BookID)
 	if !exist {
 		book, err = s.bookRepo.GetByID(ctx, bookChapter.BookID)
 		if err != nil {
@@ -445,7 +461,7 @@ func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID st
 		if book == nil {
 			return nil, ErrBookNotFound
 		}
-		_ = s.bookCatch.UpdateBook(ctx, book)
+		_ = s.bookCache.UpdateBook(ctx, book)
 	}
 
 	return &dto.BookChapterInfoResponse{

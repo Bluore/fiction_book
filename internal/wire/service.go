@@ -73,11 +73,24 @@ func ProvideBookChapterService(
 	userAssetRepo repository.UserAssetRepository,
 	bookCatch cache.BookCache,
 	bookChapterCatch cache.BookChapterCache,
+	userStatCache cache.UserStatCache,
 	limitCatch cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookChapterService {
-	return service.NewBookChapterService(userRepo, bookRepo, bookChapterRepo, userPurchasedChapterRepo, userAssetRepo, bookCatch, bookChapterCatch, limitCatch, db, cfg)
+	return service.NewBookChapterService(
+		userRepo,
+		bookRepo,
+		bookChapterRepo,
+		userPurchasedChapterRepo,
+		userAssetRepo,
+		bookCatch,
+		bookChapterCatch,
+		userStatCache,
+		limitCatch,
+		db,
+		cfg,
+	)
 }
 
 // ProvideUserAssetService  提供用户资产仓库
