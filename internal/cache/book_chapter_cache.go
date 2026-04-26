@@ -1,4 +1,4 @@
-package catch
+package cache
 
 import (
 	"context"
@@ -18,20 +18,20 @@ func KeyBookChapter(chapterId string) string {
 	return fmt.Sprintf(keyBookChapter, chapterId)
 }
 
-type BookChapterCatch interface {
+type BookChapterCache interface {
 	UpdateBookChapter(ctx context.Context, chapter *model.BookChapter) error
 	GetBookChapter(ctx context.Context, chapter string) (*model.BookChapter, bool, error)
 }
 
-type bookChapterCatch struct {
+type bookChapterCache struct {
 	redis *redis.Client
 }
 
-func NewBookChapterCatch(redis *redis.Client) BookChapterCatch {
-	return &bookChapterCatch{redis: redis}
+func NewBookChapterCatch(redis *redis.Client) BookChapterCache {
+	return &bookChapterCache{redis: redis}
 }
 
-func (c bookChapterCatch) UpdateBookChapter(ctx context.Context, chapter *model.BookChapter) error {
+func (c bookChapterCache) UpdateBookChapter(ctx context.Context, chapter *model.BookChapter) error {
 	chapterEncode, err := json.Marshal(chapter)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (c bookChapterCatch) UpdateBookChapter(ctx context.Context, chapter *model.
 	return c.redis.Set(ctx, KeyBookChapter(chapter.ID), chapterEncode, time.Hour).Err()
 }
 
-func (c bookChapterCatch) GetBookChapter(ctx context.Context, chapter string) (*model.BookChapter, bool, error) {
+func (c bookChapterCache) GetBookChapter(ctx context.Context, chapter string) (*model.BookChapter, bool, error) {
 	chapterRes, err := c.redis.Get(ctx, fmt.Sprintf(keyBook, chapter)).Result()
 	if err == redis.Nil {
 		return nil, false, nil

@@ -1,4 +1,4 @@
-package catch
+package cache
 
 import (
 	"context"
@@ -14,7 +14,7 @@ const (
 	keyIsUserBookshelfBook1Hour = "Added:User:%s:Bookshelf:%s:1Hour"
 )
 
-type LimitCatch interface {
+type LimitCache interface {
 	CheckUserBrowse1Min(ctx context.Context, userId string) (bool, error)
 	AddUserBrowse1Min(ctx context.Context, userId string) error
 	CheckUserBrowseBook5Min(ctx context.Context, userId string, bookId string) (bool, error)
@@ -22,12 +22,12 @@ type LimitCatch interface {
 	CheckUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) (bool, error)
 	AddUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) error
 }
-type limitCatch struct {
+type limitCache struct {
 	redis *redis.Client
 }
 
-func NewLimitCatch(redis *redis.Client) LimitCatch {
-	return &limitCatch{redis: redis}
+func NewLimitCatch(redis *redis.Client) LimitCache {
+	return &limitCache{redis: redis}
 }
 
 func KeyIsUserBrowse1Min(userId string) string {
@@ -42,7 +42,7 @@ func KeyIsUserBookshelfBook1Hour(userId string, bookId string) string {
 	return fmt.Sprintf(keyIsUserBookshelfBook1Hour, userId, bookId)
 }
 
-func (c limitCatch) CheckUserBrowse1Min(ctx context.Context, userId string) (bool, error) {
+func (c limitCache) CheckUserBrowse1Min(ctx context.Context, userId string) (bool, error) {
 	exist, err := c.redis.Exists(ctx, KeyIsUserBrowse1Min(userId)).Result()
 	if err != nil {
 		return false, err
@@ -53,11 +53,11 @@ func (c limitCatch) CheckUserBrowse1Min(ctx context.Context, userId string) (boo
 	return true, err
 }
 
-func (c limitCatch) AddUserBrowse1Min(ctx context.Context, userId string) error {
+func (c limitCache) AddUserBrowse1Min(ctx context.Context, userId string) error {
 	return c.redis.Set(ctx, KeyIsUserBrowse1Min(userId), 1, time.Minute).Err()
 }
 
-func (c limitCatch) CheckUserBrowseBook5Min(ctx context.Context, userId string, bookId string) (bool, error) {
+func (c limitCache) CheckUserBrowseBook5Min(ctx context.Context, userId string, bookId string) (bool, error) {
 	exist, err := c.redis.Exists(ctx, KeyIsUserBrowseBook5Min(userId, bookId)).Result()
 	if err != nil {
 		return false, err
@@ -68,11 +68,11 @@ func (c limitCatch) CheckUserBrowseBook5Min(ctx context.Context, userId string, 
 	return true, err
 }
 
-func (c limitCatch) AddUserBrowseBook5Min(ctx context.Context, userId string, bookId string) error {
+func (c limitCache) AddUserBrowseBook5Min(ctx context.Context, userId string, bookId string) error {
 	return c.redis.Set(ctx, KeyIsUserBrowseBook5Min(userId, bookId), 1, 5*time.Minute).Err()
 }
 
-func (c limitCatch) CheckUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) (bool, error) {
+func (c limitCache) CheckUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) (bool, error) {
 	exist, err := c.redis.Exists(ctx, KeyIsUserBookshelfBook1Hour(userId, bookId)).Result()
 	if err != nil {
 		return false, err
@@ -83,6 +83,6 @@ func (c limitCatch) CheckUserBookshelfBook1Hour(ctx context.Context, userId stri
 	return true, err
 }
 
-func (c limitCatch) AddUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) error {
+func (c limitCache) AddUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) error {
 	return c.redis.Set(ctx, KeyIsUserBookshelfBook1Hour(userId, bookId), 1, 1*time.Hour).Err()
 }

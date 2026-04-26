@@ -1,4 +1,4 @@
-package catch
+package cache
 
 import (
 	"context"
@@ -16,27 +16,27 @@ const (
 	keyBook = "Catch:Book:%s"
 )
 
-type BookCatch interface {
-	GetBookCatch(ctx context.Context, id string) (*model.Book, bool, error)
-	UpdateBookCatch(ctx context.Context, book *model.Book) error
-	DeleteBookCatch(ctx context.Context, id string) error
-	GetBookThermalDailyCatch(ctx context.Context, page int, size int) ([]string, error)
-	IncreaseBookThermalDailyCatch(ctx context.Context, bookId string, score int) error
+type BookCache interface {
+	GetBook(ctx context.Context, id string) (*model.Book, bool, error)
+	UpdateBook(ctx context.Context, book *model.Book) error
+	DeleteBook(ctx context.Context, id string) error
+	GetBookThermalDaily(ctx context.Context, page int, size int) ([]string, error)
+	IncreaseBookThermalDaily(ctx context.Context, bookId string, score int) error
 }
 
-type bookCatch struct {
+type bookCache struct {
 	redis *redis.Client
 }
 
-func NewBookCatch(redis *redis.Client) BookCatch {
-	return &bookCatch{redis: redis}
+func NewBookCatch(redis *redis.Client) BookCache {
+	return &bookCache{redis: redis}
 }
 
 func KeyBook(bookId string) string {
 	return fmt.Sprintf(keyBook, bookId)
 }
 
-func (c *bookCatch) GetBookCatch(ctx context.Context, id string) (*model.Book, bool, error) {
+func (c *bookCache) GetBook(ctx context.Context, id string) (*model.Book, bool, error) {
 	bookRes, err := c.redis.Get(ctx, fmt.Sprintf(keyBook, id)).Result()
 	if err == redis.Nil {
 		return nil, false, nil
@@ -52,7 +52,7 @@ func (c *bookCatch) GetBookCatch(ctx context.Context, id string) (*model.Book, b
 	return &bookDecode, true, nil
 }
 
-func (c *bookCatch) UpdateBookCatch(ctx context.Context, book *model.Book) error {
+func (c *bookCache) UpdateBook(ctx context.Context, book *model.Book) error {
 	bookEncode, err := json.Marshal(book)
 	if err != nil {
 		return err
@@ -60,11 +60,11 @@ func (c *bookCatch) UpdateBookCatch(ctx context.Context, book *model.Book) error
 	return c.redis.Set(ctx, KeyBook(book.ID), bookEncode, time.Hour).Err()
 }
 
-func (c *bookCatch) DeleteBookCatch(ctx context.Context, id string) error {
+func (c *bookCache) DeleteBook(ctx context.Context, id string) error {
 	return c.redis.Del(ctx, KeyBook(id)).Err()
 }
 
-func (c *bookCatch) GetBookThermalDailyCatch(ctx context.Context, page int, size int) ([]string, error) {
+func (c *bookCache) GetBookThermalDaily(ctx context.Context, page int, size int) ([]string, error) {
 	rankOffsetStart := int64((page - 1) * size)
 	rankOffsetEnd := int64(page*size - 1)
 	var rankRes *redis.StringSliceCmd
@@ -107,7 +107,7 @@ func (c *bookCatch) GetBookThermalDailyCatch(ctx context.Context, page int, size
 	return rankRes.Val(), nil
 }
 
-func (c *bookCatch) IncreaseBookThermalDailyCatch(ctx context.Context, bookId string, score int) error {
+func (c *bookCache) IncreaseBookThermalDaily(ctx context.Context, bookId string, score int) error {
 	// 如果排行榜没有字段则创建书籍
 	bookRankErr := c.redis.ZScore(ctx, constant.RedisBookThermalDaily(time.Now()), bookId).Err()
 	if bookRankErr != nil && bookRankErr != redis.Nil {

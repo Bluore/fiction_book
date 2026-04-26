@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"fiction-book/internal/catch"
+	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -20,8 +20,8 @@ type userBookshelfService struct {
 	userRepo          repository.UserRepository
 	bookRepo          repository.BookRepository
 	userBookshelfRepo repository.UserBookshelfRepository
-	bookCatch         catch.BookCatch
-	limitCatch        catch.LimitCatch
+	bookCatch         cache.BookCache
+	limitCatch        cache.LimitCache
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -30,8 +30,8 @@ func NewUserBookshelfService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	userBookshelfRepo repository.UserBookshelfRepository,
-	bookCatch catch.BookCatch,
-	limitCatch catch.LimitCatch,
+	bookCatch cache.BookCache,
+	limitCatch cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) UserBookshelfService {
@@ -93,7 +93,7 @@ func (s userBookshelfService) CreateUserBookshelf(ctx context.Context, userID st
 		// 热力值限流
 		_ = s.limitCatch.AddUserBookshelfBook1Hour(ctx, userID, req.BookID)
 
-		_ = s.bookCatch.IncreaseBookThermalDailyCatch(ctx, req.BookID, 10)
+		_ = s.bookCatch.IncreaseBookThermalDaily(ctx, req.BookID, 10)
 
 		return nil
 	})

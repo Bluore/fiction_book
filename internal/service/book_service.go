@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"errors"
-	"fiction-book/internal/catch"
+	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -42,7 +42,7 @@ type bookService struct {
 	userRepo          repository.UserRepository
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
-	bookCatch         catch.BookCatch
+	bookCatch         cache.BookCache
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -53,7 +53,7 @@ func NewBookService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
-	bookCatch catch.BookCatch,
+	bookCatch cache.BookCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookService {
@@ -333,7 +333,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	}
 
 	// 当前页数的排行榜缓存失效时
-	rankRes, err := s.bookCatch.GetBookThermalDailyCatch(ctx, req.Page, req.Size)
+	rankRes, err := s.bookCatch.GetBookThermalDaily(ctx, req.Page, req.Size)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	// 逐行获取
 	for _, bookRecord := range rankRes {
 		// 尝试通过缓存获取
-		book, bookCatchHit, _ := s.bookCatch.GetBookCatch(ctx, bookRecord)
+		book, bookCatchHit, _ := s.bookCatch.GetBook(ctx, bookRecord)
 		if bookCatchHit == false {
 			// 当缓存未命中
 			book, err = s.bookRepo.GetByID(ctx, bookRecord)
@@ -352,7 +352,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			_ = s.bookCatch.UpdateBookCatch(ctx, book)
+			_ = s.bookCatch.UpdateBook(ctx, book)
 		}
 		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 	}

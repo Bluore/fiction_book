@@ -1,7 +1,7 @@
 package wire
 
 import (
-	"fiction-book/internal/catch"
+	"fiction-book/internal/cache"
 
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -15,16 +15,16 @@ var CatchSet = wire.NewSet(
 )
 
 // ProvideBookCatch 创建Book缓存仓库
-func ProvideBookCatch(redis *redis.Client) catch.BookCatch {
-	return catch.NewBookCatch(redis)
+func ProvideBookCatch(redis *redis.Client) cache.BookCache {
+	return cache.NewBookCatch(redis)
 }
 
 // ProvideBookChapterCatch 创建BookChapter缓存仓库
-func ProvideBookChapterCatch(redis *redis.Client) catch.BookChapterCatch {
-	return catch.NewBookChapterCatch(redis)
+func ProvideBookChapterCatch(redis *redis.Client) cache.BookChapterCache {
+	return cache.NewBookChapterCatch(redis)
 }
 
 // ProvideLimitCatch 创建限流仓库
-func ProvideLimitCatch(redis *redis.Client) catch.LimitCatch {
-	return catch.NewLimitCatch(redis)
+func ProvideLimitCatch(redis *redis.Client) cache.LimitCache {
+	return cache.NewLimitCatch(redis)
 }

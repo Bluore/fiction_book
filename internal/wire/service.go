@@ -1,7 +1,7 @@
 package wire
 
 import (
-	"fiction-book/internal/catch"
+	"fiction-book/internal/cache"
 
 	"github.com/google/wire"
 	"gorm.io/gorm"
@@ -45,7 +45,7 @@ func ProvideBookService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
-	bookCatch catch.BookCatch,
+	bookCatch cache.BookCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookService {
@@ -67,9 +67,9 @@ func ProvideBookChapterService(
 	bookChapterRepo repository.BookChapterRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
-	bookCatch catch.BookCatch,
-	bookChapterCatch catch.BookChapterCatch,
-	limitCatch catch.LimitCatch,
+	bookCatch cache.BookCache,
+	bookChapterCatch cache.BookChapterCache,
+	limitCatch cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookChapterService {
@@ -115,8 +115,8 @@ func ProvideUserBookshelfService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	userBookshelfRepo repository.UserBookshelfRepository,
-	bookCatch catch.BookCatch,
-	limitCatch catch.LimitCatch,
+	bookCatch cache.BookCache,
+	limitCatch cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.UserBookshelfService {
