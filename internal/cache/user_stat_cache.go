@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	keyUserStatReadBookNum  = "Data:UserStat:%s:ReadBookNum"
-	keyUserStatReadWordsNum = "Data:UserStat:%s:ReadWordsNum"
+	keyUserStatReadBookNum  = "Data:User:Stat:%s:ReadBookNum"
+	keyUserStatReadWordsNum = "Data:User:Stat:%s:ReadWordsNum"
 )
 
 func KeyUserStatReadBookNum(userId string) string {

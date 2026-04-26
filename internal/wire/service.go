@@ -28,12 +28,16 @@ var ServiceSet = wire.NewSet(
 func ProvideUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userStatCache cache.UserStatCache,
+	userAssetCache cache.UserAssetCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.UserService {
 	return service.NewUserService(
 		userRepo,
 		userAssetRepo,
+		userStatCache,
+		userAssetCache,
 		db,
 		cfg,
 	)

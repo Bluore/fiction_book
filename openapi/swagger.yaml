@@ -379,6 +379,33 @@ definitions:
       username:
         type: string
     type: object
+  dto.UserStatResponse:
+    properties:
+      age:
+        type: integer
+      asset_gold:
+        type: integer
+      cover_image:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      profile_image:
+        type: string
+      read_books_num:
+        type: integer
+      read_words_num:
+        type: integer
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
   response.Response:
     properties:
       code:
@@ -1955,7 +1982,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.UserResponse'
+                  $ref: '#/definitions/dto.UserStatResponse'
               type: object
         "400":
           description: 参数错误
@@ -1975,7 +2002,7 @@ paths:
             $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
-      summary: 获取当前用户信息
+      summary: 获取当前用户详情信息
       tags:
       - 用户管理
   /api/v1/users/information:

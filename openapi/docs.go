@@ -2466,7 +2466,7 @@ const docTemplate = `{
                 "tags": [
                     "用户管理"
                 ],
-                "summary": "获取当前用户信息",
+                "summary": "获取当前用户详情信息",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2479,7 +2479,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserStatResponse"
                                         }
                                     }
                                 }
@@ -3345,6 +3345,47 @@ const docTemplate = `{
                 },
                 "profile_image": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserStatResponse": {
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "asset_gold": {
+                    "type": "integer"
+                },
+                "cover_image": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "profile_image": {
+                    "type": "string"
+                },
+                "read_books_num": {
+                    "type": "integer"
+                },
+                "read_words_num": {
+                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"

@@ -96,3 +96,11 @@ type EmailVerifyResponse struct {
 type UploadAvatarRequest struct {
 	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
 }
+
+// UserStatResponse 用户详情响应
+type UserStatResponse struct {
+	UserResponse
+	AssetGold    int64 `json:"asset_gold"`
+	ReadBooksNum int64 `json:"read_books_num"`
+	ReadWordsNum int64 `json:"read_words_num"`
+}

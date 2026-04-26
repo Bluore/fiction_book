@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fiction-book/internal/cache"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
 	"fiction-book/pkg/redisclient"
@@ -54,27 +55,34 @@ type UserService interface {
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
 	SendEmailVerification(ctx context.Context, receiver string) error
 	UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error)
+	GetStatByID(ctx context.Context, userID string) (*dto.UserStatResponse, error)
 }
 
 type userService struct {
-	userRepo      repository.UserRepository
-	userAssetRepo repository.UserAssetRepository
-	db            *gorm.DB
-	cfg           *config.Config
+	userRepo       repository.UserRepository
+	userAssetRepo  repository.UserAssetRepository
+	userStatCache  cache.UserStatCache
+	userAssetCache cache.UserAssetCache
+	db             *gorm.DB
+	cfg            *config.Config
 }
 
 // NewUserService 创建用户服务实例
 func NewUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userStatCache cache.UserStatCache,
+	userAssetCache cache.UserAssetCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) UserService {
 	return &userService{
-		userRepo:      userRepo,
-		userAssetRepo: userAssetRepo,
-		db:            db,
-		cfg:           cfg,
+		userRepo:       userRepo,
+		userAssetRepo:  userAssetRepo,
+		userStatCache:  userStatCache,
+		userAssetCache: userAssetCache,
+		db:             db,
+		cfg:            cfg,
 	}
 }
 
@@ -515,4 +523,49 @@ func getFileID(path string, prefix string) string {
 		}
 	}
 	return imgId
+}
+
+func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.UserStatResponse, error) {
+	user, err := s.userRepo.GetByID(ctx, s.db, userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	userAssetGold, userAssetGoldHit, _ := s.userAssetCache.GetGold(ctx, userID)
+	if !userAssetGoldHit {
+		// 如果缓存没有命中 降级到MySql
+		userAssetGold, err = s.userAssetRepo.GetGoldByID(ctx, s.db, userID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 数据只存储在redis中
+	userStatReadBooksNum, userStatReadBooksNumHit, err := s.userStatCache.GetReadBookNum(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if userStatReadBooksNumHit {
+		logger.Info(fmt.Sprintf("userStat read book num not hit by userID: %s", userID))
+	}
+
+	userStatReadWordsNum, userStatReadWordNumHit, err := s.userStatCache.GetReadWordsNum(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if userStatReadWordNumHit {
+		logger.Info(fmt.Sprintf("userStat read words num not hit by userID: %s", userID))
+	}
+
+	resp := &dto.UserStatResponse{
+		UserResponse: *s.toUserResponse(user),
+		AssetGold:    userAssetGold,
+		ReadBooksNum: userStatReadBooksNum,
+		ReadWordsNum: userStatReadWordsNum,
+	}
+
+	return resp, nil
 }
