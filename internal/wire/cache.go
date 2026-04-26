@@ -12,6 +12,7 @@ var CatchSet = wire.NewSet(
 	ProvideBookCatch,
 	ProvideBookChapterCatch,
 	ProvideLimitCatch,
+	ProvideUserStatCache,
 )
 
 // ProvideBookCatch 创建Book缓存仓库
@@ -27,4 +28,9 @@ func ProvideBookChapterCatch(redis *redis.Client) cache.BookChapterCache {
 // ProvideLimitCatch 创建限流仓库
 func ProvideLimitCatch(redis *redis.Client) cache.LimitCache {
 	return cache.NewLimitCatch(redis)
+}
+
+// ProvideUserStatCache 创建用户信息仓库
+func ProvideUserStatCache(redis *redis.Client) cache.UserStatCache {
+	return cache.NewUserStatCache(redis)
 }
