@@ -227,7 +227,8 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 			return err
 		}
 
-		// todo 用户添加对应书籍数量
+		// 用户添加对应书籍数量
+		_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
 
 		return nil
 	}()
