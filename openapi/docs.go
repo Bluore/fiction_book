@@ -804,6 +804,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/bookshelf/delete": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "从书架中删除（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "书架管理"
+                ],
+                "summary": "从书架中删除",
+                "parameters": [
+                    {
+                        "description": "删除书籍的id",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.DeleteUserBookshelfRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4001": {
+                        "description": "书籍未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/bookshelf/{user_id}": {
             "get": {
                 "security": [
@@ -1571,7 +1634,7 @@ const docTemplate = `{
                 "tags": [
                     "历史管理"
                 ],
-                "summary": "获取用户浏览历史",
+                "summary": "获取用户浏览历史（弃用）",
                 "parameters": [
                     {
                         "type": "string",
@@ -3068,6 +3131,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "verify": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.DeleteUserBookshelfRequest": {
+            "type": "object",
+            "required": [
+                "book_id"
+            ],
+            "properties": {
+                "book_id": {
                     "type": "string"
                 }
             }

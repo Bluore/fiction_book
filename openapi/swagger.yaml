@@ -153,6 +153,13 @@ definitions:
     - password
     - username
     type: object
+  dto.DeleteUserBookshelfRequest:
+    properties:
+      book_id:
+        type: string
+    required:
+    - book_id
+    type: object
   dto.EmailVerifyRequest:
     properties:
       email:
@@ -978,6 +985,46 @@ paths:
       summary: 添加到书架
       tags:
       - 书架管理
+  /api/v1/bookshelf/delete:
+    post:
+      consumes:
+      - application/json
+      description: 从书架中删除（认证）
+      parameters:
+      - description: 删除书籍的id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DeleteUserBookshelfRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4001":
+          description: 书籍未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 从书架中删除
+      tags:
+      - 书架管理
   /api/v1/buy/book:
     post:
       consumes:
@@ -1440,7 +1487,7 @@ paths:
           description: 用户不存在
           schema:
             $ref: '#/definitions/response.Response'
-      summary: 获取用户浏览历史
+      summary: 获取用户浏览历史（弃用）
       tags:
       - 历史管理
   /api/v1/orders:

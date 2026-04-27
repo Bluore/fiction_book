@@ -196,6 +196,9 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 
 	// 向redis里面添加热力值
 	err = func() error {
+		// 用户添加对应书籍数量
+		_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
+
 		// 阅读频次需要大于1min
 		exist, _ := s.limitCache.CheckUserBrowse1Min(ctx, userID)
 		if exist {
@@ -226,9 +229,6 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 		if err != nil {
 			return err
 		}
-
-		// 用户添加对应书籍数量
-		_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
 
 		return nil
 	}()

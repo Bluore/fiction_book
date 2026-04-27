@@ -64,3 +64,33 @@ func (h *Handler) CreateUserBookshelf(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+// DeleteUserBookshelf 从书架中删除
+// @Summary 从书架中删除
+// @Description 从书架中删除（认证）
+// @Tags 书架管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body dto.DeleteUserBookshelfRequest true "删除书籍的id"
+// @Success 200 {object} response.Response
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/bookshelf/delete [post]
+func (h *Handler) DeleteUserBookshelf(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.DeleteUserBookshelfRequest](c)
+	userId := transmit.GetStr(c, "userID")
+	if userId == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	err := h.userBookshelfService.DeleteUserBookshelf(c.Request.Context(), userId, req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, nil)
+}

@@ -9,7 +9,7 @@ import (
 )
 
 // ListUserHistory 获取用户浏览历史
-// @Summary 获取用户浏览历史
+// @Summary 获取用户浏览历史（弃用）
 // @Description 获取指定用户的浏览历史（分页）
 // @Tags 历史管理
 // @Accept application/json

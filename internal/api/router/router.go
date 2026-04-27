@@ -126,11 +126,12 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		{
 			bookshelf.GET("/:user_id", middleware.Validation(&dto.ListUserBookshelfRequest{}), h.ListUserBookshelf)
 			bookshelf.POST("/add", middleware.Auth(cfg), middleware.Validation(&dto.CreateUserBookshelfRequest{}), h.CreateUserBookshelf)
+			bookshelf.POST("/delete", middleware.Auth(cfg), middleware.Validation(&dto.DeleteUserBookshelfRequest{}), h.DeleteUserBookshelf)
 		}
 		//历史管理
 		history := v1.Group("/history")
 		{
-			history.GET("/:user_id", middleware.Auth(cfg), middleware.Validation(&dto.ListUserHistoryRequest{}), h.ListUserHistory)
+			history.GET("/:user_id", middleware.Validation(&dto.ListUserHistoryRequest{}), h.ListUserHistory)
 		}
 
 		// 订单管理

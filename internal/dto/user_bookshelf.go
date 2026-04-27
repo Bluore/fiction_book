@@ -22,3 +22,7 @@ type ListUserBookshelfResponse struct {
 	Books []*UserBookshelfResponse `json:"books"`
 	PageListResponse
 }
+
+type DeleteUserBookshelfRequest struct {
+	BookID string `json:"book_id" binding:"required"`
+}

@@ -14,6 +14,7 @@ import (
 type UserBookshelfService interface {
 	GetUserBookshelfList(ctx context.Context, req *dto.ListUserBookshelfRequest) (*dto.ListUserBookshelfResponse, error)
 	CreateUserBookshelf(ctx context.Context, userID string, req *dto.CreateUserBookshelfRequest) error
+	DeleteUserBookshelf(ctx context.Context, userID string, req *dto.DeleteUserBookshelfRequest) error
 }
 
 type userBookshelfService struct {
@@ -110,4 +111,23 @@ func toUserBookshelfResponse(_ *config.Config, in *model.UserBookshelf) *dto.Use
 		BookID:    in.BookID,
 		CreatedAt: in.CreatedAt,
 	}
+}
+
+func (s userBookshelfService) DeleteUserBookshelf(ctx context.Context, userID string, req *dto.DeleteUserBookshelfRequest) error {
+	err := s.db.Transaction(func(db *gorm.DB) error {
+		exist, _, err := s.userBookshelfRepo.CheckByUserIDAndBookID(ctx, db, userID, req.BookID)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return ErrBookNotFound
+		}
+
+		err = s.userBookshelfRepo.DeleteByUserIDAndBookID(ctx, db, userID, req.BookID)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
