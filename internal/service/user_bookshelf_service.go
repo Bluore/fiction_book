@@ -74,6 +74,10 @@ func (s userBookshelfService) GetUserBookshelfList(ctx context.Context, userID s
 		return nil, err
 	}
 
+	if len(bookRes) == 0 {
+		bookRes = make([]*dto.BookResponse, 0)
+	}
+
 	page := dto.PageListResponse{
 		Page:  req.Page,
 		Size:  req.Size,
