@@ -534,10 +534,10 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 		return nil, ErrUserNotFound
 	}
 
-	userAssetGold, userAssetGoldHit, _ := s.userAssetCache.GetGold(ctx, userID)
+	userAsset, userAssetGoldHit, _ := s.userAssetCache.Get(ctx, userID)
 	if !userAssetGoldHit {
 		// 如果缓存没有命中 降级到MySql
-		userAssetGold, err = s.userAssetRepo.GetGoldByID(ctx, s.db, userID)
+		userAsset, err = s.userAssetRepo.GetByID(ctx, s.db, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -561,10 +561,10 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 	}
 
 	resp := &dto.UserStatResponse{
-		UserResponse: *s.toUserResponse(user),
-		AssetGold:    userAssetGold,
-		ReadBooksNum: userStatReadBooksNum,
-		ReadWordsNum: userStatReadWordsNum,
+		UserResponse:      *s.toUserResponse(user),
+		UserAssetResponse: *toUserAssetResponse(userAsset),
+		ReadBooksNum:      userStatReadBooksNum,
+		ReadWordsNum:      userStatReadWordsNum,
 	}
 
 	return resp, nil

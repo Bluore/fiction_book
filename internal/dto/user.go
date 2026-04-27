@@ -100,7 +100,7 @@ type UploadAvatarRequest struct {
 // UserStatResponse 用户详情响应
 type UserStatResponse struct {
 	UserResponse
-	AssetGold    int64 `json:"asset_gold"`
+	UserAssetResponse
 	ReadBooksNum int64 `json:"read_books_num"`
 	ReadWordsNum int64 `json:"read_words_num"`
 }

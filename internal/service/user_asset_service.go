@@ -50,9 +50,10 @@ func (u *userAssetService) GetByID(ctx context.Context, id string) (*dto.UserAss
 
 func toUserAssetResponse(userAsset *model.UserAsset) *dto.UserAssetResponse {
 	return &dto.UserAssetResponse{
-		ID:       userAsset.ID,
-		Gold:     userAsset.Gold,
-		VIPLevel: VIPStrToLevel(userAsset.VIPLevel),
-		VIPMark:  userAsset.VIPLevel,
+		ID:          userAsset.ID,
+		Gold:        userAsset.Gold,
+		VIPLevel:    VIPStrToLevel(userAsset.VIPLevel),
+		VIPMark:     userAsset.VIPLevel,
+		VIPActiveAt: userAsset.VIPActiveAt,
 	}
 }
