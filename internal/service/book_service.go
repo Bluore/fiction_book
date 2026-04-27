@@ -35,6 +35,7 @@ type BookService interface {
 	UploadBookCover(ctx context.Context, userID string, req *dto.UploadBookCoverRequest) (*dto.UploadBookCoverResponse, error)
 	GetBookListByThermalDaily(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 	GetListByOwnerID(ctx context.Context, userID string, req *dto.GetBookListByOwnerIDRequest) (*dto.BookListResponse, error)
+	GetReadHistoryRecently(ctx context.Context, userID string, page int, size int) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -42,7 +43,8 @@ type bookService struct {
 	userRepo          repository.UserRepository
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
-	bookCatch         cache.BookCache
+	bookCache         cache.BookCache
+	userStatCache     cache.UserStatCache
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -53,7 +55,8 @@ func NewBookService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
-	bookCatch cache.BookCache,
+	bookCache cache.BookCache,
+	userStatCache cache.UserStatCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookService {
@@ -62,7 +65,8 @@ func NewBookService(
 		userRepo:          userRepo,
 		userAssetRepo:     userAssetRepo,
 		purchasedBookRepo: purchasedBookRepo,
-		bookCatch:         bookCatch,
+		bookCache:         bookCache,
+		userStatCache:     userStatCache,
 		db:                db,
 		cfg:               cfg,
 	}
@@ -333,7 +337,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	}
 
 	// 当前页数的排行榜缓存失效时
-	rankRes, err := s.bookCatch.GetBookThermalDaily(ctx, req.Page, req.Size)
+	rankRes, err := s.bookCache.GetBookThermalDaily(ctx, req.Page, req.Size)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +345,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 	// 逐行获取
 	for _, bookRecord := range rankRes {
 		// 尝试通过缓存获取
-		book, bookCatchHit, _ := s.bookCatch.GetBook(ctx, bookRecord)
+		book, bookCatchHit, _ := s.bookCache.GetBook(ctx, bookRecord)
 		if bookCatchHit == false {
 			// 当缓存未命中
 			book, err = s.bookRepo.GetByID(ctx, bookRecord)
@@ -352,7 +356,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			_ = s.bookCatch.UpdateBook(ctx, book)
+			_ = s.bookCache.UpdateBook(ctx, book)
 		}
 		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 	}
@@ -389,4 +393,50 @@ func (s *bookService) GetListByOwnerID(ctx context.Context, userID string, req *
 		PageListResponse: pageResponse,
 	}
 	return res, nil
+}
+
+func (s *bookService) GetReadHistoryRecently(ctx context.Context, userID string, page int, size int) (*dto.BookListResponse, error) {
+	bookListResponse := make([]*dto.BookResponse, 0)
+	pageResponse := dto.PageListResponse{
+		Page:  page,
+		Size:  size,
+		Count: -1,
+	}
+
+	bookListCache, err := s.userStatCache.GetReadBookList(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	startOffset := (page - 1) * size
+	endOffset := startOffset + size
+	if endOffset > len(bookListCache) {
+		endOffset = len(bookListCache)
+	}
+	if startOffset > len(bookListCache) {
+		startOffset = len(bookListCache)
+	}
+
+	bookListCache = bookListCache[startOffset:endOffset]
+
+	itemsCount, _ := s.userStatCache.CountReadBookList(ctx, userID)
+	pageResponse.Count = int(itemsCount)
+
+	for _, bookRecord := range bookListCache {
+		bookCache, bookCacheHit, _ := s.bookCache.GetBook(ctx, bookRecord)
+		if bookCacheHit == false {
+			bookCache, err = s.bookRepo.GetByID(ctx, bookRecord)
+			if err != nil {
+				return nil, err
+			}
+			_ = s.bookCache.UpdateBook(ctx, bookCache)
+		}
+		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, bookCache))
+	}
+
+	historyResponse := &dto.BookListResponse{
+		Books:            bookListResponse,
+		PageListResponse: pageResponse,
+	}
+	return historyResponse, nil
 }

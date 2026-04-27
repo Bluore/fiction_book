@@ -50,6 +50,7 @@ func ProvideBookService(
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
 	bookCatch cache.BookCache,
+	userStatCache cache.UserStatCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookService {
@@ -59,6 +60,7 @@ func ProvideBookService(
 		userAssetRepo,
 		purchasedBookRepo,
 		bookCatch,
+		userStatCache,
 		db,
 		cfg,
 	)

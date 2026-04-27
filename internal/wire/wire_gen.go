@@ -34,7 +34,7 @@ func InitializeApp() (*App, error) {
 	bookRepository := ProvideBookRepository(db)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	bookCache := ProvideBookCatch(client)
-	bookService := ProvideBookService(bookRepository, userRepository, userAssetRepository, userPurchasedBookRepository, bookCache, db, config)
+	bookService := ProvideBookService(bookRepository, userRepository, userAssetRepository, userPurchasedBookRepository, bookCache, userStatCache, db, config)
 	bookChapterRepository := ProvideBookChapterRepository(db)
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)

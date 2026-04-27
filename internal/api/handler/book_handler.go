@@ -179,7 +179,7 @@ func (h *Handler) UploadBookCoverImage(c *gin.Context) {
 // @Produce json
 // @Param page query int false "页码" default(1)
 // @Param size query int false "每页数量" default(10)
-// @Success 200 {object} dto.UploadBookCoverResponse "封面URL"
+// @Success 200 {object} dto.UploadBookCoverResponse
 // @Failure 400 {object} response.Response "请求参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/books/thermal/daily [get]
@@ -219,6 +219,38 @@ func (h *Handler) GetBookListByOwner(c *gin.Context) {
 	}
 
 	res, err := h.bookService.GetListByOwnerID(c.Request.Context(), userID, req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}
+
+// GetUserReadBookHistoryRecently 获取用户最近读书的历史记录
+// @Summary 获取用户最近读书的历史记录
+// @Description 获取用户最近阅读的书籍，返回每本书籍的详细字段，但是不返回阅读的时间（认证）
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param page query int false "页码" default(1)
+// @Param size query int false "每页数量" default(10)
+// @Success 200 {object} dto.UploadBookCoverResponse
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 401 {object} response.Response "用户登录失效"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/books/history/list [get]
+func (h *Handler) GetUserReadBookHistoryRecently(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.PageListRequest](c)
+	req.ToStandard()
+
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	res, err := h.bookService.GetReadHistoryRecently(c.Request.Context(), userID, req.Page, req.Size)
 	if err != nil {
 		response.PushError(c, err)
 		return

@@ -41,6 +41,8 @@ type UserStatCache interface {
 	GetReadBookNum(ctx context.Context, userId string) (int64, bool, error)
 	IncreaseReadWordsNum(ctx context.Context, userId string, increaseNum int64) error
 	GetReadWordsNum(ctx context.Context, userId string) (int64, bool, error)
+	GetReadBookList(ctx context.Context, userId string) ([]string, error)
+	CountReadBookList(ctx context.Context, userId string) (int64, error)
 }
 
 type userStatCache struct {
@@ -165,4 +167,12 @@ func (c userStatCache) GetReadWordsNum(ctx context.Context, userId string) (int6
 		return 0, false, err
 	}
 	return result, true, nil
+}
+
+func (c userStatCache) GetReadBookList(ctx context.Context, userId string) ([]string, error) {
+	return c.redis.LRange(ctx, KeyUserStatReadBookList(userId), 0, -1).Result()
+}
+
+func (c userStatCache) CountReadBookList(ctx context.Context, userId string) (int64, error) {
+	return c.redis.LLen(ctx, KeyUserStatReadBookList(userId)).Result()
 }

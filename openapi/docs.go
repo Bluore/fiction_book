@@ -273,6 +273,68 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/books/history/list": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取用户最近阅读的书籍，返回每本书籍的详细字段，但是不返回阅读的时间（认证）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "书籍管理"
+                ],
+                "summary": "获取用户最近读书的历史记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "用户登录失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/books/list": {
             "get": {
                 "description": "分页获取书籍列表",
@@ -455,7 +517,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "封面URL",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
@@ -3280,6 +3342,9 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "vip_active_at": {
+                    "type": "string"
+                },
                 "vip_level": {
                     "type": "integer"
                 },
@@ -3360,9 +3425,6 @@ const docTemplate = `{
                 "age": {
                     "type": "integer"
                 },
-                "asset_gold": {
-                    "type": "integer"
-                },
                 "cover_image": {
                     "type": "string"
                 },
@@ -3374,6 +3436,9 @@ const docTemplate = `{
                 },
                 "email": {
                     "type": "string"
+                },
+                "gold": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "string"
@@ -3391,6 +3456,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                },
+                "vip_active_at": {
+                    "type": "string"
+                },
+                "vip_level": {
+                    "type": "integer"
+                },
+                "vip_mark": {
                     "type": "string"
                 }
             }

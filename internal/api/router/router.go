@@ -80,6 +80,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			books.GET("/:id/chapters/list", middleware.Validation(&dto.GetBookChapterListRequest{}), h.GetBookChapterList)
 			books.GET("/thermal/daily", middleware.Validation(&dto.GetBookListByThermalDaily{}), h.GetBookListThermalDaily)
 			books.GET("/own/list", middleware.Auth(cfg), middleware.Validation(&dto.GetBookListByOwnerIDRequest{}), h.GetBookListByOwner)
+			books.GET("/history/list", middleware.Auth(cfg), middleware.Validation(&dto.PageListRequest{}), h.GetUserReadBookHistoryRecently)
 		}
 
 		// 书籍章节模块
