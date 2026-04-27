@@ -867,6 +867,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/bookshelf/list": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取登录用户的书架列表（分页）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "书架管理"
+                ],
+                "summary": "获取自己书架",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.BookListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/bookshelf/{user_id}": {
             "get": {
                 "security": [
@@ -920,7 +994,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.ListUserBookshelfResponse"
+                                            "$ref": "#/definitions/dto.BookListResponse"
                                         }
                                     }
                                 }
@@ -3228,26 +3302,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ListUserBookshelfResponse": {
-            "type": "object",
-            "properties": {
-                "books": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.UserBookshelfResponse"
-                    }
-                },
-                "count": {
-                    "type": "integer"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
         "dto.ListUserHistoryResponse": {
             "type": "object",
             "properties": {
@@ -3423,23 +3477,6 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "vip_mark": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UserBookshelfResponse": {
-            "type": "object",
-            "properties": {
-                "book_id": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }

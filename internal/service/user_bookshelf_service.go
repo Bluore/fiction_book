@@ -12,7 +12,7 @@ import (
 )
 
 type UserBookshelfService interface {
-	GetUserBookshelfList(ctx context.Context, req *dto.ListUserBookshelfRequest) (*dto.ListUserBookshelfResponse, error)
+	GetUserBookshelfList(ctx context.Context, userID string, req *dto.PageListRequest) (*dto.BookListResponse, error)
 	CreateUserBookshelf(ctx context.Context, userID string, req *dto.CreateUserBookshelfRequest) error
 	DeleteUserBookshelf(ctx context.Context, userID string, req *dto.DeleteUserBookshelfRequest) error
 }
@@ -47,18 +47,29 @@ func NewUserBookshelfService(
 	}
 }
 
-func (s userBookshelfService) GetUserBookshelfList(ctx context.Context, req *dto.ListUserBookshelfRequest) (*dto.ListUserBookshelfResponse, error) {
-	books, err := s.userBookshelfRepo.ListByUserID(ctx, s.db, req.UserID, req.Page, req.Size)
+func (s userBookshelfService) GetUserBookshelfList(ctx context.Context, userID string, req *dto.PageListRequest) (*dto.BookListResponse, error) {
+	bookShelfList, err := s.userBookshelfRepo.ListByUserID(ctx, s.db, userID, req.Page, req.Size)
 	if err != nil {
 		return nil, err
 	}
 
-	bookRes := make([]*dto.UserBookshelfResponse, len(books))
-	for i, book := range books {
-		bookRes[i] = toUserBookshelfResponse(s.cfg, book)
+	var bookRes []*dto.BookResponse
+	for _, bookShelfItem := range bookShelfList {
+		bookCache, bookCacheHit, _ := s.bookCatch.GetBook(ctx, bookShelfItem.BookID)
+		if !bookCacheHit {
+			var err error
+			bookCache, err = s.bookRepo.GetByID(ctx, bookShelfItem.BookID)
+			if err != nil {
+				return nil, err
+			}
+
+			_ = s.bookCatch.UpdateBook(ctx, bookCache)
+		}
+
+		bookRes = append(bookRes, toBookResponse(s.cfg, bookCache))
 	}
 
-	count, err := s.userBookshelfRepo.CountByUserID(ctx, s.db, req.UserID)
+	count, err := s.userBookshelfRepo.CountByUserID(ctx, s.db, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +80,7 @@ func (s userBookshelfService) GetUserBookshelfList(ctx context.Context, req *dto
 		Count: count,
 	}
 
-	res := &dto.ListUserBookshelfResponse{
+	res := &dto.BookListResponse{
 		Books:            bookRes,
 		PageListResponse: page,
 	}

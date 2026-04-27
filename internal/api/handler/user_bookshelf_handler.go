@@ -19,7 +19,7 @@ import (
 // @Param user_id path string true "用户ID"
 // @Param page query int false "页码" default(1)
 // @Param size query int false "每页数量" default(10)
-// @Success 200 {object} response.Response{data=dto.ListUserBookshelfResponse}
+// @Success 200 {object} response.Response{data=dto.BookListResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 500 {object} response.Response "服务器内部错误"
@@ -27,8 +27,40 @@ import (
 func (h *Handler) ListUserBookshelf(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.ListUserBookshelfRequest](c)
 	req.ToStandard()
+	pageListReq := &dto.PageListRequest{Page: req.Page, Size: req.Size}
 
-	books, err := h.userBookshelfService.GetUserBookshelfList(c.Request.Context(), req)
+	books, err := h.userBookshelfService.GetUserBookshelfList(c.Request.Context(), req.UserID, pageListReq)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, books)
+}
+
+// ListMineBookshelf 获取自己的书架
+// @Summary 获取自己书架
+// @Description 获取登录用户的书架列表（分页）
+// @Tags 书架管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param page query int false "页码" default(1)
+// @Param size query int false "每页数量" default(10)
+// @Success 200 {object} response.Response{data=dto.BookListResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 401 {object} response.Response "登录已失效"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/bookshelf/list [get]
+func (h *Handler) ListMineBookshelf(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.PageListRequest](c)
+	req.ToStandard()
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	books, err := h.userBookshelfService.GetUserBookshelfList(c.Request.Context(), userID, req)
 	if err != nil {
 		response.PushError(c, err)
 		return
