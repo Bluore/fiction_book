@@ -205,6 +205,11 @@ const docTemplate = `{
         },
         "/api/v1/books/create": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "创建一本新书籍（需要认证）",
                 "consumes": [
                     "application/json"
@@ -3129,7 +3134,6 @@ const docTemplate = `{
         "dto.CreateBookRequest": {
             "type": "object",
             "required": [
-                "cover_image",
                 "description",
                 "name"
             ],

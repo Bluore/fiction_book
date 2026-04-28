@@ -8,7 +8,7 @@ import (
 type CreateBookRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description" binding:"required"`
-	CoverImage  string `json:"cover_image" binding:"required"`
+	CoverImage  string `json:"cover_image"`
 	//OwnerId     string    `json:"owner_id"`
 	VIPLevel string    `json:"vip_level"`
 	Price    int64     `json:"price"`

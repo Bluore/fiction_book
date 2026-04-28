@@ -112,7 +112,6 @@ definitions:
         description: OwnerId     string    `json:"owner_id"`
         type: string
     required:
-    - cover_image
     - description
     - name
     type: object
@@ -701,6 +700,8 @@ paths:
           description: 书籍已存在
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
       summary: 创建书籍
       tags:
       - 书籍管理
