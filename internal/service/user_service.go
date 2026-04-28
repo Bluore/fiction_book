@@ -6,7 +6,6 @@ import (
 	"fiction-book/internal/cache"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
-	"fiction-book/pkg/redisclient"
 	"fmt"
 	"image"
 	"io"
@@ -63,6 +62,7 @@ type userService struct {
 	userAssetRepo  repository.UserAssetRepository
 	userStatCache  cache.UserStatCache
 	userAssetCache cache.UserAssetCache
+	authCache      cache.AuthCache
 	db             *gorm.DB
 	cfg            *config.Config
 }
@@ -73,6 +73,7 @@ func NewUserService(
 	userAssetRepo repository.UserAssetRepository,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
+	authCache cache.AuthCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) UserService {
@@ -81,6 +82,7 @@ func NewUserService(
 		userAssetRepo:  userAssetRepo,
 		userStatCache:  userStatCache,
 		userAssetCache: userAssetCache,
+		authCache:      authCache,
 		db:             db,
 		cfg:            cfg,
 	}
@@ -156,51 +158,60 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 		return nil, err
 	}
 
-	// 检查用户名是否已存在
-	existingUser, err := s.userRepo.GetByUsername(ctx, s.db, req.Username)
+	var user *model.User
+
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		// 检查用户名是否已存在
+		existingUser, err := s.userRepo.GetByUsername(ctx, tx, req.Username)
+		if err != nil {
+			return err
+		}
+		if existingUser != nil {
+			return ErrUserExists
+		}
+
+		// 检查邮箱是否已存在
+		existingUser, err = s.userRepo.GetByEmail(ctx, tx, req.Email)
+		if err != nil {
+			return err
+		}
+		if existingUser != nil {
+			return ErrEmailExists
+		}
+
+		// 加密密码
+		hashedPassword, err := hashPassword(req.Password)
+		if err != nil {
+			return err
+		}
+
+		// 创建用户
+		role := "user"
+		// 在 debug 模式下，如果用户名为 admin，则创建管理员账号
+		if s.cfg.Server.Mode == "debug" && req.Username == "admin" {
+			role = "admin"
+		}
+		user = &model.User{
+			ID:       uuid.New().String(),
+			Username: req.Username,
+			Email:    req.Email,
+			Password: hashedPassword, // pragma: allowlist secret
+			Age:      req.Age,
+			Role:     role,
+		}
+
+		if err := s.userRepo.Create(ctx, tx, user); err != nil {
+			return err
+		}
+
+		// 创建用户资产
+		if err := s.userAssetRepo.CreateUserAsset(ctx, tx, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, ErrUserExists
-	}
-
-	// 检查邮箱是否已存在
-	existingUser, err = s.userRepo.GetByEmail(ctx, s.db, req.Email)
-	if err != nil {
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, ErrEmailExists
-	}
-
-	// 加密密码
-	hashedPassword, err := hashPassword(req.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	// 创建用户
-	role := "user"
-	// 在 debug 模式下，如果用户名为 admin，则创建管理员账号
-	if s.cfg.Server.Mode == "debug" && req.Username == "admin" {
-		role = "admin"
-	}
-	user := &model.User{
-		ID:       uuid.New().String(),
-		Username: req.Username,
-		Email:    req.Email,
-		Password: hashedPassword, // pragma: allowlist secret
-		Age:      req.Age,
-		Role:     role,
-	}
-
-	if err := s.userRepo.Create(ctx, s.db, user); err != nil {
-		return nil, err
-	}
-
-	// 创建用户资产
-	if err := s.userAssetRepo.CreateUserAsset(ctx, s.db, user.ID); err != nil {
 		return nil, err
 	}
 
@@ -213,20 +224,15 @@ func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer s
 	}
 
 	// 验证码是否正确
-	rVerify, err := redisclient.Get(
-		ctx,
-		fmt.Sprintf("email:verify:%s", emailVer),
-	)
+	rVerify, err := s.authCache.GetEmailVerification(ctx, emailVer)
 	if err != nil {
 		return ErrEmailVerifySend
 	}
 	if pwdVer != rVerify {
 		return ErrVerification
 	}
-	err = redisclient.Delete(
-		ctx,
-		fmt.Sprintf("email:verify:%s", emailVer),
-	)
+	err = s.authCache.DeleteEmailVerification(ctx, emailVer)
+
 	if err != nil {
 		return nil
 	}
@@ -377,12 +383,11 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 	}
 
 	// redis添加记录
-	err = redisclient.SetWithExpiration(
+	err = s.authCache.UpdateEmailVerification(
 		ctx,
-		fmt.Sprintf("email:verify:%s",
-			receiver),
+		receiver,
 		num,
-		10*time.Minute,
+		5*time.Minute,
 	)
 	if err != nil {
 		log.Printf("redis add value error: %s\n", err.Error())

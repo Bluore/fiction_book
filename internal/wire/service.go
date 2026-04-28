@@ -30,6 +30,7 @@ func ProvideUserService(
 	userAssetRepo repository.UserAssetRepository,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
+	authCache cache.AuthCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.UserService {
@@ -38,6 +39,7 @@ func ProvideUserService(
 		userAssetRepo,
 		userStatCache,
 		userAssetCache,
+		authCache,
 		db,
 		cfg,
 	)

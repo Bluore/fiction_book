@@ -30,7 +30,8 @@ func InitializeApp() (*App, error) {
 	}
 	userStatCache := ProvideUserStatCache(client)
 	userAssetCache := ProvideUserAssetCache(client)
-	userService := ProvideUserService(userRepository, userAssetRepository, userStatCache, userAssetCache, db, config)
+	authCache := ProvideAuthCache(client)
+	userService := ProvideUserService(userRepository, userAssetRepository, userStatCache, userAssetCache, authCache, db, config)
 	bookRepository := ProvideBookRepository(db)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	bookCache := ProvideBookCatch(client)
