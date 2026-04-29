@@ -94,8 +94,8 @@ func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 		BookID:   req.BookID,
 		Title:    *req.Title,
 		Content:  *req.Content,
-		VIPLevel: VIPLevelToStr(VIPStrToLevel(req.VIPLevel)),
-		Price:    int64(req.Price),
+		VIPLevel: VIPLevelToStr(VIPStrToLevel(*req.VIPLevel)),
+		Price:    int64(*req.Price),
 	}
 
 	bookChapterResp, err := s.bookChapterRepo.AddByBookID(ctx, bookChapter)

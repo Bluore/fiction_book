@@ -4,8 +4,8 @@ type CreatBookChapterRequest struct {
 	BookID   string  `json:"book_id" binding:"required"`
 	Title    *string `json:"title" binding:"required"`
 	Content  *string `json:"content" binding:"required"`
-	VIPLevel string  `json:"vip_level" binding:"required"`
-	Price    int     `json:"price" binding:"required"`
+	VIPLevel *string `json:"vip_level" binding:"required"`
+	Price    *int    `json:"price" binding:"required"`
 }
 
 type BookChapterResponse struct {
