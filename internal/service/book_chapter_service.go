@@ -339,6 +339,11 @@ func (s bookChapterService) DeleteChapter(ctx context.Context, userID string, ch
 		return ErrBookNotFound
 	}
 
+	// 检查书籍所有权
+	if book.OwnerID != userID {
+		return ErrPermission
+	}
+
 	// 删除章节
 	return s.bookChapterRepo.Delete(ctx, chapterID)
 }

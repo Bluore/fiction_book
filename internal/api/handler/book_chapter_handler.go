@@ -159,8 +159,9 @@ func (h *Handler) UpdateBookChapter(c *gin.Context) {
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 403 {object} response.Response "禁止访问"
-// @Failure 4010 {object} response.Response "章节未找到"
 // @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 4020 {object} response.Response "你没有权限操作"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/{id} [delete]
 func (h *Handler) DeleteBookChapter(c *gin.Context) {
