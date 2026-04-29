@@ -32,9 +32,11 @@ type GetBookChapterRequest struct {
 }
 
 type UpdateBookChapterRequest struct {
-	ID      string  `uri:"id" binding:"required"`
-	Title   *string `json:"title" binding:""`
-	Content *string `json:"content" binding:""`
+	ID       string  `uri:"id" binding:"required"`
+	Title    *string `json:"title" binding:""`
+	Content  *string `json:"content" binding:""`
+	VIPLevel *string `json:"vip_level" binding:""`
+	Price    *int64  `json:"price" binding:""`
 }
 
 type DeleteBookChapterRequest struct {

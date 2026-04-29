@@ -27,7 +27,7 @@ type BookChapterService interface {
 	AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterResponse, error)
 	GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error)
 	GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error)
-	UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
+	UpdateChapter(ctx context.Context, userID string, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error)
 	DeleteChapter(ctx context.Context, userID string, chapterID string) error
 	GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error)
 	BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error
@@ -275,26 +275,13 @@ func VIPLevelToStr(vipLevel int) string {
 	}
 }
 
-func (s bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
+func (s bookChapterService) UpdateChapter(ctx context.Context, userID string, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
 	old, err := s.bookChapterRepo.GetByID(ctx, req.ID)
 	if err != nil {
 		return nil, err
 	}
 	if old == nil {
 		return nil, ErrBookChapterNotFound
-	}
-	cur := old
-
-	if req.Title != nil && *req.Title != "" {
-		cur.Title = *req.Title
-	}
-	if req.Content != nil && *req.Content != "" {
-		cur.Content = *req.Content
-	}
-
-	err = s.bookChapterRepo.Update(ctx, old.ID, cur)
-	if err != nil {
-		return nil, err
 	}
 
 	book, err := s.bookRepo.GetByID(ctx, old.BookID)
@@ -303,6 +290,30 @@ func (s bookChapterService) UpdateChapter(ctx context.Context, req *dto.UpdateBo
 	}
 	if book == nil {
 		return nil, ErrBookNotFound
+	}
+
+	if book.OwnerID != userID {
+		return nil, ErrPermission
+	}
+
+	cur := old
+
+	if req.Title != nil && *req.Title != "" {
+		cur.Title = *req.Title
+	}
+	if req.Content != nil && *req.Content != "" {
+		cur.Content = *req.Content
+	}
+	if req.VIPLevel != nil {
+		cur.VIPLevel = VIPLevelToStr(VIPStrToLevel(*req.VIPLevel))
+	}
+	if req.Price != nil {
+		cur.Price = *req.Price
+	}
+
+	err = s.bookChapterRepo.Update(ctx, old.ID, cur)
+	if err != nil {
+		return nil, err
 	}
 
 	return toBookChapterResponse(s.cfg, cur, book), nil

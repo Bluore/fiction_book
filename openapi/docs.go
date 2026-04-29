@@ -1480,6 +1480,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "4020": {
+                        "description": "你没有编辑权限",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
@@ -3396,7 +3402,13 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "price": {
+                    "type": "integer"
+                },
                 "title": {
+                    "type": "string"
+                },
+                "vip_level": {
                     "type": "string"
                 }
             }

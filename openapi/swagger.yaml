@@ -269,7 +269,11 @@ definitions:
         type: string
       id:
         type: string
+      price:
+        type: integer
       title:
+        type: string
+      vip_level:
         type: string
     required:
     - id
@@ -1321,6 +1325,10 @@ paths:
             $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4020":
+          description: 你没有编辑权限
           schema:
             $ref: '#/definitions/response.Response'
       security:

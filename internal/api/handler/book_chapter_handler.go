@@ -125,11 +125,18 @@ func (h *Handler) GetBookChapter(c *gin.Context) {
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 4001 {object} response.Response "书籍未找到"
 // @Failure 4010 {object} response.Response "章节未找到"
+// @Failure 4020 {object} response.Response "你没有编辑权限"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/chapters/{id} [put]
 func (h *Handler) UpdateBookChapter(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.UpdateBookChapterRequest](c)
-	curChapter, err := h.bookChapterService.UpdateChapter(c.Request.Context(), req)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	curChapter, err := h.bookChapterService.UpdateChapter(c.Request.Context(), userID, req)
 	if err != nil {
 		if err == service.ErrBookNotFound {
 			response.InternalError(c, err)
