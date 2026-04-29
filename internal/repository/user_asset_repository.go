@@ -130,11 +130,13 @@ func (u userAssetRepository) CreateUserAsset(ctx context.Context, db *gorm.DB, i
 		return errors.New("user asset exist")
 	}
 
+	nowTime := time.Now()
+
 	userAsset := &model.UserAsset{
 		ID:          id,
 		Gold:        0,
 		VIPLevel:    "vip_0",
-		VIPActiveAt: time.Now(),
+		VIPActiveAt: &nowTime,
 	}
 	err = db.WithContext(ctx).Save(userAsset).Error
 	if err != nil {
