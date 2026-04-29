@@ -104,3 +104,10 @@ type UserStatResponse struct {
 	ReadBooksNum int64 `json:"read_books_num"`
 	ReadWordsNum int64 `json:"read_words_num"`
 }
+
+// ForgetPasswordRequest 忘记密码请求
+type ForgetPasswordRequest struct {
+	Password    string `json:"password" binding:"required,min=6"`
+	Email       string `json:"email" binding:"required,email"`
+	EmailVerify string `json:"email_verify" binding:"required,len=6"`
+}

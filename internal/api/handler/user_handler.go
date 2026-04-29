@@ -469,3 +469,28 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 	}
 	response.Success(c, user)
 }
+
+// ForgetPassword 忘记密码
+// @Summary 忘记密码
+// @Description 更新用户密码（需要认证新的邮箱）
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body dto.ForgetPasswordRequest true "更新信息"
+// @Success 200 {object} response.Response{data=dto.UserResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4003 {object} response.Response "验证码验证失败"
+// @Failure 4004 {object} response.Response "验证码未发送"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/auth/forget/password [post]
+func (h *Handler) ForgetPassword(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.ForgetPasswordRequest](c)
+
+	err := h.userService.ForgetPassword(c.Request.Context(), req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, nil)
+}

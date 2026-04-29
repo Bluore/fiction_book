@@ -171,6 +171,20 @@ definitions:
       email:
         type: string
     type: object
+  dto.ForgetPasswordRequest:
+    properties:
+      email:
+        type: string
+      email_verify:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - email_verify
+    - password
+    type: object
   dto.GetOrderListResponse:
     properties:
       count:
@@ -488,6 +502,53 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取邮箱验证码
+      tags:
+      - 认证
+  /api/v1/auth/forget/password:
+    post:
+      consumes:
+      - application/json
+      description: 更新用户密码（需要认证新的邮箱）
+      parameters:
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ForgetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4003":
+          description: 验证码验证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4004":
+          description: 验证码未发送
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 忘记密码
       tags:
       - 认证
   /api/v1/auth/login:

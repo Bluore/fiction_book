@@ -55,6 +55,7 @@ type UserService interface {
 	SendEmailVerification(ctx context.Context, receiver string) error
 	UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error)
 	GetStatByID(ctx context.Context, userID string) (*dto.UserStatResponse, error)
+	ForgetPassword(ctx context.Context, req *dto.ForgetPasswordRequest) error
 }
 
 type userService struct {
@@ -573,4 +574,37 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 	}
 
 	return resp, nil
+}
+
+func (s *userService) ForgetPassword(ctx context.Context, req *dto.ForgetPasswordRequest) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		userModel, err := s.userRepo.GetByEmail(ctx, tx, req.Email)
+		if err != nil {
+			return err
+		}
+		if userModel == nil {
+			return ErrUserNotFound
+		}
+
+		err = s.emailVerify(ctx, req.Email, req.EmailVerify)
+		if err != nil {
+			return err
+		}
+
+		userModel.Password, err = hashPassword(req.Password)
+		if err != nil {
+			return err
+		}
+
+		err = s.userRepo.Update(ctx, tx, userModel)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
