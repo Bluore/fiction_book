@@ -36,6 +36,7 @@ type BookService interface {
 	GetBookListByThermalDaily(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 	GetListByOwnerID(ctx context.Context, userID string, req *dto.GetBookListByOwnerIDRequest) (*dto.BookListResponse, error)
 	GetReadHistoryRecently(ctx context.Context, userID string, page int, size int) (*dto.BookListResponse, error)
+	UpdateBook(ctx context.Context, userID string, req *dto.UpdateBookRequest) (*dto.BookResponse, error)
 }
 
 type bookService struct {
@@ -439,4 +440,43 @@ func (s *bookService) GetReadHistoryRecently(ctx context.Context, userID string,
 		PageListResponse: pageResponse,
 	}
 	return historyResponse, nil
+}
+
+func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.UpdateBookRequest) (*dto.BookResponse, error) {
+	book, err := s.bookRepo.GetByID(ctx, req.BookID)
+	if err != nil {
+		return nil, err
+	}
+
+	if book.OwnerID != userID {
+		return nil, ErrPermission
+	}
+
+	if req.Name != nil {
+		book.Name = *req.Name
+
+		// 检查是否重名
+		exist, err := s.bookRepo.GetByName(ctx, book.Name)
+		if err != nil {
+			return nil, err
+		}
+		if exist != nil {
+			return nil, ErrBookExists
+		}
+	}
+	if req.Description != nil {
+		book.Description = *req.Description
+	}
+	if req.Price != nil {
+		book.Price = *req.Price
+	}
+
+	err = s.bookRepo.Update(ctx, book)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.bookCache.UpdateBook(ctx, book)
+
+	return toBookResponse(s.cfg, book), nil
 }

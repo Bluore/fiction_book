@@ -292,6 +292,19 @@ definitions:
     required:
     - id
     type: object
+  dto.UpdateBookRequest:
+    properties:
+      bookID:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+    required:
+    - bookID
+    type: object
   dto.UpdateUserEmailRequest:
     properties:
       email:
@@ -725,6 +738,51 @@ paths:
       summary: 上传书籍封面（验证）
       tags:
       - 书籍管理
+  /api/v1/books/{id}/info:
+    put:
+      consumes:
+      - application/json
+      description: 更新用户书籍的请求，支持更新名称、价格、描述
+      parameters:
+      - description: 书籍ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BookResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 用户登录失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4020":
+          description: 你没有该书籍的所有权
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 更新书籍信息请求
+      tags:
+      - 书籍管理
   /api/v1/books/create:
     post:
       consumes:
@@ -1123,7 +1181,7 @@ paths:
         name: id
         required: true
         type: string
-      - description: 更新信息
+      - description: 购买书籍请求
         in: body
         name: request
         required: true
@@ -1283,6 +1341,10 @@ paths:
             $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4020":
+          description: 你没有权限操作
           schema:
             $ref: '#/definitions/response.Response'
       security:

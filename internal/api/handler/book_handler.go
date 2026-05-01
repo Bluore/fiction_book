@@ -113,7 +113,7 @@ func (h *Handler) BookList(c *gin.Context) {
 // @Produce json
 // @Security Bearer
 // @Param id path string true "用户ID"
-// @Param request body dto.BuyBookRequest true "更新信息"
+// @Param request body dto.BuyBookRequest true "购买书籍请求"
 // @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
@@ -252,6 +252,38 @@ func (h *Handler) GetUserReadBookHistoryRecently(c *gin.Context) {
 	}
 
 	res, err := h.bookService.GetReadHistoryRecently(c.Request.Context(), userID, req.Page, req.Size)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}
+
+// UpdateBookInformation 更新书籍信息请求
+// @Summary 更新书籍信息请求
+// @Description 更新用户书籍的请求，支持更新名称、价格、描述
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "书籍ID"
+// @Param request body dto.UpdateBookRequest true "更新信息"
+// @Success 200 {object} dto.BookResponse
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 401 {object} response.Response "用户登录失效"
+// @Failure 4008 {object} response.Response "书籍名称已存在"
+// @Failure 4020 {object} response.Response "你没有该书籍的所有权"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/books/{id}/info [put]
+func (h *Handler) UpdateBookInformation(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.UpdateBookRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	res, err := h.bookService.UpdateBook(c.Request.Context(), userID, req)
 	if err != nil {
 		response.PushError(c, err)
 		return

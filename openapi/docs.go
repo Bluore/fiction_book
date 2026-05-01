@@ -828,6 +828,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/books/{id}/info": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "更新用户书籍的请求，支持更新名称、价格、描述",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "书籍管理"
+                ],
+                "summary": "更新书籍信息请求",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "书籍ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateBookRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.BookResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "用户登录失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4020": {
+                        "description": "你没有该书籍的所有权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/bookshelf/add": {
             "post": {
                 "security": [
@@ -1130,7 +1200,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "更新信息",
+                        "description": "购买书籍请求",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1623,6 +1693,12 @@ const docTemplate = `{
                     },
                     "4010": {
                         "description": "章节未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4020": {
+                        "description": "你没有权限操作",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -3506,6 +3582,26 @@ const docTemplate = `{
                 },
                 "vip_level": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.UpdateBookRequest": {
+            "type": "object",
+            "required": [
+                "bookID"
+            ],
+            "properties": {
+                "bookID": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
                 }
             }
         },

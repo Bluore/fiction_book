@@ -136,3 +136,10 @@ type GetBookListByThermalDaily struct {
 type GetBookListByOwnerIDRequest struct {
 	PageListRequest
 }
+
+type UpdateBookRequest struct {
+	BookID      string  `uri:"id" binding:"required"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	Price       *int64  `json:"price"`
+}
