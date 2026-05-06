@@ -22,6 +22,8 @@ type BookCache interface {
 	DeleteBook(ctx context.Context, id string) error
 	GetBookThermalDaily(ctx context.Context, page int, size int) ([]string, error)
 	IncreaseBookThermalDaily(ctx context.Context, bookId string, score int) error
+	GetBookThermalWeekly(ctx context.Context, page int, size int) ([]string, error)
+	GetBookThermalMonthly(ctx context.Context, page int, size int) ([]string, error)
 }
 
 type bookCache struct {
@@ -97,6 +99,12 @@ func (c *bookCache) GetBookThermalDaily(ctx context.Context, page int, size int)
 
 		// 设置排行榜缓存时间
 		c.redis.Expire(ctx, constant.RedisBookThermalDailyTotal, 5*time.Minute)
+
+		// 持久化到排行榜历史
+		copyToday := redis.ZStore{
+			Keys: []string{constant.RedisBookThermalDaily(time.Now())},
+		}
+		_ = c.redis.ZUnionStore(ctx, constant.RedisBookThermalDay(time.Now()), &copyToday)
 	}
 	if rankRes.Err() != nil {
 		return nil, rankRes.Err()
@@ -134,4 +142,51 @@ func (c *bookCache) IncreaseBookThermalDaily(ctx context.Context, bookId string,
 		c.redis.Expire(ctx, constant.RedisBookThermalDaily(time.Now()), time.Duration(3*24*time.Hour))
 	}
 	return nil
+}
+
+func (c *bookCache) GetBookThermalWeekly(ctx context.Context, page int, size int) ([]string, error) {
+	existKey, err := c.redis.Exists(ctx, constant.RedisBookThermalWeeklyTotal).Result()
+	if err != nil {
+		return nil, err
+	}
+	if existKey != 1 {
+		// 创建排行
+		weekStore := redis.ZStore{
+			Keys: []string{
+				constant.RedisBookThermalDay(time.Now()),
+				constant.RedisBookThermalDay(time.Now().Add(-1 * 24 * time.Hour)),
+				constant.RedisBookThermalDay(time.Now().Add(-2 * 24 * time.Hour)),
+				constant.RedisBookThermalDay(time.Now().Add(-3 * 24 * time.Hour)),
+				constant.RedisBookThermalDay(time.Now().Add(-4 * 24 * time.Hour)),
+				constant.RedisBookThermalDay(time.Now().Add(-5 * 24 * time.Hour)),
+				constant.RedisBookThermalDay(time.Now().Add(-6 * 24 * time.Hour)),
+			},
+		}
+		err := c.redis.ZUnionStore(ctx, constant.RedisBookThermalWeeklyTotal, &weekStore).Err()
+		if err != nil {
+			return nil, err
+		}
+
+		_ = c.redis.Expire(ctx, constant.RedisBookThermalWeeklyTotal, time.Duration(30*24*time.Hour)).Err()
+	}
+
+	startOffset := int64((page - 1) * size)
+	endOffset := int64(page*size - 1)
+	rankArgs := redis.ZRangeArgs{
+		Key:   constant.RedisBookThermalDailyTotal,
+		Start: startOffset,
+		Stop:  endOffset,
+		Rev:   true,
+	}
+
+	rank, err := c.redis.ZRangeArgs(ctx, rankArgs).Result()
+	if err != nil {
+		return nil, err
+	}
+	return rank, nil
+}
+
+func (c *bookCache) GetBookThermalMonthly(ctx context.Context, page int, size int) ([]string, error) {
+	//TODO implement me
+	panic("implement me")
 }

@@ -774,6 +774,10 @@ paths:
           description: 服务器内部错误
           schema:
             $ref: '#/definitions/response.Response'
+        "4008":
+          description: 书籍名称已存在
+          schema:
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 你没有该书籍的所有权
           schema:
@@ -997,6 +1001,40 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取每日热度榜单
+      tags:
+      - 书籍管理
+  /api/v1/books/thermal/weekly:
+    get:
+      consumes:
+      - application/json
+      description: 榜单每5分钟刷新，缓存优化，获取今天到前6天的排行总汇
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取每周热度榜单
       tags:
       - 书籍管理
   /api/v1/bookshelf/{user_id}:

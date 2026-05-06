@@ -37,6 +37,7 @@ type BookService interface {
 	GetListByOwnerID(ctx context.Context, userID string, req *dto.GetBookListByOwnerIDRequest) (*dto.BookListResponse, error)
 	GetReadHistoryRecently(ctx context.Context, userID string, page int, size int) (*dto.BookListResponse, error)
 	UpdateBook(ctx context.Context, userID string, req *dto.UpdateBookRequest) (*dto.BookResponse, error)
+	GetBookListByThermalWeekly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -479,4 +480,59 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 	_ = s.bookCache.UpdateBook(ctx, book)
 
 	return toBookResponse(s.cfg, book), nil
+}
+
+func (s *bookService) GetBookListByThermalWeekly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error) {
+	bookListResponse := make([]*dto.BookResponse, 0)
+	pageResponse := dto.PageListResponse{
+		Page:  req.Page,
+		Size:  req.Size,
+		Count: -1,
+	}
+	res := &dto.BookListResponse{
+		Books:            bookListResponse,
+		PageListResponse: pageResponse,
+	}
+
+	// 当前页数的排行榜缓存失效时
+	rankRes, err := s.bookCache.GetBookThermalWeekly(ctx, req.Page, req.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	bookListTemp, err := s.bookListToResponse(ctx, rankRes)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bookListTemp) == 0 {
+		bookListTemp = make([]*dto.BookResponse, 0)
+	}
+	res.Books = bookListTemp
+
+	return res, nil
+}
+
+func (s *bookService) bookListToResponse(ctx context.Context, rankRes []string) ([]*dto.BookResponse, error) {
+	var bookResponse []*dto.BookResponse
+	// 逐行获取
+	for _, bookRecord := range rankRes {
+		// 尝试通过缓存获取
+		book, bookCatchHit, _ := s.bookCache.GetBook(ctx, bookRecord)
+		if bookCatchHit == false {
+			// 当缓存未命中
+			var err error
+			book, err = s.bookRepo.GetByID(ctx, bookRecord)
+			if err != nil {
+				return nil, err
+			}
+			if book == nil {
+				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
+				continue
+			}
+			_ = s.bookCache.UpdateBook(ctx, book)
+		}
+		bookResponse = append(bookResponse, toBookResponse(s.cfg, book))
+	}
+	return bookResponse, nil
 }
