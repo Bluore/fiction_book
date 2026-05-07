@@ -314,3 +314,27 @@ func (h *Handler) GetBookListThermalWeekly(c *gin.Context) {
 	}
 	response.Success(c, res)
 }
+
+// GetBookListThermalMonthly 获取每月热度榜单
+// @Summary 获取每月热度榜单
+// @Description 榜单每5分钟刷新，缓存优化，获取今天到前30天的排行总汇
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Param page query int false "页码" default(1)
+// @Param size query int false "每页数量" default(10)
+// @Success 200 {object} dto.UploadBookCoverResponse
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/books/thermal/monthly [get]
+func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookListByThermalDaily](c)
+	req.ToStandard()
+
+	res, err := h.bookService.GetBookListByThermalMonthly(c.Request.Context(), req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}

@@ -38,6 +38,7 @@ type BookService interface {
 	GetReadHistoryRecently(ctx context.Context, userID string, page int, size int) (*dto.BookListResponse, error)
 	UpdateBook(ctx context.Context, userID string, req *dto.UpdateBookRequest) (*dto.BookResponse, error)
 	GetBookListByThermalWeekly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
+	GetBookListByThermalMonthly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 }
 
 type bookService struct {
@@ -453,7 +454,7 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 		return nil, ErrPermission
 	}
 
-	if req.Name != nil {
+	if req.Name != nil && *req.Name != book.Name {
 		book.Name = *req.Name
 
 		// 检查是否重名
@@ -535,4 +536,35 @@ func (s *bookService) bookListToResponse(ctx context.Context, rankRes []string) 
 		bookResponse = append(bookResponse, toBookResponse(s.cfg, book))
 	}
 	return bookResponse, nil
+}
+
+func (s *bookService) GetBookListByThermalMonthly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error) {
+	bookListResponse := make([]*dto.BookResponse, 0)
+	pageResponse := dto.PageListResponse{
+		Page:  req.Page,
+		Size:  req.Size,
+		Count: -1,
+	}
+	res := &dto.BookListResponse{
+		Books:            bookListResponse,
+		PageListResponse: pageResponse,
+	}
+
+	// 当前页数的排行榜缓存失效时
+	rankRes, err := s.bookCache.GetBookThermalMonthly(ctx, req.Page, req.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	bookListTemp, err := s.bookListToResponse(ctx, rankRes)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bookListTemp) == 0 {
+		bookListTemp = make([]*dto.BookResponse, 0)
+	}
+	res.Books = bookListTemp
+
+	return res, nil
 }

@@ -187,6 +187,42 @@ func (c *bookCache) GetBookThermalWeekly(ctx context.Context, page int, size int
 }
 
 func (c *bookCache) GetBookThermalMonthly(ctx context.Context, page int, size int) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+	existKey, err := c.redis.Exists(ctx, constant.RedisBookThermalMonthlyTotal).Result()
+	if err != nil {
+		return nil, err
+	}
+	if existKey != 1 {
+		// 创建排行
+		monthKeys := make([]string, 0)
+		for i := 0; i <= 30; i++ {
+			keyTime := time.Now().Add(-time.Duration(i) * 24 * time.Hour)
+			monthKeys = append(monthKeys, constant.RedisBookThermalDay(keyTime))
+		}
+
+		monthStore := redis.ZStore{
+			Keys: monthKeys,
+		}
+
+		err := c.redis.ZUnionStore(ctx, constant.RedisBookThermalMonthlyTotal, &monthStore).Err()
+		if err != nil {
+			return nil, err
+		}
+
+		_ = c.redis.Expire(ctx, constant.RedisBookThermalMonthlyTotal, time.Duration(30*24*time.Hour)).Err()
+	}
+
+	startOffset := int64((page - 1) * size)
+	endOffset := int64(page*size - 1)
+	rankArgs := redis.ZRangeArgs{
+		Key:   constant.RedisBookThermalDailyTotal,
+		Start: startOffset,
+		Stop:  endOffset,
+		Rev:   true,
+	}
+
+	rank, err := c.redis.ZRangeArgs(ctx, rankArgs).Result()
+	if err != nil {
+		return nil, err
+	}
+	return rank, nil
 }
