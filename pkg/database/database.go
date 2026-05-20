@@ -74,6 +74,9 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	if err := db.AutoMigrate(&model.Order{}); err != nil {
 		return nil, err
 	}
+	if err := db.AutoMigrate(&model.Outbox{}); err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }

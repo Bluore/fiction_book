@@ -18,6 +18,7 @@ var RepositorySet = wire.NewSet(
 	ProvideUserBookshelfRepository,
 	ProvideUserHistoryRepository,
 	ProvideOrderRepository,
+	ProvideOutboxRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -63,4 +64,9 @@ func ProvideUserHistoryRepository(db *gorm.DB) repository.UserHistoryRepository 
 // ProvideOrderRepository 提供订单仓库
 func ProvideOrderRepository(db *gorm.DB) repository.OrderRepository {
 	return repository.NewOrderRepository(db)
+}
+
+// ProvideOutboxRepository 提供事件发送仓库
+func ProvideOutboxRepository(db *gorm.DB) repository.OutboxRepository {
+	return repository.NewOutboxRepository(db)
 }
