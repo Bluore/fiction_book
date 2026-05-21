@@ -21,6 +21,8 @@ var (
 type Outbox struct {
 	ID        int64             `json:"id" gorm:"primary_key;type:bigint(20)"`
 	TableName string            `json:"table_name" gorm:"type:varchar(255)"`
+	ID        string            `json:"id" gorm:"primary_key;type:varchar(36)"`
+	Type      string            `json:"type" gorm:"type:varchar(255)"`
 	Operation DatabaseOperation `json:"operation" gorm:"type:varchar(255)"`
 
 	Payload json.RawMessage `json:"payload" gorm:"type:JSON"`
