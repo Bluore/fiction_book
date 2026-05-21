@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
@@ -46,6 +47,7 @@ type bookService struct {
 	userRepo          repository.UserRepository
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
+	outboxRepo        repository.OutboxRepository
 	bookCache         cache.BookCache
 	userStatCache     cache.UserStatCache
 	db                *gorm.DB
@@ -58,6 +60,7 @@ func NewBookService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
+	outboxRepo repository.OutboxRepository,
 	bookCache cache.BookCache,
 	userStatCache cache.UserStatCache,
 	db *gorm.DB,
@@ -68,6 +71,7 @@ func NewBookService(
 		userRepo:          userRepo,
 		userAssetRepo:     userAssetRepo,
 		purchasedBookRepo: purchasedBookRepo,
+		outboxRepo:        outboxRepo,
 		bookCache:         bookCache,
 		userStatCache:     userStatCache,
 		db:                db,
@@ -96,7 +100,32 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		BrowseAmount:    0,
 		BookshelfAmount: 0,
 	}
-	err = s.bookRepo.Create(ctx, book)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.bookRepo.Create(ctx, tx, book)
+		if err != nil {
+			return err
+		}
+
+		bookJSON, err := json.Marshal(book)
+		if err != nil {
+			return err
+		}
+
+		outbox := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      model.Book{}.TableName(),
+			Operation: model.DatabaseOperationCreate,
+			Payload:   bookJSON,
+			Status:    model.OutboxStatusCreated,
+			CreatedAt: time.Now(),
+		}
+
+		err = s.outboxRepo.AddEvent(ctx, tx, outbox)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +345,32 @@ func (s *bookService) UploadBookCover(ctx context.Context, userID string, req *d
 	}
 
 	book.CoverImage = uploadOut.FilePath
-	err = s.bookRepo.Update(ctx, book)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.bookRepo.Update(ctx, tx, book)
+		if err != nil {
+			return err
+		}
+
+		bookJSON, err := json.Marshal(book)
+		if err != nil {
+			return err
+		}
+
+		outbox := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      model.Book{}.TableName(),
+			Operation: model.DatabaseOperationUpdate,
+			Payload:   bookJSON,
+			Status:    model.OutboxStatusCreated,
+			CreatedAt: time.Now(),
+		}
+
+		err = s.outboxRepo.AddEvent(ctx, tx, outbox)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +527,32 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 		book.Price = *req.Price
 	}
 
-	err = s.bookRepo.Update(ctx, book)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.bookRepo.Update(ctx, tx, book)
+		if err != nil {
+			return err
+		}
+
+		bookJSON, err := json.Marshal(book)
+		if err != nil {
+			return err
+		}
+
+		outbox := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      model.Book{}.TableName(),
+			Operation: model.DatabaseOperationUpdate,
+			Payload:   bookJSON,
+			Status:    model.OutboxStatusCreated,
+			CreatedAt: time.Now(),
+		}
+
+		err = s.outboxRepo.AddEvent(ctx, tx, outbox)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}

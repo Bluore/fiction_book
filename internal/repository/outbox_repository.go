@@ -29,7 +29,7 @@ func (r outboxRepository) AddEvent(ctx context.Context, db *gorm.DB, outbox *mod
 
 func (r outboxRepository) GetEventByTableName(ctx context.Context, db *gorm.DB, table interface{}) (*model.Outbox, error) {
 	var outbox model.Outbox
-	err := db.WithContext(ctx).Model(table).Where("status = ?", model.OutboxStatusCreated).Order("created_at").First(&outbox).Error
+	err := db.WithContext(ctx).Model(table).Where("status = ?", model.OutboxStatusCreated).Order("created_at asc").First(&outbox).Error
 	if err != nil {
 		return nil, err
 	}

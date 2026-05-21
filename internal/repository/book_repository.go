@@ -16,9 +16,9 @@ type BookRepository interface {
 	GetByName(ctx context.Context, name string) (*model.Book, error)
 	List(ctx context.Context, page int, size int) ([]*model.Book, error)
 	ListWithOption(ctx context.Context, opt BookListOption) ([]*model.Book, error)
-	Create(ctx context.Context, model *model.Book) error
-	Update(ctx context.Context, model *model.Book) error
-	Delete(ctx context.Context, id string) error
+	Create(ctx context.Context, db *gorm.DB, model *model.Book) error
+	Update(ctx context.Context, db *gorm.DB, model *model.Book) error
+	Delete(ctx context.Context, db *gorm.DB, id string) error
 	Count(ctx context.Context) (int, error)
 	CountByOwner(ctx context.Context, ownerID string) (int, error)
 	IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
@@ -136,16 +136,16 @@ func (r *bookRepository) ListWithOption(ctx context.Context, opt BookListOption)
 	return books, nil
 }
 
-func (r *bookRepository) Create(ctx context.Context, model *model.Book) error {
-	return r.db.WithContext(ctx).Create(&model).Error
+func (r *bookRepository) Create(ctx context.Context, db *gorm.DB, model *model.Book) error {
+	return db.WithContext(ctx).Create(&model).Error
 }
 
-func (r *bookRepository) Update(ctx context.Context, model *model.Book) error {
-	return r.db.WithContext(ctx).Save(&model).Error
+func (r *bookRepository) Update(ctx context.Context, db *gorm.DB, model *model.Book) error {
+	return db.WithContext(ctx).Save(&model).Error
 }
 
-func (r *bookRepository) Delete(ctx context.Context, id string) error {
-	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Book{}).Error
+func (r *bookRepository) Delete(ctx context.Context, db *gorm.DB, id string) error {
+	return db.WithContext(ctx).Where("id = ?", id).Delete(&model.Book{}).Error
 }
 
 func (r *bookRepository) Count(ctx context.Context) (int, error) {
