@@ -86,8 +86,8 @@ type ListBooksRequest struct {
 	Size          int         `form:"size"`
 	SortKey       BookSortKey `form:"sort_key"`
 	SortOrder     SortOrder   `form:"sort_order"`
-	PushStartTime time.Time   `form:"push_start_time"`
-	PushEndTime   time.Time   `form:"push_end_time"`
+	PushStartTime time.Time   `form:"push_start_time" time_format:"unix"`
+	PushEndTime   time.Time   `form:"push_end_time" time_format:"unix"`
 }
 
 func (p *ListBooksRequest) ToStandard() *ListBooksRequest {

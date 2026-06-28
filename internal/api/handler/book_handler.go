@@ -87,7 +87,7 @@ func (h *Handler) GetBook(c *gin.Context) {
 // @Param size query int false "每页数量" default(10)
 // @Param sort_key query string false "排序字段 (browse_amount|bookshelf_amount|new_update|new_push)" default(browse_amount)
 // @Param sort_order query string false "排序方向 (asc|desc)" default(desc)
-// @Param push_start_time query string false "书籍创建开始时间  (RFC格式)"
+// @Param push_start_time query string false "书籍创建开始时间  (Unix格式)"
 // @Param push_end_time query string false "书籍创建结束时间"
 // @Success 200 {object} response.Response{data=dto.BookListResponse}
 // @Failure 400 {object} response.Response "参数错误"
