@@ -8,6 +8,7 @@ package wire
 
 import (
 	"fiction-book/internal/api/handler"
+	"fiction-book/internal/kafka"
 )
 
 // Injectors from wire.go:
@@ -56,6 +57,21 @@ func InitializeApp() (*App, error) {
 	return app, nil
 }
 
+func InitializeMassageQueue() (*MassageQueue, error) {
+	config, err := ProvideConfig()
+	if err != nil {
+		return nil, err
+	}
+	db, err := ProvideDatabase(config)
+	if err != nil {
+		return nil, err
+	}
+	outboxRepository := ProvideOutboxRepository(db)
+	handler := ProvideMassageHandlerSer(outboxRepository, db)
+	massageQueue := NewMassageQueue(handler)
+	return massageQueue, nil
+}
+
 // wire.go:
 
 // App 应用容器
@@ -66,4 +82,12 @@ type App struct {
 // NewApp 创建 App 实例
 func NewApp(h *handler.Handler) *App {
 	return &App{Handler: h}
+}
+
+type MassageQueue struct {
+	Handler *kafka.Handler
+}
+
+func NewMassageQueue(h *kafka.Handler) *MassageQueue {
+	return &MassageQueue{Handler: h}
 }

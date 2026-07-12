@@ -4,6 +4,8 @@
 package wire
 
 import (
+	"fiction-book/internal/kafka"
+
 	"github.com/google/wire"
 
 	"fiction-book/internal/api/handler"
@@ -41,4 +43,22 @@ type App struct {
 // NewApp 创建 App 实例
 func NewApp(h *handler.Handler) *App {
 	return &App{Handler: h}
+}
+
+func InitializeMassageQueue() (*MassageQueue, error) {
+	wire.Build(
+		InfraSet,
+		RepositorySet,
+		MassageHandlerSet,
+		NewMassageQueue,
+	)
+	return nil, nil
+}
+
+type MassageQueue struct {
+	Handler *kafka.Handler
+}
+
+func NewMassageQueue(h *kafka.Handler) *MassageQueue {
+	return &MassageQueue{Handler: h}
 }
