@@ -15,6 +15,7 @@ type Config struct {
 	Tracing  TracingConfig  `mapstructure:"tracing"`
 	OSS      OSSConfig      `mapstructure:"oss"`
 	Resend   Resend         `mapstructure:"resend"`
+	Kafka    KafkaConfig    `mapstructure:"kafka"`
 }
 
 // OSSConfig 对象存储配置
@@ -89,6 +90,15 @@ type TracingConfig struct {
 type Resend struct {
 	From   string `mapstructure:"from"`
 	ApiKey string `mapstructure:"api_key"`
+}
+
+type KafkaConfig struct {
+	Addr  []string         `mapstructure:"addr"`
+	Topic TopicKafkaConfig `mapstructure:"topic"`
+}
+
+type TopicKafkaConfig struct {
+	DatabaseSync string `mapstructure:"database_sync"`
 }
 
 // Load 加载配置

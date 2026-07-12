@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fiction-book/internal/kafka/outbox"
 	"fmt"
 	"net/http"
 	"os"
@@ -57,6 +58,14 @@ func main() {
 		zap.String("mode", cfg.Server.Mode),
 		zap.Int("port", cfg.Server.Port),
 	)
+
+	// 初始化Kafka
+	kafkaApp, err := wire.InitializeMassageQueue()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize kafka consumer: %v", err))
+	}
+	massageQueueStartContext, massageQueueCancel := context.WithCancel(context.Background())
+	outbox.KafkaInit(massageQueueStartContext, cfg, kafkaApp)
 
 	// 初始化 Sentry（如果启用）
 	if cfg.Sentry.Enabled {
@@ -137,6 +146,9 @@ func main() {
 	// 设置 5 秒的超时时间用于优雅关闭
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	// 关闭kafka消息队列
+	massageQueueCancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal("Server forced to shutdown", zap.Error(err))

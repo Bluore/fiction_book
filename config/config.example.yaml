@@ -48,3 +48,10 @@ tracing:
 resend:
   from: 123@abc.com
   api_key: re_***************
+
+# kafka消息队列
+kafka:
+  addr:
+    - "localhost:9092"
+  topic:
+    database_sync: "database_sync"
