@@ -503,6 +503,9 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 	if err != nil {
 		return nil, err
 	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
 
 	if book.OwnerID != userID {
 		return nil, ErrPermission

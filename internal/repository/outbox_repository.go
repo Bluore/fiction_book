@@ -31,6 +31,9 @@ func (r outboxRepository) GetEventByTableName(ctx context.Context, db *gorm.DB, 
 	var outbox model.Outbox
 	err := db.WithContext(ctx).Model(table).Where("status = ?", model.OutboxStatusCreated).Order("created_at asc").First(&outbox).Error
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &outbox, nil
