@@ -13,7 +13,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func outboxClient(ctx context.Context, cfg *config.Config, h *wire.MassageQueue) {
+func outboxProducerClient(ctx context.Context, cfg *config.Config, h *wire.MassageQueue) {
 	writer := kafka.Writer{
 		Addr:     kafka.TCP(cfg.Kafka.Addr...),
 		Topic:    cfg.Kafka.Topic.DatabaseSync,
@@ -62,6 +62,7 @@ func syncOutboxToMassageQueue(h *wire.MassageQueue, w kafka.Writer) {
 		err = h.Handler.OutboxRepository.FinishEventByTableNameAndID(context.Background(), h.Handler.DB, model.Outbox{}, msg.ID)
 		if err != nil {
 			logger.Error(fmt.Sprintf("syncOutboxToMassageQueue FinishEventByTableName error: %v", err))
+			logger.Warn(fmt.Sprintf("syncOutboxToMassageQueue FinishEventByTableName error: %v", err))
 			return
 		}
 	}

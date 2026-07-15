@@ -1,11 +1,12 @@
 package wire
 
 import (
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/redisclient"
-	"log"
 
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"fiction-book/pkg/config"
@@ -32,7 +33,7 @@ func ProvideDatabase(cfg *config.Config) (*gorm.DB, error) {
 // ProvideCatch 提供缓存数据库链接
 func ProvideCatch(cfg *config.Config) (*redis.Client, error) {
 	if err := redisclient.Init(&cfg.Redis); err != nil {
-		log.Fatal(err)
+		logger.Fatal("init redis error", zap.Error(err))
 	}
 	return redisclient.GetClient()
 }

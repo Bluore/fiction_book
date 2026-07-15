@@ -12,7 +12,8 @@ import (
 
 func KafkaInit(ctx context.Context, cfg *config.Config, h *wire.MassageQueue) {
 
-	go outboxClient(ctx, cfg, h)
+	go outboxProducerClient(ctx, cfg, h)
+	go outboxConsumerClient(ctx, cfg, h)
 }
 
 func createTopic(k *kafka.Conn, topicName string) {
