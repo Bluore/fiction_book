@@ -21,6 +21,7 @@ var RepositorySet = wire.NewSet(
 	ProvideOrderRepository,
 	ProvideOutboxRepository,
 	ProvideBookESRepository,
+	ProvideBookChapterESRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -76,4 +77,9 @@ func ProvideOutboxRepository(db *gorm.DB) repository.OutboxRepository {
 // ProvideBookESRepository 提供书籍ES仓库
 func ProvideBookESRepository(esClient *elasticsearch.Client) repository.BookESRepository {
 	return repository.NewBookESRepository(esClient)
+}
+
+// ProvideBookChapterESRepository 提供书籍章节ES仓库
+func ProvideBookChapterESRepository(esClient *elasticsearch.Client) repository.BookChapterESRepository {
+	return repository.NewBookChapterESRepository(esClient)
 }

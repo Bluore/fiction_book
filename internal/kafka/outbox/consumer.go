@@ -73,6 +73,8 @@ func syncData(ctx context.Context, h *wire.MassageQueue, massageDecodeData *mode
 	switch massageDecodeData.Type {
 	case model.Book{}.TableName():
 		return syncBookES(ctx, h, massageDecodeData.Operation, &massageDecodeData.Payload)
+	case model.BookChapter{}.TableName():
+		return syncBookChapterES(ctx, h, massageDecodeData.Operation, &massageDecodeData.Payload)
 	default:
 	}
 	
@@ -95,6 +97,25 @@ func syncBookES(ctx context.Context, h *wire.MassageQueue, operation model.Datab
 		return h.Handler.BookESRepository.Update(ctx, &book)
 	case model.DatabaseOperationDelete:
 		return h.Handler.BookESRepository.Delete(ctx, book.ID)
+	}
+	return nil
+}
+
+// syncBookChapterES 同步图书章节ES
+func syncBookChapterES(ctx context.Context, h *wire.MassageQueue, operation model.DatabaseOperation, chapterDecode *json.RawMessage) error {
+	var chapter model.BookChapter
+	err := json.Unmarshal(*chapterDecode, &chapter)
+	if err != nil {
+		return err
+	}
+
+	switch operation {
+	case model.DatabaseOperationCreate:
+		return h.Handler.BookChapterESRepository.Create(ctx, &chapter)
+	case model.DatabaseOperationUpdate:
+		return h.Handler.BookChapterESRepository.Update(ctx, &chapter)
+	case model.DatabaseOperationDelete:
+		return h.Handler.BookChapterESRepository.Delete(ctx, chapter.ID)
 	}
 	return nil
 }

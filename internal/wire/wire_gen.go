@@ -72,7 +72,8 @@ func InitializeMassageQueue() (*MassageQueue, error) {
 		return nil, err
 	}
 	bookESRepository := ProvideBookESRepository(client)
-	handler := ProvideMassageHandlerSer(outboxRepository, bookESRepository, db)
+	bookChapterESRepository := ProvideBookChapterESRepository(client)
+	handler := ProvideMassageHandlerSer(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	massageQueue := NewMassageQueue(handler)
 	return massageQueue, nil
 }

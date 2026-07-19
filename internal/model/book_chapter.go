@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const TableNameBookChapter = "book_chapter"
+
 type BookChapter struct {
 	ID        string         `json:"id" gorm:"primary_key;type:varchar(36)"`
 	BookID    string         `json:"book_id" gorm:"type:varchar(36)"`
@@ -20,7 +22,7 @@ type BookChapter struct {
 }
 
 func (BookChapter) TableName() string {
-	return "book_chapter"
+	return TableNameBookChapter
 }
 
 type BookChapterInfo struct {
@@ -33,5 +35,5 @@ type BookChapterInfo struct {
 }
 
 func (BookChapterInfo) TableName() string {
-	return "book_chapter"
+	return TableNameBookChapter
 }

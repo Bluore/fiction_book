@@ -51,7 +51,8 @@ var MassageHandlerSet = wire.NewSet(
 func ProvideMassageHandlerSer(
 	outboxRepository repository.OutboxRepository,
 	bookESRepository repository.BookESRepository,
+	bookChapterESRepository repository.BookChapterESRepository,
 	db *gorm.DB,
 ) *mq.Handler {
-	return mq.NewHandler(outboxRepository, bookESRepository, db)
+	return mq.NewHandler(outboxRepository, bookESRepository, bookChapterESRepository, db)
 }
