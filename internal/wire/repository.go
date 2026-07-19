@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 
@@ -19,6 +20,7 @@ var RepositorySet = wire.NewSet(
 	ProvideUserHistoryRepository,
 	ProvideOrderRepository,
 	ProvideOutboxRepository,
+	ProvideBookESRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -69,4 +71,9 @@ func ProvideOrderRepository(db *gorm.DB) repository.OrderRepository {
 // ProvideOutboxRepository 提供事件发送仓库
 func ProvideOutboxRepository(db *gorm.DB) repository.OutboxRepository {
 	return repository.NewOutboxRepository(db)
+}
+
+// ProvideBookESRepository 提供书籍ES仓库
+func ProvideBookESRepository(esClient *elasticsearch.Client) repository.BookESRepository {
+	return repository.NewBookESRepository(esClient)
 }

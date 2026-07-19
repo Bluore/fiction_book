@@ -6,16 +6,17 @@ import (
 
 // Config 配置结构
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Redis    RedisConfig    `mapstructure:"redis"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
-	Pprof    PprofConfig    `mapstructure:"pprof"`
-	Sentry   SentryConfig   `mapstructure:"sentry"`
-	Tracing  TracingConfig  `mapstructure:"tracing"`
-	OSS      OSSConfig      `mapstructure:"oss"`
-	Resend   Resend         `mapstructure:"resend"`
-	Kafka    KafkaConfig    `mapstructure:"kafka"`
+	Server        ServerConfig        `mapstructure:"server"`
+	Database      MysqlConfig         `mapstructure:"mysql"`
+	Elasticsearch ElasticsearchConfig `mapstructure:"elasticsearch"`
+	Redis         RedisConfig         `mapstructure:"redis"`
+	JWT           JWTConfig           `mapstructure:"jwt"`
+	Pprof         PprofConfig         `mapstructure:"pprof"`
+	Sentry        SentryConfig        `mapstructure:"sentry"`
+	Tracing       TracingConfig       `mapstructure:"tracing"`
+	OSS           OSSConfig           `mapstructure:"oss"`
+	Resend        Resend              `mapstructure:"resend"`
+	Kafka         KafkaConfig         `mapstructure:"kafka"`
 }
 
 // OSSConfig 对象存储配置
@@ -39,9 +40,8 @@ type ServerConfig struct {
 	WriteTimeout int    `mapstructure:"write_timeout"`
 }
 
-// DatabaseConfig 数据库配置
-type DatabaseConfig struct {
-	Driver          string `mapstructure:"driver"`
+// MysqlConfig 数据库配置
+type MysqlConfig struct {
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
 	Database        string `mapstructure:"database"`
@@ -50,6 +50,13 @@ type DatabaseConfig struct {
 	MaxOpenConns    int    `mapstructure:"max_open_conns"`
 	MaxIdleConns    int    `mapstructure:"max_idle_conns"`
 	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"`
+}
+
+// ElasticsearchConfig 数据库配置
+type ElasticsearchConfig struct {
+	Address  []string `mapstructure:"address"`
+	Username string   `mapstructure:"username"`
+	Password string   `mapstructure:"password"`
 }
 
 // RedisConfig Redis 配置

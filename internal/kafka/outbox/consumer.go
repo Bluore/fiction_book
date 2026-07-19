@@ -52,7 +52,12 @@ func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) 
 			return
 		}
 
-		//todo 同步数据
+		err = syncData(ctx, h, massageDecodeData)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Error syncing data: %s", err))
+			logger.Warn(fmt.Sprintf("Error syncing data: %s", err))
+			return
+		}
 
 		err = r.CommitMessages(context.Background(), massage)
 		if err != nil {
@@ -61,4 +66,35 @@ func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) 
 			return
 		}
 	}
+}
+
+// syncData 同步数据
+func syncData(ctx context.Context, h *wire.MassageQueue, massageDecodeData *model.Outbox) error {
+	switch massageDecodeData.Type {
+	case model.Book{}.TableName():
+		return syncBookES(ctx, h, massageDecodeData.Operation, &massageDecodeData.Payload)
+	default:
+	}
+	
+	logger.Warn(fmt.Sprintf("Unknown table name: %s", massageDecodeData.TableName()))
+	return nil
+}
+
+// syncBookES 同步图书ES
+func syncBookES(ctx context.Context, h *wire.MassageQueue, operation model.DatabaseOperation, bookDecode *json.RawMessage) error {
+	var book model.Book
+	err := json.Unmarshal(*bookDecode, &book)
+	if err != nil {
+		return err
+	}
+
+	switch operation {
+	case model.DatabaseOperationCreate:
+		return h.Handler.BookESRepository.Create(ctx, &book)
+	case model.DatabaseOperationUpdate:
+		return h.Handler.BookESRepository.Update(ctx, &book)
+	case model.DatabaseOperationDelete:
+		return h.Handler.BookESRepository.Delete(ctx, book.ID)
+	}
+	return nil
 }

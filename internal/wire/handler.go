@@ -1,7 +1,7 @@
 package wire
 
 import (
-	"fiction-book/internal/kafka"
+	mq "fiction-book/internal/kafka"
 	"fiction-book/internal/repository"
 
 	"github.com/google/wire"
@@ -50,7 +50,8 @@ var MassageHandlerSet = wire.NewSet(
 
 func ProvideMassageHandlerSer(
 	outboxRepository repository.OutboxRepository,
+	bookESRepository repository.BookESRepository,
 	db *gorm.DB,
-) *kafka.Handler {
-	return kafka.NewHandler(outboxRepository, db)
+) *mq.Handler {
+	return mq.NewHandler(outboxRepository, bookESRepository, db)
 }

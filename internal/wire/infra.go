@@ -4,6 +4,7 @@ import (
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/redisclient"
 
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -18,6 +19,7 @@ var InfraSet = wire.NewSet(
 	ProvideConfig,
 	ProvideDatabase,
 	ProvideCatch,
+	ProvideESClient,
 )
 
 // ProvideConfig 提供配置
@@ -36,4 +38,9 @@ func ProvideCatch(cfg *config.Config) (*redis.Client, error) {
 		logger.Fatal("init redis error", zap.Error(err))
 	}
 	return redisclient.GetClient()
+}
+
+// ProvideESClient 提供 Elasticsearch 客户端链接
+func ProvideESClient(cfg *config.Config) (*elasticsearch.Client, error) {
+	return database.InitES(cfg)
 }

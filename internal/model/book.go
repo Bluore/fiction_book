@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const TableNameBook = "book"
+
 // Book 模型
 type Book struct {
 	ID              string         `json:"id" gorm:"primaryKey;type:varchar(36)"`
@@ -26,7 +28,7 @@ type Book struct {
 
 // TableName 指定表名
 func (Book) TableName() string {
-	return "book"
+	return TableNameBook
 }
 
 func (m *Book) CalculateThermal() {

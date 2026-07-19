@@ -4,7 +4,7 @@
 package wire
 
 import (
-	"fiction-book/internal/kafka"
+	mq "fiction-book/internal/kafka"
 
 	"github.com/google/wire"
 
@@ -56,9 +56,9 @@ func InitializeMassageQueue() (*MassageQueue, error) {
 }
 
 type MassageQueue struct {
-	Handler *kafka.Handler
+	Handler *mq.Handler
 }
 
-func NewMassageQueue(h *kafka.Handler) *MassageQueue {
+func NewMassageQueue(h *mq.Handler) *MassageQueue {
 	return &MassageQueue{Handler: h}
 }

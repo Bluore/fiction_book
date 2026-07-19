@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -79,4 +80,17 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	return db, nil
+}
+
+// InitES 初始化Elasticsearch连接
+func InitES(cfg *config.Config) (*elasticsearch.Client, error) {
+	es, err := elasticsearch.NewClient(elasticsearch.Config{
+		Addresses: cfg.Elasticsearch.Address,
+		Username:  cfg.Elasticsearch.Username,
+		Password:  cfg.Elasticsearch.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return es, nil
 }
