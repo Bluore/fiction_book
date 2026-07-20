@@ -76,7 +76,7 @@ func createBookIndex(esClient *elasticsearch.Client) error {
 				"user_id": map[string]interface{}{
 					"type": "keyword",
 				},
-				"username": map[string]interface{}{
+				"name": map[string]interface{}{
 					"type":            "text",
 					"analyzer":        "ik_max_word",
 					"search_analyzer": "ik_smart",

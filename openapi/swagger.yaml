@@ -57,6 +57,15 @@ definitions:
       vip_level:
         type: string
     type: object
+  dto.BookSearchResult:
+    properties:
+      book:
+        $ref: '#/definitions/dto.BookResponse'
+      highlight:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   dto.BuyBookChapterRequest:
     properties:
       book_id:
@@ -898,7 +907,7 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: 书籍创建开始时间  (RFC格式)
+      - description: 书籍创建开始时间  (Unix格式)
         in: query
         name: push_start_time
         type: string
@@ -2427,6 +2436,101 @@ paths:
       summary: 更新用户密码
       tags:
       - 用户管理
+  /api/v2/books/search:
+    get:
+      consumes:
+      - application/json
+      description: 搜索书籍，支持多条件过滤、排序和高亮
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: keyword
+        type: string
+      - description: 作者ID
+        in: query
+        name: author_id
+        type: string
+      - description: VIP等级
+        in: query
+        name: vip_level
+        type: integer
+      - description: 推送开始时间 (Unix)
+        in: query
+        name: push_start_time
+        type: string
+      - description: 推送结束时间 (Unix)
+        in: query
+        name: push_end_time
+        type: string
+      - description: 更新开始时间 (Unix)
+        in: query
+        name: update_start_time
+        type: string
+      - description: 更新结束时间 (Unix)
+        in: query
+        name: update_end_time
+        type: string
+      - description: 价格最小值 (分)
+        in: query
+        name: price_min
+        type: integer
+      - description: 价格最大值 (分)
+        in: query
+        name: price_max
+        type: integer
+      - description: 书架数最小值
+        in: query
+        name: bookshelf_min
+        type: integer
+      - description: 书架数最大值
+        in: query
+        name: bookshelf_max
+        type: integer
+      - description: 热度最小值
+        in: query
+        name: hot_min
+        type: integer
+      - description: 热度最大值
+        in: query
+        name: hot_max
+        type: integer
+      - description: 排序字段 (hot_value|browse_amount|bookshelf_amount|update_time|push_time)
+        in: query
+        name: sort_key
+        type: string
+      - description: 排序方向 (asc|desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: 用于向后分页的最后一个ID
+        in: query
+        name: last_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.BookSearchResult'
+                  type: array
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 搜索书籍
+      tags:
+      - 书籍管理
   /health:
     get:
       consumes:

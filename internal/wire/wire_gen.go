@@ -34,10 +34,15 @@ func InitializeApp() (*App, error) {
 	authCache := ProvideAuthCache(client)
 	userService := ProvideUserService(userRepository, userAssetRepository, userStatCache, userAssetCache, authCache, db, config)
 	bookRepository := ProvideBookRepository(db)
+	elasticsearchClient, err := ProvideESClient(config)
+	if err != nil {
+		return nil, err
+	}
+	bookESRepository := ProvideBookESRepository(elasticsearchClient)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	outboxRepository := ProvideOutboxRepository(db)
 	bookCache := ProvideBookCatch(client)
-	bookService := ProvideBookService(bookRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, db, config)
+	bookService := ProvideBookService(bookRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, db, config)
 	bookChapterRepository := ProvideBookChapterRepository(db)
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)
