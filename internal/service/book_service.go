@@ -40,10 +40,12 @@ type BookService interface {
 	UpdateBook(ctx context.Context, userID string, req *dto.UpdateBookRequest) (*dto.BookResponse, error)
 	GetBookListByThermalWeekly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 	GetBookListByThermalMonthly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
+	SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2Request) (*dto.SearchBooksV2Response, error)
 }
 
 type bookService struct {
 	bookRepo          repository.BookRepository
+	bookESRepo        repository.BookESRepository
 	userRepo          repository.UserRepository
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
@@ -57,6 +59,7 @@ type bookService struct {
 // NewBookService 创建书籍服务实例
 func NewBookService(
 	bookRepo repository.BookRepository,
+	bookESRepo repository.BookESRepository,
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
@@ -68,6 +71,7 @@ func NewBookService(
 ) BookService {
 	return &bookService{
 		bookRepo:          bookRepo,
+		bookESRepo:        bookESRepo,
 		userRepo:          userRepo,
 		userAssetRepo:     userAssetRepo,
 		purchasedBookRepo: purchasedBookRepo,
@@ -649,4 +653,50 @@ func (s *bookService) GetBookListByThermalMonthly(ctx context.Context, req *dto.
 	res.Books = bookListTemp
 
 	return res, nil
+}
+
+// SearchBooksV2 v2 版本的搜索方法，使用 Elasticsearch
+func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2Request) (*dto.SearchBooksV2Response, error) {
+	// 转换为 model 的 BookFilterWithIDPage
+	filter := &model.BookFilterWithIDPage{
+		Query:                req.Query,
+		VIPLevel:             req.VIPLevel,
+		PushedAtStart:        req.PushStartTime,
+		PushedAtEnd:          req.PushEndTime,
+		UpdatedAtStart:       req.UpdateStartTime,
+		UpdatedAtEnd:         req.UpdateEndTime,
+		PriceStart:           req.PriceStart,
+		PriceEnd:             req.PriceEnd,
+		OwnerID:              req.OwnerID,
+		BookshelfAmountStart: req.BookshelfAmountStart,
+		BookshelfAmountEnd:   req.BookshelfAmountEnd,
+		ThermalValueStart:    req.ThermalValueStart,
+		ThermalValueEnd:      req.ThermalValueEnd,
+		Order:                req.Order,
+		OrderDirection:       req.OrderDirection,
+		IDPage: model.IDPage{
+			LastID: req.LastID,
+			Limit:  req.Limit,
+		},
+	}
+
+	// 调用 ES 搜索
+	esResults, err := s.bookESRepo.Search(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换为响应
+	results := make([]*dto.BookSearchResult, 0, len(*esResults))
+	for _, esResult := range *esResults {
+		bookResp := toBookResponse(s.cfg, &esResult.Book)
+		results = append(results, &dto.BookSearchResult{
+			Book:      *bookResp,
+			Highlight: esResult.Highlight,
+		})
+	}
+
+	return &dto.SearchBooksV2Response{
+		Books: results,
+	}, nil
 }

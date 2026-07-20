@@ -147,4 +147,13 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			orders.POST("/create/gold", middleware.Auth(cfg), middleware.Validation(&dto.CreateOrderRequest{}), h.CreateOrder)
 		}
 	}
+
+	// API v2 版本分组
+	v2 := r.Group("/api/v2")
+	{
+		books := v2.Group("/books")
+		{
+			books.GET("/search", middleware.Validation(&dto.SearchBooksV2Request{}), h.SearchBooksV2)
+		}
+	}
 }

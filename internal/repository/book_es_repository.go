@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fiction-book/internal/model"
+	"fiction-book/pkg/logger"
 	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"go.uber.org/zap"
 )
 
 type BookESRepository interface {
@@ -128,7 +130,7 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 			map[string]interface{}{
 				"multi_match": map[string]interface{}{
 					"query":  filter.Query,
-					"fields": []string{"name^3", "description"},
+					"fields": []string{"name", "description"},
 					"type":   "best_fields",
 				},
 			},
@@ -285,6 +287,9 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 	}
 
 	// 处理排序：先按用户指定的字段排序，最后固定以ID降序排序
+	if filter.Order == "" {
+		filter.Order = model.BookOrderUpdate
+	}
 	var userSortOrder string
 	if filter.OrderDirection == model.SortOrderAsc {
 		userSortOrder = "asc"
@@ -320,8 +325,9 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 	}
 	defer res.Body.Close()
 
+	logger.Info("Elasticsearch匹配语句: ", zap.Any("requestBody", requestBody))
 	if res.IsError() {
-		return nil, fmt.Errorf("ES搜索返回错误状态: %s", res.Status())
+		return nil, fmt.Errorf("ES搜索返回错误状态: %s", res.String())
 	}
 
 	var searchResponse struct {

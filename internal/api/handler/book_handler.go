@@ -5,11 +5,13 @@ import (
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/response"
 	"fiction-book/pkg/transmit"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // CreateBook 创建书籍
@@ -337,4 +339,43 @@ func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
 		return
 	}
 	response.Success(c, res)
+}
+
+// SearchBooksV2 搜索书籍
+// @Summary 搜索书籍
+// @Description 搜索书籍，支持多条件过滤、排序和高亮
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Param keyword query string false "搜索关键词"
+// @Param author_id query string false "作者ID"
+// @Param vip_level query int false "VIP等级"
+// @Param push_start_time query string false "推送开始时间 (Unix)"
+// @Param push_end_time query string false "推送结束时间 (Unix)"
+// @Param update_start_time query string false "更新开始时间 (Unix)"
+// @Param update_end_time query string false "更新结束时间 (Unix)"
+// @Param price_min query int false "价格最小值 (分)"
+// @Param price_max query int false "价格最大值 (分)"
+// @Param bookshelf_min query int false "书架数最小值"
+// @Param bookshelf_max query int false "书架数最大值"
+// @Param hot_min query int false "热度最小值"
+// @Param hot_max query int false "热度最大值"
+// @Param sort_key query string false "排序字段 (hot_value|browse_amount|bookshelf_amount|update_time|push_time)"
+// @Param sort_order query string false "排序方向 (asc|desc)"
+// @Param last_id query string false "用于向后分页的最后一个ID"
+// @Success 200 {object} response.Response{data=[]dto.BookSearchResult}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v2/books/search [get]
+func (h *Handler) SearchBooksV2(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.SearchBooksV2Request](c)
+	req.ToStandard()
+
+	books, err := h.bookService.SearchBooksV2(c.Request.Context(), req)
+	if err != nil {
+		response.InternalError(c, err)
+		logger.Info("HTTP Handler: SearchBooksV2 err", zap.Error(err))
+		return
+	}
+	response.Success(c, books)
 }
