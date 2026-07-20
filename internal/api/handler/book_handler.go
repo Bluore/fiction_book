@@ -347,7 +347,7 @@ func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
 // @Tags 书籍管理
 // @Accept json
 // @Produce json
-// @Param keyword query string false "搜索关键词"
+// @Param query query string false "搜索关键词"
 // @Param author_id query string false "作者ID"
 // @Param vip_level query int false "VIP等级"
 // @Param push_start_time query string false "推送开始时间 (Unix)"

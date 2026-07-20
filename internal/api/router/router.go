@@ -37,17 +37,19 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		middleware.Pprof(r)
 	}
 
+	api := r.Group("/api")
+
 	// Swagger 文档
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 静态文件服务
-	r.Static("/upload", "upload")
+	api.Static("/upload", "upload")
 
 	// 健康检查
-	r.GET("/health", h.HealthCheck)
+	api.GET("/health", h.HealthCheck)
 
 	// API 版本分组
-	v1 := r.Group("/api/v1")
+	v1 := api.Group("/v1")
 	{
 		// 认证相关
 		auth := v1.Group("/auth")
@@ -149,11 +151,16 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 	}
 
 	// API v2 版本分组
-	v2 := r.Group("/api/v2")
+	v2 := api.Group("/v2")
 	{
 		books := v2.Group("/books")
 		{
 			books.GET("/search", middleware.Validation(&dto.SearchBooksV2Request{}), h.SearchBooksV2)
+		}
+
+		chapters := v2.Group("/chapters")
+		{
+			chapters.GET("/search", middleware.Validation(&dto.SearchBookChaptersV2Request{}), h.SearchBookChaptersV2)
 		}
 	}
 }
