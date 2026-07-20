@@ -25,11 +25,13 @@ func outboxConsumerClient(ctx context.Context, cfg *config.Config, h *wire.Massa
 	})
 
 	ticker := time.NewTicker(1 * time.Second)
-	select {
-	case <-ticker.C:
-		consumeMassage(ctx, h, reader)
-	case <-ctx.Done():
-		return
+	for {
+		select {
+		case <-ticker.C:
+			consumeMassage(ctx, h, reader)
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
@@ -77,7 +79,7 @@ func syncData(ctx context.Context, h *wire.MassageQueue, massageDecodeData *mode
 		return syncBookChapterES(ctx, h, massageDecodeData.Operation, &massageDecodeData.Payload)
 	default:
 	}
-	
+
 	logger.Warn(fmt.Sprintf("Unknown table name: %s", massageDecodeData.TableName()))
 	return nil
 }

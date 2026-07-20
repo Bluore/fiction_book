@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
@@ -40,6 +41,7 @@ type bookChapterService struct {
 	bookChapterRepo          repository.BookChapterRepository
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository
 	userAssetRepo            repository.UserAssetRepository
+	outboxRepo               repository.OutboxRepository
 	bookCache                cache.BookCache
 	bookChapterCache         cache.BookChapterCache
 	userStatCache            cache.UserStatCache
@@ -54,6 +56,7 @@ func NewBookChapterService(
 	bookChapterRepo repository.BookChapterRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
+	outboxRepo repository.OutboxRepository,
 	bookCache cache.BookCache,
 	bookChapterCache cache.BookChapterCache,
 	userStatCache cache.UserStatCache,
@@ -67,6 +70,7 @@ func NewBookChapterService(
 		bookChapterRepo:          bookChapterRepo,
 		userPurchasedChapterRepo: userPurchasedChapterRepo,
 		userAssetRepo:            userAssetRepo,
+		outboxRepo:               outboxRepo,
 		bookCache:                bookCache,
 		bookChapterCache:         bookChapterCache,
 		userStatCache:            userStatCache,
@@ -98,7 +102,30 @@ func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 		Price:    int64(*req.Price),
 	}
 
-	bookChapterResp, err := s.bookChapterRepo.AddByBookID(ctx, bookChapter)
+	var bookChapterResp *model.BookChapter
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		bookChapterResp, err = s.bookChapterRepo.AddByBookID(ctx, bookChapter)
+		if err != nil {
+			return err
+		}
+
+		bookJSON, err := json.Marshal(bookChapter)
+		if err != nil {
+			return err
+		}
+
+		outbox := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      model.TableNameBookChapter,
+			Operation: model.DatabaseOperationCreate,
+			Payload:   bookJSON,
+			Status:    model.OutboxStatusCreated,
+			CreatedAt: time.Now(),
+		}
+
+		return s.outboxRepo.AddEvent(ctx, tx, outbox)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -311,10 +338,34 @@ func (s bookChapterService) UpdateChapter(ctx context.Context, userID string, re
 		cur.Price = *req.Price
 	}
 
-	err = s.bookChapterRepo.Update(ctx, old.ID, cur)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		err = s.bookChapterRepo.Update(ctx, old.ID, cur)
+		if err != nil {
+			return err
+		}
+
+		bookJSON, err := json.Marshal(cur)
+		if err != nil {
+			return err
+		}
+
+		outbox := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      model.TableNameBookChapter,
+			Operation: model.DatabaseOperationUpdate,
+			Payload:   bookJSON,
+			Status:    model.OutboxStatusCreated,
+			CreatedAt: time.Now(),
+		}
+
+		return s.outboxRepo.AddEvent(ctx, tx, outbox)
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	// 更新缓存
+	_ = s.bookChapterCache.UpdateBookChapter(ctx, cur)
 
 	return toBookChapterResponse(s.cfg, cur, book), nil
 
@@ -344,8 +395,36 @@ func (s bookChapterService) DeleteChapter(ctx context.Context, userID string, ch
 		return ErrPermission
 	}
 
-	// 删除章节
-	return s.bookChapterRepo.Delete(ctx, chapterID)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		// 删除章节
+		err = s.bookChapterRepo.Delete(ctx, chapterID)
+		if err != nil {
+			return err
+		}
+
+		// 构建删除事件的 payload
+		deletePayload := map[string]string{"id": chapterID}
+		bookJSON, err := json.Marshal(deletePayload)
+		if err != nil {
+			return err
+		}
+
+		outbox := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      model.TableNameBookChapter,
+			Operation: model.DatabaseOperationDelete,
+			Payload:   bookJSON,
+			Status:    model.OutboxStatusCreated,
+			CreatedAt: time.Now(),
+		}
+
+		return s.outboxRepo.AddEvent(ctx, tx, outbox)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error) {
