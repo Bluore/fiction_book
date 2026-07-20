@@ -3230,7 +3230,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "搜索关键词",
-                        "name": "keyword",
+                        "name": "query",
                         "in": "query"
                     },
                     {
@@ -3361,6 +3361,115 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v2/chapters/search": {
+            "get": {
+                "description": "搜索章节，支持多条件过滤、排序和高亮",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "章节管理"
+                ],
+                "summary": "搜索章节",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "搜索关键词",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "书籍ID",
+                        "name": "book_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "description": "VIP等级",
+                        "name": "vip_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "创建开始时间 (Unix)",
+                        "name": "created_at_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "创建结束时间 (Unix)",
+                        "name": "created_at_end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "价格最小值 (分)",
+                        "name": "price_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "价格最大值 (分)",
+                        "name": "price_end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序字段 (created_at|price)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方向 (asc|desc)",
+                        "name": "order_direction",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "用于向后分页的最后一个ID",
+                        "name": "last_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.SearchBookChaptersV2Response"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "检查服务是否正常运行",
@@ -3424,6 +3533,20 @@ const docTemplate = `{
                 },
                 "vip_level": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.BookChapterSearchResult": {
+            "type": "object",
+            "properties": {
+                "book_chapter": {
+                    "$ref": "#/definitions/dto.BookChapterResponse"
+                },
+                "highlight": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -3829,6 +3952,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.SearchBookChaptersV2Response": {
+            "type": "object",
+            "properties": {
+                "chapters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BookChapterSearchResult"
+                    }
                 }
             }
         },

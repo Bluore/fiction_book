@@ -17,6 +17,15 @@ definitions:
       vip_level:
         type: string
     type: object
+  dto.BookChapterSearchResult:
+    properties:
+      book_chapter:
+        $ref: '#/definitions/dto.BookChapterResponse'
+      highlight:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
   dto.BookListResponse:
     properties:
       books:
@@ -285,6 +294,13 @@ definitions:
         type: integer
       user_id:
         type: string
+    type: object
+  dto.SearchBookChaptersV2Response:
+    properties:
+      chapters:
+        items:
+          $ref: '#/definitions/dto.BookChapterSearchResult'
+        type: array
     type: object
   dto.UpdateBookChapterRequest:
     properties:
@@ -2444,7 +2460,7 @@ paths:
       parameters:
       - description: 搜索关键词
         in: query
-        name: keyword
+        name: query
         type: string
       - description: 作者ID
         in: query
@@ -2531,6 +2547,75 @@ paths:
       summary: 搜索书籍
       tags:
       - 书籍管理
+  /api/v2/chapters/search:
+    get:
+      consumes:
+      - application/json
+      description: 搜索章节，支持多条件过滤、排序和高亮
+      parameters:
+      - description: 搜索关键词
+        in: query
+        name: query
+        type: string
+      - description: 书籍ID
+        in: query
+        name: book_id
+        type: string
+      - description: VIP等级
+        in: query
+        name: vip_level
+        type: array
+      - description: 创建开始时间 (Unix)
+        in: query
+        name: created_at_start
+        type: string
+      - description: 创建结束时间 (Unix)
+        in: query
+        name: created_at_end
+        type: string
+      - description: 价格最小值 (分)
+        in: query
+        name: price_start
+        type: integer
+      - description: 价格最大值 (分)
+        in: query
+        name: price_end
+        type: integer
+      - description: 排序字段 (created_at|price)
+        in: query
+        name: order
+        type: string
+      - description: 排序方向 (asc|desc)
+        in: query
+        name: order_direction
+        type: string
+      - description: 用于向后分页的最后一个ID
+        in: query
+        name: last_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.SearchBookChaptersV2Response'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 搜索章节
+      tags:
+      - 章节管理
   /health:
     get:
       consumes:
