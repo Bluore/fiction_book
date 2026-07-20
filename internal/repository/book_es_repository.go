@@ -14,6 +14,7 @@ type BookESRepository interface {
 	Create(ctx context.Context, book *model.Book) error
 	Update(ctx context.Context, book *model.Book) error
 	Delete(ctx context.Context, id string) error
+	Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*[]model.BookSearchResult, error)
 }
 
 type bookESRepository struct {
@@ -110,4 +111,247 @@ func (r *bookESRepository) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// Search 搜索图书ES
+func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*[]model.BookSearchResult, error) {
+	query := map[string]interface{}{
+		"bool": map[string]interface{}{
+			"must": []interface{}{},
+		},
+	}
+
+	// 处理查询关键词
+	if filter.Query != "" {
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"multi_match": map[string]interface{}{
+					"query":  filter.Query,
+					"fields": []string{"name^3", "description"},
+					"type":   "best_fields",
+				},
+			},
+		)
+	}
+
+	// 处理 VIP 等级过滤
+	if len(filter.VIPLevel) > 0 {
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"terms": map[string]interface{}{
+					"vip_level": filter.VIPLevel,
+				},
+			},
+		)
+	}
+
+	// 处理 PushedAt 范围过滤
+	if !filter.PushedAtStart.IsZero() || !filter.PushedAtEnd.IsZero() {
+		pushedAtRange := map[string]interface{}{}
+		if !filter.PushedAtStart.IsZero() {
+			pushedAtRange["gte"] = filter.PushedAtStart
+		}
+		if !filter.PushedAtEnd.IsZero() {
+			pushedAtRange["lte"] = filter.PushedAtEnd
+		}
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"range": map[string]interface{}{
+					"pushed_at": pushedAtRange,
+				},
+			},
+		)
+	}
+
+	// 处理 UpdatedAt 范围过滤
+	if !filter.UpdatedAtStart.IsZero() || !filter.UpdatedAtEnd.IsZero() {
+		updatedAtRange := map[string]interface{}{}
+		if !filter.UpdatedAtStart.IsZero() {
+			updatedAtRange["gte"] = filter.UpdatedAtStart
+		}
+		if !filter.UpdatedAtEnd.IsZero() {
+			updatedAtRange["lte"] = filter.UpdatedAtEnd
+		}
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"range": map[string]interface{}{
+					"updated_at": updatedAtRange,
+				},
+			},
+		)
+	}
+
+	// 处理 Price 范围过滤
+	if filter.PriceStart > 0 || filter.PriceEnd > 0 {
+		priceRange := map[string]interface{}{}
+		if filter.PriceStart > 0 {
+			priceRange["gte"] = filter.PriceStart
+		}
+		if filter.PriceEnd > 0 {
+			priceRange["lte"] = filter.PriceEnd
+		}
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"range": map[string]interface{}{
+					"price": priceRange,
+				},
+			},
+		)
+	}
+
+	// 处理 OwnerID 过滤
+	if filter.OwnerID != "" {
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"term": map[string]interface{}{
+					"user_id": filter.OwnerID,
+				},
+			},
+		)
+	}
+
+	// 处理 BookshelfAmount 范围过滤
+	if filter.BookshelfAmountStart > 0 || filter.BookshelfAmountEnd > 0 {
+		bookshelfRange := map[string]interface{}{}
+		if filter.BookshelfAmountStart > 0 {
+			bookshelfRange["gte"] = filter.BookshelfAmountStart
+		}
+		if filter.BookshelfAmountEnd > 0 {
+			bookshelfRange["lte"] = filter.BookshelfAmountEnd
+		}
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"range": map[string]interface{}{
+					"bookshelf_amount": bookshelfRange,
+				},
+			},
+		)
+	}
+
+	// 处理 ThermalValue 范围过滤
+	if filter.ThermalValueStart > 0 || filter.ThermalValueEnd > 0 {
+		thermalRange := map[string]interface{}{}
+		if filter.ThermalValueStart > 0 {
+			thermalRange["gte"] = filter.ThermalValueStart
+		}
+		if filter.ThermalValueEnd > 0 {
+			thermalRange["lte"] = filter.ThermalValueEnd
+		}
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"range": map[string]interface{}{
+					"thermal_value": thermalRange,
+				},
+			},
+		)
+	}
+
+	// 处理 LastID 筛选：ID 比 LastID 小的结果
+	if filter.LastID != nil && *filter.LastID != "" {
+		query["bool"].(map[string]interface{})["must"] = append(
+			query["bool"].(map[string]interface{})["must"].([]interface{}),
+			map[string]interface{}{
+				"range": map[string]interface{}{
+					"id": map[string]interface{}{
+						"lt": *filter.LastID,
+					},
+				},
+			},
+		)
+	}
+
+	// 构建请求体
+	requestBody := map[string]interface{}{
+		"query": query,
+		"size":  filter.Limit,
+	}
+
+	// 添加高亮配置
+	if filter.Query != "" {
+		requestBody["highlight"] = map[string]interface{}{
+			"fields": map[string]interface{}{
+				"name":        map[string]interface{}{},
+				"description": map[string]interface{}{},
+			},
+		}
+	}
+
+	// 处理排序：先按用户指定的字段排序，最后固定以ID降序排序
+	var userSortOrder string
+	if filter.OrderDirection == model.SortOrderAsc {
+		userSortOrder = "asc"
+	} else {
+		userSortOrder = "desc"
+	}
+
+	requestBody["sort"] = []map[string]interface{}{
+		{
+			string(filter.Order): map[string]interface{}{
+				"order": userSortOrder,
+			},
+		},
+		{
+			"id": map[string]interface{}{
+				"order": "desc",
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("序列化搜索请求失败: %w", err)
+	}
+
+	res, err := r.esClient.Search(
+		r.esClient.Search.WithContext(ctx),
+		r.esClient.Search.WithIndex(model.TableNameBook),
+		r.esClient.Search.WithBody(bytes.NewReader(jsonData)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("执行搜索请求失败: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return nil, fmt.Errorf("ES搜索返回错误状态: %s", res.Status())
+	}
+
+	var searchResponse struct {
+		Hits struct {
+			Hits []struct {
+				Source    model.Book          `json:"_source"`
+				Highlight map[string][]string `json:"highlight"`
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&searchResponse); err != nil {
+		return nil, fmt.Errorf("解析搜索响应失败: %w", err)
+	}
+
+	results := make([]model.BookSearchResult, 0, len(searchResponse.Hits.Hits))
+	for _, hit := range searchResponse.Hits.Hits {
+		// 处理高亮信息
+		highlightMap := make(map[string]string)
+		for field, fragments := range hit.Highlight {
+			if len(fragments) > 0 {
+				highlightMap[field] = fragments[0]
+			}
+		}
+
+		results = append(results, model.BookSearchResult{
+			Book:      hit.Source,
+			Highlight: highlightMap,
+		})
+	}
+
+	return &results, nil
 }
