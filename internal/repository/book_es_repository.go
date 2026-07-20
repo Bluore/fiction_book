@@ -16,7 +16,7 @@ type BookESRepository interface {
 	Create(ctx context.Context, book *model.Book) error
 	Update(ctx context.Context, book *model.Book) error
 	Delete(ctx context.Context, id string) error
-	Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*[]model.BookSearchResult, error)
+	Search(ctx context.Context, filter *model.BookFilterWithIDPage) ([]model.BookSearchResult, error)
 }
 
 type bookESRepository struct {
@@ -116,7 +116,7 @@ func (r *bookESRepository) Delete(ctx context.Context, id string) error {
 }
 
 // Search 搜索图书ES
-func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*[]model.BookSearchResult, error) {
+func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterWithIDPage) ([]model.BookSearchResult, error) {
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
 			"must": []interface{}{},
@@ -359,5 +359,5 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 		})
 	}
 
-	return &results, nil
+	return results, nil
 }

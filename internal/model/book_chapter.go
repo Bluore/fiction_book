@@ -57,3 +57,8 @@ type BookChapterFilterWithIDPage struct {
 	OrderDirection SortOrder        `json:"order_direction"`
 	IDPage
 }
+
+type BookChapterSearchResult struct {
+	BookChapter BookChapter       `json:"book_chapter"`
+	Highlight   map[string]string `json:"highlight"`
+}

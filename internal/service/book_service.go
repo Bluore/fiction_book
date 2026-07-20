@@ -687,8 +687,8 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 	}
 
 	// 转换为响应
-	results := make([]*dto.BookSearchResult, 0, len(*esResults))
-	for _, esResult := range *esResults {
+	results := make([]*dto.BookSearchResult, 0, len(esResults))
+	for _, esResult := range esResults {
 		bookResp := toBookResponse(s.cfg, &esResult.Book)
 		results = append(results, &dto.BookSearchResult{
 			Book:      *bookResp,
