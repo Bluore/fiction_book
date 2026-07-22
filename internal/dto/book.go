@@ -24,11 +24,11 @@ type BookResponse struct {
 	OwnerID         string    `json:"owner_id"`
 	VIPLevel        string    `json:"vip_level"`
 	Price           int64     `json:"price"`
-	PushAt          time.Time `json:"push_at"`
+	PushAt          int64 `json:"push_at"`
 	BrowseAmount    uint64    `json:"browse_amount"`
 	BookshelfAmount uint64    `json:"bookshelf_amount"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	CreatedAt       int64 `json:"created_at"`
+	UpdatedAt       int64 `json:"updated_at"`
 }
 
 type GetBookRequest struct {

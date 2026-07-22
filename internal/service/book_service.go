@@ -145,11 +145,11 @@ func toBookResponse(cfg *config.Config, book *model.Book) *dto.BookResponse {
 		OwnerID:         book.OwnerID,
 		VIPLevel:        book.VIPLevel,
 		Price:           book.Price,
-		PushAt:          book.PushedAt,
+		PushAt:          book.PushedAt.Unix(),
 		BrowseAmount:    book.BrowseAmount,
 		BookshelfAmount: book.BookshelfAmount,
-		CreatedAt:       book.CreatedAt,
-		UpdatedAt:       book.UpdatedAt,
+		CreatedAt:       book.CreatedAt.Unix(),
+		UpdatedAt:       book.UpdatedAt.Unix(),
 	}
 }
 

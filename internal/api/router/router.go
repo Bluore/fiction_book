@@ -37,13 +37,13 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		middleware.Pprof(r)
 	}
 
-	api := r.Group("/api")
-
 	// Swagger 文档
-	api.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 静态文件服务
-	api.Static("/upload", "upload")
+	r.Static("/upload", "upload")
+
+	api := r.Group("/api")
 
 	// 健康检查
 	api.GET("/health", h.HealthCheck)
