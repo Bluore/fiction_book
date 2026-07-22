@@ -363,6 +363,7 @@ func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
 // @Param sort_key query string false "排序字段 (hot_value|browse_amount|bookshelf_amount|update_time|push_time)"
 // @Param sort_order query string false "排序方向 (asc|desc)"
 // @Param last_id query string false "用于向后分页的最后一个ID"
+// @Param limit query int false "每页返回数量" default(10)
 // @Success 200 {object} response.Response{data=[]dto.BookSearchResult}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"

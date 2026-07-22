@@ -291,6 +291,7 @@ func (h *Handler) GetBookChapterInfo(c *gin.Context) {
 // @Param order query string false "排序字段 (created_at|price)"
 // @Param order_direction query string false "排序方向 (asc|desc)"
 // @Param last_id query string false "用于向后分页的最后一个ID"
+// @Param limit query int false "每页返回数量" default(10)
 // @Success 200 {object} response.Response{data=dto.SearchBookChaptersV2Response}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"

@@ -97,7 +97,7 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		OwnerID:         userID,
 		Name:            req.Name,
 		Description:     req.Description,
-		VIPLevel:        req.VIPLevel,
+		VIPLevel:        VIPLevelToStr(VIPStrToLevel(req.VIPLevel)),
 		Price:           req.Price,
 		CoverImage:      req.CoverImage,
 		PushedAt:        req.PushAt,
