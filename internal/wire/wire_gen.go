@@ -34,15 +34,21 @@ func InitializeApp() (*App, error) {
 	authCache := ProvideAuthCache(client)
 	userService := ProvideUserService(userRepository, userAssetRepository, userStatCache, userAssetCache, authCache, db, config)
 	bookRepository := ProvideBookRepository(db)
+	elasticsearchClient, err := ProvideESClient(config)
+	if err != nil {
+		return nil, err
+	}
+	bookESRepository := ProvideBookESRepository(elasticsearchClient)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	outboxRepository := ProvideOutboxRepository(db)
 	bookCache := ProvideBookCatch(client)
-	bookService := ProvideBookService(bookRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, db, config)
+	bookService := ProvideBookService(bookRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, db, config)
 	bookChapterRepository := ProvideBookChapterRepository(db)
+	bookChapterESRepository := ProvideBookChapterESRepository(elasticsearchClient)
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)
 	limitCache := ProvideLimitCatch(client)
-	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, userPurchasedChapterRepository, userAssetRepository, outboxRepository, bookCache, bookChapterCache, userStatCache, limitCache, db, config)
+	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, outboxRepository, bookCache, bookChapterCache, userStatCache, limitCache, db, config)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)

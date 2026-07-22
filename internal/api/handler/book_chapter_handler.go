@@ -274,3 +274,35 @@ func (h *Handler) GetBookChapterInfo(c *gin.Context) {
 	}
 	response.Success(c, res)
 }
+
+// SearchBookChaptersV2 搜索章节
+// @Summary 搜索章节
+// @Description 搜索章节，支持多条件过滤、排序和高亮
+// @Tags 章节管理
+// @Accept json
+// @Produce json
+// @Param query query string false "搜索关键词"
+// @Param book_id query string false "书籍ID"
+// @Param vip_level query array false "VIP等级"
+// @Param created_at_start query string false "创建开始时间 (Unix)"
+// @Param created_at_end query string false "创建结束时间 (Unix)"
+// @Param price_start query int false "价格最小值 (分)"
+// @Param price_end query int false "价格最大值 (分)"
+// @Param order query string false "排序字段 (created_at|price)"
+// @Param order_direction query string false "排序方向 (asc|desc)"
+// @Param last_id query string false "用于向后分页的最后一个ID"
+// @Success 200 {object} response.Response{data=dto.SearchBookChaptersV2Response}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v2/chapters/search [get]
+func (h *Handler) SearchBookChaptersV2(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.SearchBookChaptersV2Request](c)
+	req.ToStandard()
+
+	chapters, err := h.bookChapterService.SearchBookChaptersV2(c.Request.Context(), req)
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, chapters)
+}

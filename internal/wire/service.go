@@ -48,6 +48,7 @@ func ProvideUserService(
 // ProvideBookService 提供书籍服务
 func ProvideBookService(
 	bookRepo repository.BookRepository,
+	bookESRepo repository.BookESRepository,
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
@@ -59,6 +60,7 @@ func ProvideBookService(
 ) service.BookService {
 	return service.NewBookService(
 		bookRepo,
+		bookESRepo,
 		userRepo,
 		userAssetRepo,
 		purchasedBookRepo,
@@ -75,6 +77,7 @@ func ProvideBookChapterService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	bookChapterRepo repository.BookChapterRepository,
+	bookChapterESRepo repository.BookChapterESRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
 	outboxRepo repository.OutboxRepository,
@@ -89,6 +92,7 @@ func ProvideBookChapterService(
 		userRepo,
 		bookRepo,
 		bookChapterRepo,
+		bookChapterESRepo,
 		userPurchasedChapterRepo,
 		userAssetRepo,
 		outboxRepo,
