@@ -62,7 +62,7 @@ func main() {
 	// 初始化Kafka
 	kafkaApp, err := wire.InitializeMassageQueue()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize kafka consumer: %v", err))
+		panic(fmt.Sprintf("Failed to initialize kafka app: %v", err))
 	}
 	massageQueueStartContext, massageQueueCancel := context.WithCancel(context.Background())
 	outbox.KafkaInit(massageQueueStartContext, cfg, kafkaApp)

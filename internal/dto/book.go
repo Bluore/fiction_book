@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"fiction-book/internal/model"
 	"mime/multipart"
 	"time"
 )
@@ -23,11 +24,11 @@ type BookResponse struct {
 	OwnerID         string    `json:"owner_id"`
 	VIPLevel        string    `json:"vip_level"`
 	Price           int64     `json:"price"`
-	PushAt          time.Time `json:"push_at"`
+	PushAt          int64 `json:"push_at"`
 	BrowseAmount    uint64    `json:"browse_amount"`
 	BookshelfAmount uint64    `json:"bookshelf_amount"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	CreatedAt       int64 `json:"created_at"`
+	UpdatedAt       int64 `json:"updated_at"`
 }
 
 type GetBookRequest struct {
@@ -142,4 +143,52 @@ type UpdateBookRequest struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Price       *int64  `json:"price"`
+}
+
+// SearchBooksV2Request v2 版本的搜索请求
+type SearchBooksV2Request struct {
+	Query                string          `form:"query"`
+	VIPLevel             []string        `form:"vip_level"`
+	PushStartTime        time.Time       `form:"push_start_time" time_format:"unix"`
+	PushEndTime          time.Time       `form:"push_end_time" time_format:"unix"`
+	UpdateStartTime      time.Time       `form:"update_start_time" time_format:"unix"`
+	UpdateEndTime        time.Time       `form:"update_end_time" time_format:"unix"`
+	PriceStart           int64           `form:"price_start"`
+	PriceEnd             int64           `form:"price_end"`
+	OwnerID              string          `form:"owner_id"`
+	BookshelfAmountStart uint64          `form:"bookshelf_amount_start"`
+	BookshelfAmountEnd   uint64          `form:"bookshelf_amount_end"`
+	ThermalValueStart    uint64          `form:"thermal_value_start"`
+	ThermalValueEnd      uint64          `form:"thermal_value_end"`
+	Order                model.BookOrder `form:"order"`
+	OrderDirection       model.SortOrder `form:"order_direction"`
+	LastID               *string         `form:"last_id"`
+	Limit                int             `form:"limit"`
+}
+
+// BookSearchResult 搜索结果，包含书籍和高亮信息
+type BookSearchResult struct {
+	Book      BookResponse      `json:"book"`
+	Highlight map[string]string `json:"highlight"`
+}
+
+// SearchBooksV2Response v2 版本的搜索响应
+type SearchBooksV2Response struct {
+	Books []*BookSearchResult `json:"books"`
+}
+
+func (p *SearchBooksV2Request) ToStandard() *SearchBooksV2Request {
+	if p.Limit < 1 {
+		p.Limit = 10
+	}
+	if p.Limit > 100 {
+		p.Limit = 100
+	}
+	if p.Order == "" {
+		p.Order = model.BookOrderThermalValue
+	}
+	if p.OrderDirection == "" {
+		p.OrderDirection = model.SortOrderDesc
+	}
+	return p
 }

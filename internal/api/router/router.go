@@ -43,11 +43,13 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 	// 静态文件服务
 	r.Static("/upload", "upload")
 
+	api := r.Group("/api")
+
 	// 健康检查
-	r.GET("/health", h.HealthCheck)
+	api.GET("/health", h.HealthCheck)
 
 	// API 版本分组
-	v1 := r.Group("/api/v1")
+	v1 := api.Group("/v1")
 	{
 		// 认证相关
 		auth := v1.Group("/auth")
@@ -145,6 +147,20 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			orders.GET("/:id", middleware.Auth(cfg), middleware.Validation(&dto.GetOrderRequest{}), h.GetOrderByID)
 			orders.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetOrderListRequest{}), h.GetOrderList)
 			orders.POST("/create/gold", middleware.Auth(cfg), middleware.Validation(&dto.CreateOrderRequest{}), h.CreateOrder)
+		}
+	}
+
+	// API v2 版本分组
+	v2 := api.Group("/v2")
+	{
+		books := v2.Group("/books")
+		{
+			books.GET("/search", middleware.Validation(&dto.SearchBooksV2Request{}), h.SearchBooksV2)
+		}
+
+		chapters := v2.Group("/chapters")
+		{
+			chapters.GET("/search", middleware.Validation(&dto.SearchBookChaptersV2Request{}), h.SearchBookChaptersV2)
 		}
 	}
 }

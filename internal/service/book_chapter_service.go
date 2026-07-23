@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -33,12 +34,14 @@ type BookChapterService interface {
 	GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error)
 	BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error
 	GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error)
+	SearchBookChaptersV2(ctx context.Context, req *dto.SearchBookChaptersV2Request) (*dto.SearchBookChaptersV2Response, error)
 }
 
 type bookChapterService struct {
 	userRepo                 repository.UserRepository
 	bookRepo                 repository.BookRepository
 	bookChapterRepo          repository.BookChapterRepository
+	bookChapterESRepo        repository.BookChapterESRepository
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository
 	userAssetRepo            repository.UserAssetRepository
 	outboxRepo               repository.OutboxRepository
@@ -54,6 +57,7 @@ func NewBookChapterService(
 	userRepo repository.UserRepository,
 	bookRepo repository.BookRepository,
 	bookChapterRepo repository.BookChapterRepository,
+	bookChapterESRepo repository.BookChapterESRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
 	outboxRepo repository.OutboxRepository,
@@ -68,6 +72,7 @@ func NewBookChapterService(
 		userRepo:                 userRepo,
 		bookRepo:                 bookRepo,
 		bookChapterRepo:          bookChapterRepo,
+		bookChapterESRepo:        bookChapterESRepo,
 		userPurchasedChapterRepo: userPurchasedChapterRepo,
 		userAssetRepo:            userAssetRepo,
 		outboxRepo:               outboxRepo,
@@ -567,5 +572,61 @@ func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID st
 		VIPLevel:  bookChapter.VIPLevel,
 		Price:     bookChapter.Price,
 		Book:      toBookResponse(s.cfg, book),
+	}, nil
+}
+
+// SearchBookChaptersV2 v2 版本的搜索章节方法，使用 Elasticsearch
+func (s bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.SearchBookChaptersV2Request) (*dto.SearchBookChaptersV2Response, error) {
+	filter := model.BookChapterFilterWithIDPage{
+		Query:          req.Query,
+		BookID:         req.BookID,
+		VIPLevel:       req.VIPLevel,
+		CreatedAtStart: req.CreatedAtStart,
+		CreatedAtEnd:   req.CreatedAtEnd,
+		PriceStart:     req.PriceStart,
+		PriceEnd:       req.PriceEnd,
+		Order:          req.Order,
+		OrderDirection: req.OrderDirection,
+		IDPage: model.IDPage{
+			LastID: req.LastID,
+			Limit:  req.Limit,
+		},
+	}
+
+	esResults, err := s.bookChapterESRepo.Search(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*dto.BookChapterSearchResult, 0, len(esResults))
+	for _, esResult := range esResults {
+		var book *model.Book
+		var exist bool
+		var err error
+
+		// 查询关联的书籍信息以组合返回
+		book, exist, _ = s.bookCache.GetBook(ctx, esResult.BookChapter.BookID)
+		if !exist {
+			book, err = s.bookRepo.GetByID(ctx, esResult.BookChapter.BookID)
+			if err != nil {
+				logger.Error("SearchBookChaptersV2 GetByID err: ", zap.Error(err))
+				continue
+			}
+			if book != nil {
+				_ = s.bookCache.UpdateBook(ctx, book)
+			}
+		}
+
+		if book != nil {
+			chapterResp := toBookChapterResponse(s.cfg, &esResult.BookChapter, book)
+			results = append(results, &dto.BookChapterSearchResult{
+				BookChapter: *chapterResp,
+				Highlight:   esResult.Highlight,
+			})
+		}
+	}
+
+	return &dto.SearchBookChaptersV2Response{
+		Chapters: results,
 	}, nil
 }
