@@ -154,13 +154,23 @@ func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookC
 		)
 	}
 
-	// 处理 VIP 等级过滤
+	// 处理 VIP 等级过滤：多个 VIP 等级之间为或关系（vip_1 或 vip_2）
 	if len(filter.VIPLevel) > 0 {
+		vipShould := make([]interface{}, 0, len(filter.VIPLevel))
+		for _, vipLevel := range filter.VIPLevel {
+			vipShould = append(vipShould, map[string]interface{}{
+				"term": map[string]interface{}{
+					"vip_level": vipLevel,
+				},
+			})
+		}
+
 		query["bool"].(map[string]interface{})["must"] = append(
 			query["bool"].(map[string]interface{})["must"].([]interface{}),
 			map[string]interface{}{
-				"terms": map[string]interface{}{
-					"vip_level": filter.VIPLevel,
+				"bool": map[string]interface{}{
+					"should":               vipShould,
+					"minimum_should_match": 1,
 				},
 			},
 		)

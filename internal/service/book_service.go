@@ -12,6 +12,7 @@ import (
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -660,7 +661,6 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 	// 转换为 model 的 BookFilterWithIDPage
 	filter := &model.BookFilterWithIDPage{
 		Query:                req.Query,
-		VIPLevel:             req.VIPLevel,
 		PushedAtStart:        req.PushStartTime,
 		PushedAtEnd:          req.PushEndTime,
 		UpdatedAtStart:       req.UpdateStartTime,
@@ -678,6 +678,10 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 			LastID: req.LastID,
 			Limit:  req.Limit,
 		},
+	}
+	
+	if req.VIPLevel != "" {
+		filter.VIPLevel = strings.Split(req.VIPLevel, ",")
 	}
 
 	// 调用 ES 搜索

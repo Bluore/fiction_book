@@ -74,7 +74,7 @@ type BuyBookChapterRequest struct {
 type SearchBookChaptersV2Request struct {
 	Query          string                 `form:"query"`
 	BookID         string                 `form:"book_id"`
-	VIPLevel       []string               `form:"vip_level"`
+	VIPLevel       string                 `form:"vip_level"`
 	CreatedAtStart time.Time              `form:"created_at_start" time_format:"unix"`
 	CreatedAtEnd   time.Time              `form:"created_at_end" time_format:"unix"`
 	PriceStart     int64                  `form:"price_start"`

@@ -17,18 +17,18 @@ type CreateBookRequest struct {
 }
 
 type BookResponse struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	Description     string    `json:"description"`
-	CoverImage      string    `json:"cover_image"`
-	OwnerID         string    `json:"owner_id"`
-	VIPLevel        string    `json:"vip_level"`
-	Price           int64     `json:"price"`
-	PushAt          int64 `json:"push_at"`
-	BrowseAmount    uint64    `json:"browse_amount"`
-	BookshelfAmount uint64    `json:"bookshelf_amount"`
-	CreatedAt       int64 `json:"created_at"`
-	UpdatedAt       int64 `json:"updated_at"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	CoverImage      string `json:"cover_image"`
+	OwnerID         string `json:"owner_id"`
+	VIPLevel        string `json:"vip_level"`
+	Price           int64  `json:"price"`
+	PushAt          int64  `json:"push_at"`
+	BrowseAmount    uint64 `json:"browse_amount"`
+	BookshelfAmount uint64 `json:"bookshelf_amount"`
+	CreatedAt       int64  `json:"created_at"`
+	UpdatedAt       int64  `json:"updated_at"`
 }
 
 type GetBookRequest struct {
@@ -148,7 +148,7 @@ type UpdateBookRequest struct {
 // SearchBooksV2Request v2 版本的搜索请求
 type SearchBooksV2Request struct {
 	Query                string          `form:"query"`
-	VIPLevel             []string        `form:"vip_level"`
+	VIPLevel             string          `form:"vip_level"`
 	PushStartTime        time.Time       `form:"push_start_time" time_format:"unix"`
 	PushEndTime          time.Time       `form:"push_end_time" time_format:"unix"`
 	UpdateStartTime      time.Time       `form:"update_start_time" time_format:"unix"`

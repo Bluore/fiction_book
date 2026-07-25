@@ -12,6 +12,7 @@ import (
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/utils"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -580,7 +581,6 @@ func (s bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.S
 	filter := model.BookChapterFilterWithIDPage{
 		Query:          req.Query,
 		BookID:         req.BookID,
-		VIPLevel:       req.VIPLevel,
 		CreatedAtStart: req.CreatedAtStart,
 		CreatedAtEnd:   req.CreatedAtEnd,
 		PriceStart:     req.PriceStart,
@@ -591,6 +591,10 @@ func (s bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.S
 			LastID: req.LastID,
 			Limit:  req.Limit,
 		},
+	}
+
+	if req.VIPLevel != "" {
+		filter.VIPLevel = strings.Split(req.VIPLevel, ",")
 	}
 
 	esResults, err := s.bookChapterESRepo.Search(ctx, filter)
