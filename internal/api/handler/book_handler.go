@@ -348,22 +348,23 @@ func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param query query string false "搜索关键词"
-// @Param author_id query string false "作者ID"
-// @Param vip_level query int false "VIP等级"
-// @Param push_start_time query string false "推送开始时间 (Unix)"
-// @Param push_end_time query string false "推送结束时间 (Unix)"
-// @Param update_start_time query string false "更新开始时间 (Unix)"
-// @Param update_end_time query string false "更新结束时间 (Unix)"
-// @Param price_min query int false "价格最小值 (分)"
-// @Param price_max query int false "价格最大值 (分)"
-// @Param bookshelf_min query int false "书架数最小值"
-// @Param bookshelf_max query int false "书架数最大值"
-// @Param hot_min query int false "热度最小值"
-// @Param hot_max query int false "热度最大值"
-// @Param sort_key query string false "排序字段 (hot_value|browse_amount|bookshelf_amount|update_time|push_time)"
-// @Param sort_order query string false "排序方向 (asc|desc)"
+// @Param vip_level query string false "VIP等级，多个等级使用逗号分隔 (例如 vip_0,vip_1)"
+// @Param push_start_time query int false "推送开始时间 (Unix)"
+// @Param push_end_time query int false "推送结束时间 (Unix)"
+// @Param update_start_time query int false "更新开始时间 (Unix)"
+// @Param update_end_time query int false "更新结束时间 (Unix)"
+// @Param price_start query int false "价格最小值 (分)"
+// @Param price_end query int false "价格最大值 (分)"
+// @Param owner_id query string false "作者ID"
+// @Param bookshelf_amount_start query int false "书架数最小值"
+// @Param bookshelf_amount_end query int false "书架数最大值"
+// @Param thermal_value_start query int false "热度最小值"
+// @Param thermal_value_end query int false "热度最大值"
+// @Param order query string false "排序字段 (thermal_value|browse_amount|bookshelf_amount|updated_at|pushed_at)" default(thermal_value)
+// @Param order_direction query string false "排序方向 (asc|desc)" default(desc)
 // @Param last_id query string false "用于向后分页的最后一个ID"
-// @Success 200 {object} response.Response{data=[]dto.BookSearchResult}
+// @Param limit query int false "每页数量 (1-100)" default(10)
+// @Success 200 {object} response.Response{data=dto.SearchBooksV2Response}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v2/books/search [get]

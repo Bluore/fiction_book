@@ -3235,36 +3235,30 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "作者ID",
-                        "name": "author_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "VIP等级",
+                        "description": "VIP等级，多个等级使用逗号分隔 (例如 vip_0,vip_1)",
                         "name": "vip_level",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "推送开始时间 (Unix)",
                         "name": "push_start_time",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "推送结束时间 (Unix)",
                         "name": "push_end_time",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "更新开始时间 (Unix)",
                         "name": "update_start_time",
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "更新结束时间 (Unix)",
                         "name": "update_end_time",
                         "in": "query"
@@ -3272,55 +3266,70 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "价格最小值 (分)",
-                        "name": "price_min",
+                        "name": "price_start",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "价格最大值 (分)",
-                        "name": "price_max",
+                        "name": "price_end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "作者ID",
+                        "name": "owner_id",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "书架数最小值",
-                        "name": "bookshelf_min",
+                        "name": "bookshelf_amount_start",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "书架数最大值",
-                        "name": "bookshelf_max",
+                        "name": "bookshelf_amount_end",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "热度最小值",
-                        "name": "hot_min",
+                        "name": "thermal_value_start",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "热度最大值",
-                        "name": "hot_max",
+                        "name": "thermal_value_end",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "排序字段 (hot_value|browse_amount|bookshelf_amount|update_time|push_time)",
-                        "name": "sort_key",
+                        "default": "thermal_value",
+                        "description": "排序字段 (thermal_value|browse_amount|bookshelf_amount|updated_at|pushed_at)",
+                        "name": "order",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "default": "desc",
                         "description": "排序方向 (asc|desc)",
-                        "name": "sort_order",
+                        "name": "order_direction",
                         "in": "query"
                     },
                     {
                         "type": "string",
                         "description": "用于向后分页的最后一个ID",
                         "name": "last_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量 (1-100)",
+                        "name": "limit",
                         "in": "query"
                     }
                 ],
@@ -3336,10 +3345,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/dto.BookSearchResult"
-                                            }
+                                            "$ref": "#/definitions/dto.SearchBooksV2Response"
                                         }
                                     }
                                 }
@@ -3583,7 +3589,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "description": {
                     "type": "string"
@@ -3601,10 +3607,10 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "push_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "updated_at": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "vip_level": {
                     "type": "string"
@@ -3962,6 +3968,17 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/dto.BookChapterSearchResult"
+                    }
+                }
+            }
+        },
+        "dto.SearchBooksV2Response": {
+            "type": "object",
+            "properties": {
+                "books": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.BookSearchResult"
                     }
                 }
             }
