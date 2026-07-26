@@ -50,6 +50,7 @@ type AlipayConfig struct {
 	NotifyURL  string `mapstructure:"notify_url"`
 	ReturnURL  string `mapstructure:"return_url"`
 	IsProd     bool   `mapstructure:"is_prod"`
+	IsDebug    bool   `mapstructure:"is_debug"`
 }
 
 // WechatConfig 微信支付配置

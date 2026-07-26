@@ -22,6 +22,11 @@ func NewAlipayStrategy(cfg AlipayConfig) (*AlipayStrategy, error) {
 		return nil, fmt.Errorf("failed to create alipay client: %w", err)
 	}
 
+	if cfg.IsDebug {
+		// 开启调试日志
+		client.DebugSwitch = gopay.DebugOn
+	}
+
 	client.SetLocation(alipay.LocationShanghai).
 		SetCharset(alipay.UTF8).
 		SetSignType(alipay.RSA2).

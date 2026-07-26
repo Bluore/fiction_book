@@ -2,6 +2,7 @@ package wire
 
 import (
 	"fiction-book/pkg/logger"
+	"fiction-book/pkg/payment"
 	"fiction-book/pkg/redisclient"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -20,6 +21,7 @@ var InfraSet = wire.NewSet(
 	ProvideDatabase,
 	ProvideCatch,
 	ProvideESClient,
+	ProvideAlipayStrategy,
 )
 
 // ProvideConfig 提供配置
@@ -43,4 +45,9 @@ func ProvideCatch(cfg *config.Config) (*redis.Client, error) {
 // ProvideESClient 提供 Elasticsearch 客户端链接
 func ProvideESClient(cfg *config.Config) (*elasticsearch.Client, error) {
 	return database.InitES(cfg)
+}
+
+// ProvideAlipayStrategy 提供支付宝支付策略
+func ProvideAlipayStrategy(cfg *config.Config) (payment.Strategy, error) {
+	return payment.NewAlipayStrategy(cfg.Payment.Alipay)
 }

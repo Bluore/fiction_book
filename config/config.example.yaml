@@ -69,3 +69,21 @@ purchased:
   vip_2:
     month: 3000
     year: 30000
+
+# 支付配置
+payment:
+  alipay:
+    app_id: ""
+    private_key: ""
+    public_key: ""
+    notify_url: ""
+    return_url: ""
+    is_prod: false
+    is_debug: true
+  wechat:
+    app_id: ""
+    mch_id: ""
+    serial_no: ""
+    api_v3_key: ""
+    private_key_path: ""
+    notify_url: ""

@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fiction-book/pkg/payment"
+
 	"github.com/spf13/viper"
 )
 
@@ -18,6 +20,7 @@ type Config struct {
 	Resend        Resend              `mapstructure:"resend"`
 	Kafka         KafkaConfig         `mapstructure:"kafka"`
 	Purchased     PurchasedConfig     `mapstructure:"purchased"`
+	Payment       payment.Config      `mapstructure:"payment"`
 }
 
 // OSSConfig 对象存储配置

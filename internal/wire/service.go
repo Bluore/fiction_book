@@ -9,6 +9,7 @@ import (
 	"fiction-book/internal/repository"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/payment"
 )
 
 // ServiceSet 服务层 Provider 集合
@@ -188,6 +189,7 @@ func ProvideOrderService(
 	orderRepo repository.OrderRepository,
 	db *gorm.DB,
 	cfg *config.Config,
+	alipayStrategy payment.Strategy,
 ) service.OrderService {
-	return service.NewOrderService(userRepo, orderRepo, db, cfg)
+	return service.NewOrderService(userRepo, orderRepo, db, cfg, alipayStrategy)
 }

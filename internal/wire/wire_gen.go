@@ -58,7 +58,11 @@ func InitializeApp() (*App, error) {
 	userHistoryRepository := ProvideUserHistoryRepository(db)
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
 	orderRepository := ProvideOrderRepository(db)
-	orderService := ProvideOrderService(userRepository, orderRepository, db, config)
+	strategy, err := ProvideAlipayStrategy(config)
+	if err != nil {
+		return nil, err
+	}
+	orderService := ProvideOrderService(userRepository, orderRepository, db, config, strategy)
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIPService, config)
 	app := NewApp(handler)
 	return app, nil

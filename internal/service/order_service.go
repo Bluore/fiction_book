@@ -7,6 +7,8 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/payment"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,7 +16,8 @@ import (
 )
 
 var (
-	ErrOrderNotFound = errors.New("order not found")
+	ErrOrderNotFound     = errors.New("order not found")
+	ErrCreateAlipayOrder = errors.New("create alipay order fail")
 )
 
 const (
@@ -26,16 +29,17 @@ const (
 )
 
 type OrderService interface {
-	CreateOrder(ctx context.Context, userId string, req *dto.CreateOrderRequest) (*dto.OrderResponse, error)
+	CreateOrder(ctx context.Context, userId string, req *dto.CreateOrderRequest) (*dto.CreateOrderResponse, error)
 	GetOrder(ctx context.Context, userId string, id string) (*dto.OrderResponse, error)
 	GetOrderListByUserID(ctx context.Context, userId string, req *dto.GetOrderListRequest) (*dto.GetOrderListResponse, error)
 }
 
 type orderService struct {
-	userRepo  repository.UserRepository
-	orderRepo repository.OrderRepository
-	db        *gorm.DB
-	cfg       *config.Config
+	userRepo       repository.UserRepository
+	orderRepo      repository.OrderRepository
+	db             *gorm.DB
+	cfg            *config.Config
+	alipayStrategy payment.Strategy
 }
 
 func NewOrderService(
@@ -43,18 +47,25 @@ func NewOrderService(
 	orderRepo repository.OrderRepository,
 	db *gorm.DB,
 	cfg *config.Config,
+	alipayStrategy payment.Strategy,
 ) OrderService {
 	return &orderService{
-		userRepo:  userRepo,
-		orderRepo: orderRepo,
-		db:        db,
-		cfg:       cfg,
+		userRepo:       userRepo,
+		orderRepo:      orderRepo,
+		db:             db,
+		cfg:            cfg,
+		alipayStrategy: alipayStrategy,
 	}
 }
 
-func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.CreateOrderRequest) (*dto.OrderResponse, error) {
+func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.CreateOrderRequest) (*dto.CreateOrderResponse, error) {
+	var payUrl string
+	var orderID string = uuid.New().String()
+	var orderNo string = strings.ReplaceAll(orderID, "-", "_")
+	var err error
+
 	order := model.Order{
-		ID:            uuid.New().String(),
+		ID:            orderID,
 		UserId:        userId,
 		PayPrice:      req.Price,
 		OriginalPrice: req.Price,
@@ -64,22 +75,37 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		CreatedAt:     time.Now(),
 	}
 
-	err := s.db.Transaction(func(db *gorm.DB) error {
-		// 货币转化率 1:100
-		if int64(req.Price*100) != req.RewardGold {
-			return ErrParam
-		}
+	// 货币转化率 1:100
+	if int64(req.Price*100) != req.RewardGold {
+		return nil, ErrParam
+	}
 
-		err := s.orderRepo.CreateOrder(ctx, db, &order)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	// 创建订单
+	payUrl, _, err = s.alipayStrategy.CreateOrder(
+		payment.Amount{
+			Total:    int64(order.PayPrice*100),
+			Currency: "CNY",
+		},
+		orderNo,
+		"buy",
+	)
+	if err != nil {
+		return nil, ErrCreateAlipayOrder
+	}
+
+	// 添加数据
+	err = s.orderRepo.CreateOrder(ctx, s.db, &order)
 	if err != nil {
 		return nil, err
 	}
-	return toOrderResponse(&order), nil
+
+	// todo 添加到线程池异步返回结果
+
+	return &dto.CreateOrderResponse{
+		OrderID: orderID,
+		PayURL:  payUrl,
+		Price:   order.PayPrice,
+	}, nil
 }
 
 func toOrderResponse(in *model.Order) *dto.OrderResponse {

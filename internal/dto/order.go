@@ -9,6 +9,12 @@ type CreateOrderRequest struct {
 	RewardGold int64   `json:"reward_gold" binding:"required"`
 }
 
+type CreateOrderResponse struct {
+	OrderID string  `json:"order_id"`
+	PayURL  string  `json:"pay_url"`
+	Price   float64 `json:"price"`
+}
+
 type GetOrderRequest struct {
 	ID string `uri:"id" binding:"required"`
 }
