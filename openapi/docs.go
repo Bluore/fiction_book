@@ -3476,6 +3476,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v2/purchases/vip": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "使用金币购买 VIP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "消费管理"
+                ],
+                "summary": "购买VIP（认证）",
+                "parameters": [
+                    {
+                        "description": "购买VIP请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.BuyVIPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.BuyVIPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4018": {
+                        "description": "余额不足",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "检查服务是否正常运行",
@@ -3658,6 +3733,59 @@ const docTemplate = `{
                 },
                 "price": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.BuyVIPRequest": {
+            "type": "object",
+            "required": [
+                "duration",
+                "price",
+                "vip_level"
+            ],
+            "properties": {
+                "duration": {
+                    "type": "string",
+                    "enum": [
+                        "month",
+                        "year"
+                    ]
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "vip_level": {
+                    "type": "string",
+                    "enum": [
+                        "vip_1",
+                        "vip_2"
+                    ]
+                }
+            }
+        },
+        "dto.BuyVIPResponse": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "gold": {
+                    "type": "integer"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "vip_active_at": {
+                    "type": "string"
+                },
+                "vip_level": {
+                    "type": "integer"
+                },
+                "vip_mark": {
+                    "type": "string"
                 }
             }
         },

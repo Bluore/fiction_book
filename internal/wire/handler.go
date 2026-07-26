@@ -28,6 +28,7 @@ func ProvideHandler(
 	userBookshelfService service.UserBookshelfService,
 	userHistoryService service.UserHistoryService,
 	orderService service.OrderService,
+	buyVIPService service.BuyVIP,
 	cfg *config.Config,
 ) *handler.Handler {
 	return handler.NewHandler(
@@ -40,6 +41,7 @@ func ProvideHandler(
 		userBookshelfService,
 		userHistoryService,
 		orderService,
+		buyVIPService,
 		cfg,
 	)
 }

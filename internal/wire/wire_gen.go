@@ -52,13 +52,14 @@ func InitializeApp() (*App, error) {
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)
+	buyVIPService := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
 	userBookshelfRepository := ProvideUserBookshelfRepository(db)
 	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, bookCache, limitCache, db, config)
 	userHistoryRepository := ProvideUserHistoryRepository(db)
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
 	orderRepository := ProvideOrderRepository(db)
 	orderService := ProvideOrderService(userRepository, orderRepository, db, config)
-	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, config)
+	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIPService, config)
 	app := NewApp(handler)
 	return app, nil
 }

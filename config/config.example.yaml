@@ -60,3 +60,12 @@ kafka:
     - "localhost:9092"
   topic:
     database_sync: "database_sync"
+
+# VIP价格
+purchased:
+  vip_1:
+    month: 1000
+    year: 11900
+  vip_2:
+    month: 3000
+    year: 30000

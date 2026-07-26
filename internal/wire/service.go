@@ -19,6 +19,7 @@ var ServiceSet = wire.NewSet(
 	ProvideUserAssetService,
 	ProvideUserPurchasedBookService,
 	ProvideUserPurchasedChapterService,
+	ProvideBuyVIPService,
 	ProvideUserBookshelfService,
 	ProvideUserHistoryService,
 	ProvideOrderService,
@@ -137,6 +138,16 @@ func ProvideUserPurchasedChapterService(
 	cfg *config.Config,
 ) service.UserPurchasedChapterService {
 	return service.NewUserPurchasedChapterService(userRepo, userPurchasedChapterRepo, cfg)
+}
+
+// ProvideBuyVIPService 提供VIP购买服务
+func ProvideBuyVIPService(
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	db *gorm.DB,
+	cfg *config.Config,
+) service.BuyVIP {
+	return service.NewBuyVIPService(userRepo, userAssetRepo, db, cfg)
 }
 
 // ProvideUserBookshelfService 提供用户书架服务

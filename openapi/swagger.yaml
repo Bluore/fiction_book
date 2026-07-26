@@ -95,6 +95,42 @@ definitions:
       price:
         type: integer
     type: object
+  dto.BuyVIPRequest:
+    properties:
+      duration:
+        enum:
+        - month
+        - year
+        type: string
+      price:
+        type: integer
+      vip_level:
+        enum:
+        - vip_1
+        - vip_2
+        type: string
+    required:
+    - duration
+    - price
+    - vip_level
+    type: object
+  dto.BuyVIPResponse:
+    properties:
+      duration:
+        type: string
+      gold:
+        type: integer
+      price:
+        type: integer
+      user_id:
+        type: string
+      vip_active_at:
+        type: string
+      vip_level:
+        type: integer
+      vip_mark:
+        type: string
+    type: object
   dto.CreatBookChapterRequest:
     properties:
       book_id:
@@ -2628,6 +2664,51 @@ paths:
       summary: 搜索章节
       tags:
       - 章节管理
+  /api/v2/purchases/vip:
+    post:
+      consumes:
+      - application/json
+      description: 使用金币购买 VIP
+      parameters:
+      - description: 购买VIP请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BuyVIPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.BuyVIPResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4018":
+          description: 余额不足
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 购买VIP（认证）
+      tags:
+      - 消费管理
   /health:
     get:
       consumes:

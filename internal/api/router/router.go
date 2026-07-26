@@ -162,5 +162,11 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		{
 			chapters.GET("/search", middleware.Validation(&dto.SearchBookChaptersV2Request{}), h.SearchBookChaptersV2)
 		}
+
+		// VIP购买管理
+		vipPurchases := v1.Group("/purchases/vip")
+		{
+			vipPurchases.POST("", middleware.Auth(cfg), middleware.Validation(&dto.BuyVIPRequest{}), h.BuyVIP)
+		}
 	}
 }

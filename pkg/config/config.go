@@ -17,6 +17,7 @@ type Config struct {
 	OSS           OSSConfig           `mapstructure:"oss"`
 	Resend        Resend              `mapstructure:"resend"`
 	Kafka         KafkaConfig         `mapstructure:"kafka"`
+	Purchased     PurchasedConfig     `mapstructure:"purchased"`
 }
 
 // OSSConfig 对象存储配置
@@ -106,6 +107,16 @@ type KafkaConfig struct {
 
 type TopicKafkaConfig struct {
 	DatabaseSync string `mapstructure:"database_sync"`
+}
+
+type PurchasedConfig struct {
+	VIP1 VIPPriceConfig `mapstructure:"vip_1"`
+	VIP2 VIPPriceConfig `mapstructure:"vip_2"`
+}
+
+type VIPPriceConfig struct {
+	Month int64 `mapstructure:"month"`
+	Year  int64 `mapstructure:"year"`
 }
 
 // Load 加载配置
