@@ -3551,6 +3551,145 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v2/purchases/vip/shop": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取当前用户所有可购买、可续费和可升级的VIP计划",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "消费管理"
+                ],
+                "summary": "获取VIP商品列表（认证）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.ShopListOfVIPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4002": {
+                        "description": "用户未找到",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/purchases/vip/upgrade": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "使用金币将当前有效 vip_1 升级为 vip_2，并保持原有效期不变",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "消费管理"
+                ],
+                "summary": "升级VIP（认证）",
+                "parameters": [
+                    {
+                        "description": "升级VIP请求",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpgradeVIPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UpgradeVIPResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "4018": {
+                        "description": "余额不足",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "检查服务是否正常运行",
@@ -4111,6 +4250,37 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ShopListOfVIPResponse": {
+            "type": "object",
+            "properties": {
+                "shop": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ShopVIPItem"
+                    }
+                }
+            }
+        },
+        "dto.ShopVIPItem": {
+            "type": "object",
+            "properties": {
+                "active_at": {
+                    "type": "string"
+                },
+                "duration": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "vip_level": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.UpdateBookChapterRequest": {
             "type": "object",
             "required": [
@@ -4203,6 +4373,60 @@ const docTemplate = `{
                     "minLength": 1
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpgradeVIPRequest": {
+            "type": "object",
+            "required": [
+                "original_vip_level",
+                "price",
+                "target_vip_level"
+            ],
+            "properties": {
+                "original_vip_level": {
+                    "type": "string",
+                    "enum": [
+                        "vip_1"
+                    ]
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "target_vip_level": {
+                    "type": "string",
+                    "enum": [
+                        "vip_2"
+                    ]
+                }
+            }
+        },
+        "dto.UpgradeVIPResponse": {
+            "type": "object",
+            "properties": {
+                "gold": {
+                    "type": "integer"
+                },
+                "original_vip_level": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "target_vip_level": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "vip_active_at": {
+                    "type": "string"
+                },
+                "vip_level": {
+                    "type": "integer"
+                },
+                "vip_mark": {
                     "type": "string"
                 }
             }

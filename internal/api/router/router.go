@@ -164,9 +164,11 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		}
 
 		// VIP购买管理
-		vipPurchases := v1.Group("/purchases/vip")
+		vipPurchases := v2.Group("/purchases/vip")
 		{
+			vipPurchases.GET("/shop", middleware.Auth(cfg), h.ShopListOfVIP)
 			vipPurchases.POST("", middleware.Auth(cfg), middleware.Validation(&dto.BuyVIPRequest{}), h.BuyVIP)
+			vipPurchases.POST("/upgrade", middleware.Auth(cfg), middleware.Validation(&dto.UpgradeVIPRequest{}), h.UpgradeVIP)
 		}
 	}
 }

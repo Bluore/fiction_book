@@ -345,6 +345,26 @@ definitions:
           $ref: '#/definitions/dto.BookSearchResult'
         type: array
     type: object
+  dto.ShopListOfVIPResponse:
+    properties:
+      shop:
+        items:
+          $ref: '#/definitions/dto.ShopVIPItem'
+        type: array
+    type: object
+  dto.ShopVIPItem:
+    properties:
+      active_at:
+        type: string
+      duration:
+        type: string
+      price:
+        type: integer
+      type:
+        type: string
+      vip_level:
+        type: string
+    type: object
   dto.UpdateBookChapterRequest:
     properties:
       content:
@@ -408,6 +428,42 @@ definitions:
         minLength: 1
         type: string
       username:
+        type: string
+    type: object
+  dto.UpgradeVIPRequest:
+    properties:
+      original_vip_level:
+        enum:
+        - vip_1
+        type: string
+      price:
+        type: integer
+      target_vip_level:
+        enum:
+        - vip_2
+        type: string
+    required:
+    - original_vip_level
+    - price
+    - target_vip_level
+    type: object
+  dto.UpgradeVIPResponse:
+    properties:
+      gold:
+        type: integer
+      original_vip_level:
+        type: string
+      price:
+        type: integer
+      target_vip_level:
+        type: string
+      user_id:
+        type: string
+      vip_active_at:
+        type: string
+      vip_level:
+        type: integer
+      vip_mark:
         type: string
     type: object
   dto.UploadBookCoverResponse:
@@ -2707,6 +2763,89 @@ paths:
       security:
       - Bearer: []
       summary: 购买VIP（认证）
+      tags:
+      - 消费管理
+  /api/v2/purchases/vip/shop:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户所有可购买、可续费和可升级的VIP计划
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ShopListOfVIPResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 获取VIP商品列表（认证）
+      tags:
+      - 消费管理
+  /api/v2/purchases/vip/upgrade:
+    post:
+      consumes:
+      - application/json
+      description: 使用金币将当前有效 vip_1 升级为 vip_2，并保持原有效期不变
+      parameters:
+      - description: 升级VIP请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpgradeVIPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UpgradeVIPResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4018":
+          description: 余额不足
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 升级VIP（认证）
       tags:
       - 消费管理
   /health:

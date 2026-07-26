@@ -18,10 +18,16 @@ const (
 
 	vipDurationMonth = "month"
 	vipDurationYear  = "year"
+
+	vipShopTypeBuy     = "buy"
+	vipShopTypeRenew   = "renew"
+	vipShopTypeUpgrade = "upgrade"
 )
 
 type BuyVIP interface {
 	BuyVIP(ctx context.Context, userID string, req *dto.BuyVIPRequest) (*dto.BuyVIPResponse, error)
+	UpgradeVIP(ctx context.Context, userID string, req *dto.UpgradeVIPRequest) (*dto.UpgradeVIPResponse, error)
+	ShopListOfVIP(ctx context.Context, userID string) (*dto.ShopListOfVIPResponse, error)
 }
 
 type buyVIPService struct {
@@ -116,6 +122,111 @@ func (s *buyVIPService) BuyVIP(ctx context.Context, userID string, req *dto.BuyV
 	return toBuyVIPResponse(purchasedVIP, price, req.Duration), nil
 }
 
+func (s *buyVIPService) UpgradeVIP(ctx context.Context, userID string, req *dto.UpgradeVIPRequest) (*dto.UpgradeVIPResponse, error) {
+	if req == nil || req.Price <= 0 || req.OriginalVIPLevel != vipLevel1 || req.TargetVIPLevel != vipLevel2 {
+		return nil, ErrParam
+	}
+
+	var upgradedVIP *model.UserAsset
+	upgradePrice, err := s.upgradeVIPPrice()
+	if err != nil {
+		return nil, err
+	}
+	if req.Price != upgradePrice {
+		return nil, ErrParam
+	}
+
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		user, err := s.userRepo.GetByID(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+		if user == nil {
+			return ErrUserNotFound
+		}
+
+		userAsset, err := s.userAssetRepo.GetByID(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+		if userAsset == nil {
+			return ErrUserNotFound
+		}
+
+		currentVIP := effectiveVIPLevel(userAsset, time.Now())
+		if currentVIP != vipLevel1 || currentVIP != req.OriginalVIPLevel {
+			return ErrParam
+		}
+		if userAsset.Gold < upgradePrice {
+			return ErrSufficientFunds
+		}
+
+		userAssetNow, err := s.userAssetRepo.SubGoldByID(ctx, tx, userID, upgradePrice)
+		if err != nil {
+			return err
+		}
+		if userAssetNow == nil {
+			return ErrUserNotFound
+		}
+
+		userAssetNow.VIPLevel = req.TargetVIPLevel
+		userAssetNow.VIPActiveAt = userAsset.VIPActiveAt
+		err = s.userAssetRepo.UpdateByID(ctx, tx, userID, userAssetNow)
+		if err != nil {
+			return err
+		}
+		upgradedVIP = userAssetNow
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return toUpgradeVIPResponse(upgradedVIP, req.OriginalVIPLevel, req.TargetVIPLevel, upgradePrice), nil
+}
+
+func (s *buyVIPService) ShopListOfVIP(ctx context.Context, userID string) (*dto.ShopListOfVIPResponse, error) {
+	userAsset, err := s.userAssetRepo.GetByID(ctx, s.db, userID)
+	if err != nil {
+		return nil, err
+	}
+	if userAsset == nil {
+		return nil, ErrUserNotFound
+	}
+
+	now := time.Now()
+	currentVIP := effectiveVIPLevel(userAsset, now)
+	shop := make([]dto.ShopVIPItem, 0)
+
+	switch currentVIP {
+	case vipLevel0:
+		shop = append(shop, s.shopPlan(vipShopTypeBuy, vipLevel1, vipDurationMonth, now))
+		shop = append(shop, s.shopPlan(vipShopTypeBuy, vipLevel1, vipDurationYear, now))
+		shop = append(shop, s.shopPlan(vipShopTypeBuy, vipLevel2, vipDurationMonth, now))
+		shop = append(shop, s.shopPlan(vipShopTypeBuy, vipLevel2, vipDurationYear, now))
+	case vipLevel1:
+		shop = append(shop, s.shopPlan(vipShopTypeRenew, vipLevel1, vipDurationMonth, *userAsset.VIPActiveAt))
+		shop = append(shop, s.shopPlan(vipShopTypeRenew, vipLevel1, vipDurationYear, *userAsset.VIPActiveAt))
+		upgradePrice, err := s.upgradeVIPPrice()
+		if err != nil {
+			return nil, err
+		}
+		shop = append(shop, dto.ShopVIPItem{
+			Type:     vipShopTypeUpgrade,
+			VIPLevel: vipLevel2,
+			Price:    upgradePrice,
+			ActiveAt: userAsset.VIPActiveAt,
+		})
+	case vipLevel2:
+		shop = append(shop, s.shopPlan(vipShopTypeRenew, vipLevel2, vipDurationMonth, *userAsset.VIPActiveAt))
+		shop = append(shop, s.shopPlan(vipShopTypeRenew, vipLevel2, vipDurationYear, *userAsset.VIPActiveAt))
+	default:
+		return nil, ErrParam
+	}
+
+	return &dto.ShopListOfVIPResponse{Shop: shop}, nil
+}
+
 func (s *buyVIPService) vipPrice(currentVIP string, targetVIP string, duration string) (int64, error) {
 	switch currentVIP {
 	case vipLevel0:
@@ -138,6 +249,34 @@ func (s *buyVIPService) vipPrice(currentVIP string, targetVIP string, duration s
 		return priceByDuration(s.cfg.Purchased.VIP2, duration)
 	default:
 		return 0, ErrParam
+	}
+}
+
+func (s *buyVIPService) upgradeVIPPrice() (int64, error) {
+	upgradePrice := s.cfg.Purchased.VIP2.Month - s.cfg.Purchased.VIP1.Month
+	if upgradePrice <= 0 {
+		return 0, ErrParam
+	}
+	return upgradePrice, nil
+}
+
+func (s *buyVIPService) shopPlan(shopType string, vipLevel string, duration string, baseAt time.Time) dto.ShopVIPItem {
+	var priceConfig config.VIPPriceConfig
+	switch vipLevel {
+	case vipLevel1:
+		priceConfig = s.cfg.Purchased.VIP1
+	case vipLevel2:
+		priceConfig = s.cfg.Purchased.VIP2
+	}
+
+	price, _ := priceByDuration(priceConfig, duration)
+	activeAt, _ := vipActiveAt(duration, baseAt)
+	return dto.ShopVIPItem{
+		Type:     shopType,
+		VIPLevel: vipLevel,
+		Price:    price,
+		Duration: duration,
+		ActiveAt: &activeAt,
 	}
 }
 
@@ -185,5 +324,18 @@ func toBuyVIPResponse(userAsset *model.UserAsset, price int64, duration string) 
 		VIPActiveAt: userAsset.VIPActiveAt,
 		Price:       price,
 		Duration:    duration,
+	}
+}
+
+func toUpgradeVIPResponse(userAsset *model.UserAsset, originalVIPLevel string, targetVIPLevel string, price int64) *dto.UpgradeVIPResponse {
+	return &dto.UpgradeVIPResponse{
+		UserID:           userAsset.ID,
+		Gold:             userAsset.Gold,
+		OriginalVIPLevel: originalVIPLevel,
+		TargetVIPLevel:   targetVIPLevel,
+		VIPMark:          userAsset.VIPLevel,
+		VIPLevel:         VIPStrToLevel(userAsset.VIPLevel),
+		VIPActiveAt:      userAsset.VIPActiveAt,
+		Price:            price,
 	}
 }
