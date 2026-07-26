@@ -17,7 +17,12 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
+	customValidator "fiction-book/pkg/validator"
 )
+
+func init() {
+	customValidator.Init()
+}
 
 // MockUserService 模拟用户服务
 type MockUserService struct {
@@ -120,6 +125,22 @@ func (m *MockUserService) UpdateAvatar(ctx context.Context, userID string, avata
 		return v, args.Error(1)
 	}
 	return nil, args.Error(1)
+}
+
+func (m *MockUserService) GetStatByID(ctx context.Context, userID string) (*dto.UserStatResponse, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	if v, ok := args.Get(0).(*dto.UserStatResponse); ok {
+		return v, args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockUserService) ForgetPassword(ctx context.Context, req *dto.ForgetPasswordRequest) error {
+	args := m.Called(ctx, req)
+	return args.Error(0)
 }
 
 // testUserHandler 用于测试的处理器，仅包含用户服务
@@ -246,7 +267,7 @@ func TestGetUserNotFound(t *testing.T) {
 	var resp map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(http.StatusNotFound), resp["code"])
+	assert.Equal(t, float64(4002), resp["code"])
 
 	mockService.AssertExpectations(t)
 }
