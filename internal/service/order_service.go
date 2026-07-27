@@ -119,16 +119,20 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 	if err := s.orderCache.Set(ctx, orderID, &order); err != nil {
 		logger.Error("Failed to set order cache after creation", zap.String("orderId", orderID), zap.Error(err))
 	}
-	
-	// 默认等待 60s
-	contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
 
-	// 添加到线程池异步返回结果
-	submitSuccess := s.pool.TrySubmit(s.taskCheckOrderTradeSuccess(
-		contextWithCancelTime,
-		userId,
-		&order,
-	))
+	var submitSuccess bool = false
+	if err := s.orderCache.LockGoroutine(ctx, orderID, time.Minute); err != nil {
+		// 默认等待 60s
+		contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
+
+		// 添加到线程池异步返回结果
+		submitSuccess = s.pool.TrySubmit(s.taskCheckOrderTradeSuccess(
+			contextWithCancelTime,
+			userId,
+			&order,
+		))
+	}
+
 	if !submitSuccess {
 		logger.Error("submit task error (order)", zap.Any("order", order))
 		return nil, errors.New("submit task error")
@@ -188,6 +192,20 @@ func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*
 		return nil, ErrPermission
 	}
 
+	if order.Status == StatusPending {
+		err := s.orderCache.LockGoroutine(ctx, order.ID, time.Minute)
+		if err == nil {
+			// 默认等待 60s
+			contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
+
+			s.pool.Submit(s.taskCheckOrderTradeSuccess(
+				contextWithCancelTime,
+				userId,
+				order,
+			))
+		}
+	}
+
 	return toOrderResponse(order), nil
 }
 
@@ -232,6 +250,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 			for {
 				select {
 				case <-ctx.Done():
+					s.orderCache.UnlockGoroutine(context.Background(), orderID)
 					return nil
 				default:
 				}
