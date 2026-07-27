@@ -52,7 +52,6 @@ func InitializeApp() (*App, error) {
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)
-	buyVIPService := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
 	userBookshelfRepository := ProvideUserBookshelfRepository(db)
 	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, bookCache, limitCache, db, config)
 	userHistoryRepository := ProvideUserHistoryRepository(db)
@@ -62,8 +61,13 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	orderService := ProvideOrderService(userRepository, orderRepository, db, config, strategy)
-	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIPService, config)
+	pool, err := ProvideAgilePool(config)
+	if err != nil {
+		return nil, err
+	}
+	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, db, config, strategy, pool)
+	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
+	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, config)
 	app := NewApp(handler)
 	return app, nil
 }

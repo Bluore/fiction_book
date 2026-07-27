@@ -3,6 +3,7 @@ package wire
 import (
 	"fiction-book/internal/cache"
 
+	agilepool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/wire"
 	"gorm.io/gorm"
 
@@ -186,10 +187,12 @@ func ProvideUserHistoryService(
 // ProvideOrderService 提供订单服务
 func ProvideOrderService(
 	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
 	db *gorm.DB,
 	cfg *config.Config,
 	alipayStrategy payment.Strategy,
+	pool *agilepool.Pool,
 ) service.OrderService {
-	return service.NewOrderService(userRepo, orderRepo, db, cfg, alipayStrategy)
+	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, db, cfg, alipayStrategy, pool)
 }

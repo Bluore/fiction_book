@@ -14,6 +14,7 @@ type Order struct {
 	RewordGold    int64          `json:"reword_gold" gorm:"type:decimal(10,0)"`
 	PastAt        time.Time      `json:"past_at"`
 	Status        int64          `json:"status" gorm:"type:tinyint"`
+	PaidAt        *time.Time     `json:"paid_at"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`

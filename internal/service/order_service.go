@@ -7,9 +7,14 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/payment"
+	"fmt"
 	"strings"
 	"time"
+
+	agilePool "github.com/Yiming1997/agilePool/v2"
+	"go.uber.org/zap"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -36,25 +41,31 @@ type OrderService interface {
 
 type orderService struct {
 	userRepo       repository.UserRepository
+	userAssetRepo  repository.UserAssetRepository
 	orderRepo      repository.OrderRepository
 	db             *gorm.DB
 	cfg            *config.Config
 	alipayStrategy payment.Strategy
+	pool           *agilePool.Pool
 }
 
 func NewOrderService(
 	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
 	db *gorm.DB,
 	cfg *config.Config,
 	alipayStrategy payment.Strategy,
+	pool *agilePool.Pool,
 ) OrderService {
 	return &orderService{
 		userRepo:       userRepo,
+		userAssetRepo:  userAssetRepo,
 		orderRepo:      orderRepo,
 		db:             db,
 		cfg:            cfg,
 		alipayStrategy: alipayStrategy,
+		pool:           pool,
 	}
 }
 
@@ -72,6 +83,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		RewordGold:    req.RewardGold,
 		Status:        StatusPending,
 		PastAt:        time.Now().Add(time.Hour * 24),
+		PaidAt:        nil,
 		CreatedAt:     time.Now(),
 	}
 
@@ -83,11 +95,11 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 	// 创建订单
 	payUrl, _, err = s.alipayStrategy.CreateOrder(
 		payment.Amount{
-			Total:    int64(order.PayPrice*100),
+			Total:    int64(order.PayPrice * 100),
 			Currency: "CNY",
 		},
 		orderNo,
-		"buy",
+		fmt.Sprintf("GSF充值账单: %d G币", order.RewordGold),
 	)
 	if err != nil {
 		return nil, ErrCreateAlipayOrder
@@ -99,7 +111,86 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		return nil, err
 	}
 
-	// todo 添加到线程池异步返回结果
+	// ! 添加到线程池异步返回结果
+	submitSuccess := s.pool.TrySubmit(agilePool.TaskFunc(func() error {
+		time.Sleep(time.Millisecond * 5 * 1000) // 5000ms
+		var ctx context.Context = context.Background()
+		for {
+			time.Sleep(time.Millisecond * 1000) // 1000ms
+
+			status, paidTime, err := s.alipayStrategy.QueryOrder(orderNo)
+			if err != nil {
+				logger.Info("Error to query pay status", zap.String("orderNo", orderNo), zap.Error(err))
+			}
+			// 订单未支付
+			if status == payment.StatusPending {
+				continue
+			}
+
+			// 订单已失效
+			if status == payment.StatusFail {
+				logger.Info("Order already passed time", zap.String("orderNo", orderNo))
+
+				err := s.db.Transaction(func(tx *gorm.DB) error {
+					txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+					if err != nil {
+						return err
+					}
+					if txOrder == nil {
+						return ErrOrderNotFound
+					}
+
+					txOrder.Status = StatusOutDate
+
+					err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
+					return err
+				})
+				if err != nil {
+					logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
+				}
+
+				return nil
+			}
+
+			// 订单已支付
+			if status == payment.StatusSuccess {
+				err := s.db.Transaction(func(tx *gorm.DB) error {
+					_, err := s.userAssetRepo.AddGoldByID(ctx, tx, userId, order.RewordGold)
+					if err != nil {
+						return err
+					}
+
+					txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+					if err != nil {
+						return err
+					}
+					if txOrder == nil {
+						return ErrOrderNotFound
+					}
+
+					txOrder.PaidAt = paidTime
+					txOrder.Status = StatusSuccess
+
+					err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
+					return err
+				})
+				if err != nil {
+					logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
+					continue
+				}
+				return nil
+			}
+
+			// 订单错误
+			if status == payment.StatusError {
+				logger.Error("Order query Error", zap.String("orderNo", orderNo))
+			}
+		}
+	}))
+	if !submitSuccess {
+		logger.Error("submit task error (order)", zap.Any("order", order))
+		return nil, errors.New("submit task error")
+	}
 
 	return &dto.CreateOrderResponse{
 		OrderID: orderID,

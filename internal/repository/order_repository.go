@@ -13,6 +13,7 @@ type OrderRepository interface {
 	DeleteOrder(ctx context.Context, db *gorm.DB, orderId string) error
 	GetOrderListByUserID(ctx context.Context, db *gorm.DB, userId string, page int, size int) ([]*model.Order, error)
 	Count(ctx context.Context, db *gorm.DB, userId string) (int, error)
+	UpdateOrder(ctx context.Context, db *gorm.DB, in *model.Order) error
 }
 
 type orderRepository struct {
@@ -72,4 +73,8 @@ func (r orderRepository) Count(ctx context.Context, db *gorm.DB, userId string) 
 		return 0, err
 	}
 	return int(count), nil
+}
+
+func (r orderRepository) UpdateOrder(ctx context.Context, db *gorm.DB, in *model.Order) error {
+	return db.WithContext(ctx).Save(in).Error
 }

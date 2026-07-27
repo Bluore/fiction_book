@@ -5,6 +5,7 @@ import (
 	"fiction-book/pkg/payment"
 	"fiction-book/pkg/redisclient"
 
+	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -22,6 +23,7 @@ var InfraSet = wire.NewSet(
 	ProvideCatch,
 	ProvideESClient,
 	ProvideAlipayStrategy,
+	ProvideAgilePool,
 )
 
 // ProvideConfig 提供配置
@@ -50,4 +52,14 @@ func ProvideESClient(cfg *config.Config) (*elasticsearch.Client, error) {
 // ProvideAlipayStrategy 提供支付宝支付策略
 func ProvideAlipayStrategy(cfg *config.Config) (payment.Strategy, error) {
 	return payment.NewAlipayStrategy(cfg.Payment.Alipay)
+}
+
+// ProvideAgilePool 提供线程池
+func ProvideAgilePool(cfg *config.Config) (*agilePool.Pool, error) {
+	return agilePool.NewPool(
+		agilePool.NewConfig(
+			agilePool.WithBlockMode(agilePool.BLOCK),
+			agilePool.WithTaskQueueSize(10000),
+		),
+	), nil
 }
