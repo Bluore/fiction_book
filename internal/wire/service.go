@@ -189,10 +189,11 @@ func ProvideOrderService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
+	orderCache cache.OrderCache,
 	db *gorm.DB,
 	cfg *config.Config,
 	alipayStrategy payment.Strategy,
 	pool *agilepool.Pool,
 ) service.OrderService {
-	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, db, cfg, alipayStrategy, pool)
+	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderCache, db, cfg, alipayStrategy, pool)
 }

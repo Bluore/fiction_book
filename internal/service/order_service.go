@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
@@ -43,6 +44,7 @@ type orderService struct {
 	userRepo       repository.UserRepository
 	userAssetRepo  repository.UserAssetRepository
 	orderRepo      repository.OrderRepository
+	orderCache     cache.OrderCache
 	db             *gorm.DB
 	cfg            *config.Config
 	alipayStrategy payment.Strategy
@@ -53,6 +55,7 @@ func NewOrderService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
+	orderCache cache.OrderCache,
 	db *gorm.DB,
 	cfg *config.Config,
 	alipayStrategy payment.Strategy,
@@ -62,6 +65,7 @@ func NewOrderService(
 		userRepo:       userRepo,
 		userAssetRepo:  userAssetRepo,
 		orderRepo:      orderRepo,
+		orderCache:     orderCache,
 		db:             db,
 		cfg:            cfg,
 		alipayStrategy: alipayStrategy,
@@ -111,6 +115,11 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		return nil, err
 	}
 
+	// 写入缓存
+	if err := s.orderCache.Set(ctx, orderID, &order); err != nil {
+		logger.Error("Failed to set order cache after creation", zap.String("orderId", orderID), zap.Error(err))
+	}
+
 	// ! 添加到线程池异步返回结果
 	submitSuccess := s.pool.TrySubmit(agilePool.TaskFunc(func() error {
 		time.Sleep(time.Millisecond * 5 * 1000) // 5000ms
@@ -147,6 +156,11 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 				})
 				if err != nil {
 					logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
+				} else {
+					// 删除缓存
+					if err := s.orderCache.Delete(ctx, orderID); err != nil {
+						logger.Error("Failed to delete order cache", zap.String("orderId", orderID), zap.Error(err))
+					}
 				}
 
 				return nil
@@ -178,12 +192,18 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 					logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
 					continue
 				}
+
+				// 删除缓存，强制下次查询从数据库获取最新数据
+				if err := s.orderCache.Delete(ctx, orderID); err != nil {
+					logger.Error("Failed to delete order cache", zap.String("orderId", orderID), zap.Error(err))
+				}
+
 				return nil
 			}
 
 			// 订单错误
 			if status == payment.StatusError {
-				logger.Error("Order query Error", zap.String("orderNo", orderNo))
+				logger.Info("Order query Error", zap.String("orderNo", orderNo))
 			}
 		}
 	}))
@@ -220,13 +240,28 @@ func toOrderResponse(in *model.Order) *dto.OrderResponse {
 }
 
 func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*dto.OrderResponse, error) {
-	order, err := s.orderRepo.GetOrderByID(ctx, s.db, id)
+	// 尝试从缓存获取
+	order, exist, err := s.orderCache.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		logger.Error("Failed to get order from cache", zap.String("orderId", id), zap.Error(err))
 	}
-	if order == nil {
-		return nil, ErrOrderNotFound
+
+	// 缓存未命中，从数据库获取
+	if !exist || order == nil {
+		order, err = s.orderRepo.GetOrderByID(ctx, s.db, id)
+		if err != nil {
+			return nil, err
+		}
+		if order == nil {
+			return nil, ErrOrderNotFound
+		}
+
+		// 写入缓存
+		if err := s.orderCache.Set(ctx, id, order); err != nil {
+			logger.Error("Failed to set order cache", zap.String("orderId", id), zap.Error(err))
+		}
 	}
+
 	if order.UserId != userId {
 		return nil, ErrPermission
 	}
