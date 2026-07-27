@@ -119,94 +119,16 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 	if err := s.orderCache.Set(ctx, orderID, &order); err != nil {
 		logger.Error("Failed to set order cache after creation", zap.String("orderId", orderID), zap.Error(err))
 	}
+	
+	// 默认等待 60s
+	contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
 
-	// ! 添加到线程池异步返回结果
-	submitSuccess := s.pool.TrySubmit(agilePool.TaskFunc(func() error {
-		time.Sleep(time.Millisecond * 5 * 1000) // 5000ms
-		var ctx context.Context = context.Background()
-		for {
-			time.Sleep(time.Millisecond * 1000) // 1000ms
-
-			status, paidTime, err := s.alipayStrategy.QueryOrder(orderNo)
-			if err != nil {
-				logger.Info("Error to query pay status", zap.String("orderNo", orderNo), zap.Error(err))
-			}
-			// 订单未支付
-			if status == payment.StatusPending {
-				continue
-			}
-
-			// 订单已失效
-			if status == payment.StatusFail {
-				logger.Info("Order already passed time", zap.String("orderNo", orderNo))
-
-				err := s.db.Transaction(func(tx *gorm.DB) error {
-					txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
-					if err != nil {
-						return err
-					}
-					if txOrder == nil {
-						return ErrOrderNotFound
-					}
-
-					txOrder.Status = StatusOutDate
-
-					err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
-					return err
-				})
-				if err != nil {
-					logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
-				} else {
-					// 删除缓存
-					if err := s.orderCache.Delete(ctx, orderID); err != nil {
-						logger.Error("Failed to delete order cache", zap.String("orderId", orderID), zap.Error(err))
-					}
-				}
-
-				return nil
-			}
-
-			// 订单已支付
-			if status == payment.StatusSuccess {
-				err := s.db.Transaction(func(tx *gorm.DB) error {
-					_, err := s.userAssetRepo.AddGoldByID(ctx, tx, userId, order.RewordGold)
-					if err != nil {
-						return err
-					}
-
-					txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
-					if err != nil {
-						return err
-					}
-					if txOrder == nil {
-						return ErrOrderNotFound
-					}
-
-					txOrder.PaidAt = paidTime
-					txOrder.Status = StatusSuccess
-
-					err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
-					return err
-				})
-				if err != nil {
-					logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
-					continue
-				}
-
-				// 删除缓存，强制下次查询从数据库获取最新数据
-				if err := s.orderCache.Delete(ctx, orderID); err != nil {
-					logger.Error("Failed to delete order cache", zap.String("orderId", orderID), zap.Error(err))
-				}
-
-				return nil
-			}
-
-			// 订单错误
-			if status == payment.StatusError {
-				logger.Info("Order query Error", zap.String("orderNo", orderNo))
-			}
-		}
-	}))
+	// 添加到线程池异步返回结果
+	submitSuccess := s.pool.TrySubmit(s.taskCheckOrderTradeSuccess(
+		contextWithCancelTime,
+		userId,
+		&order,
+	))
 	if !submitSuccess {
 		logger.Error("submit task error (order)", zap.Any("order", order))
 		return nil, errors.New("submit task error")
@@ -298,4 +220,104 @@ func (s orderService) GetOrderListByUserID(ctx context.Context, userId string, r
 	}
 
 	return out, nil
+}
+
+func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId string, order *model.Order) agilePool.TaskFunc {
+	var orderID string = order.ID
+	var orderNo string = strings.ReplaceAll(orderID, "-", "_")
+	return agilePool.TaskFunc(
+		func() error {
+			time.Sleep(time.Millisecond * 5 * 1000) // 5000ms
+			var ctx context.Context = context.Background()
+			for {
+				select {
+				case <-ctx.Done():
+					return nil
+				default:
+				}
+
+				time.Sleep(time.Millisecond * 1000) // 1000ms
+
+				status, paidTime, err := s.alipayStrategy.QueryOrder(orderNo)
+				if err != nil {
+					logger.Info("Error to query pay status", zap.String("orderNo", orderNo), zap.Error(err))
+				}
+				// 订单未支付
+				if status == payment.StatusPending {
+					continue
+				}
+
+				// 订单已失效
+				if status == payment.StatusFail {
+					logger.Info("Order already passed time", zap.String("orderNo", orderNo))
+
+					err := s.db.Transaction(func(tx *gorm.DB) error {
+						txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+						if err != nil {
+							return err
+						}
+						if txOrder == nil {
+							return ErrOrderNotFound
+						}
+
+						txOrder.Status = StatusOutDate
+
+						err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
+						return err
+					})
+					if err != nil {
+						logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
+					} else {
+						// 删除缓存
+						if err := s.orderCache.Delete(ctx, orderID); err != nil {
+							logger.Error("Failed to delete order cache", zap.String("orderId", orderID), zap.Error(err))
+						}
+					}
+
+					return nil
+				}
+
+				// 订单已支付
+				if status == payment.StatusSuccess {
+					err := s.db.Transaction(func(tx *gorm.DB) error {
+						_, err := s.userAssetRepo.AddGoldByID(ctx, tx, userId, order.RewordGold)
+						if err != nil {
+							return err
+						}
+
+						txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+						if err != nil {
+							return err
+						}
+						if txOrder == nil {
+							return ErrOrderNotFound
+						}
+
+						txOrder.PaidAt = paidTime
+						txOrder.Status = StatusSuccess
+
+						err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
+						return err
+					})
+					if err != nil {
+						logger.Error("OrderRepo update error", zap.String("orderNo", orderNo), zap.Error(err))
+						continue
+					}
+
+					// 删除缓存，强制下次查询从数据库获取最新数据
+					if err := s.orderCache.Delete(ctx, orderID); err != nil {
+						logger.Error("Failed to delete order cache", zap.String("orderId", orderID), zap.Error(err))
+					}
+
+					return nil
+				}
+
+				// 订单错误
+				if status == payment.StatusError {
+					logger.Info("Order query Error", zap.String("orderNo", orderNo))
+				}
+			}
+
+		},
+	)
 }
