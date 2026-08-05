@@ -46,14 +46,15 @@ type ServerConfig struct {
 
 // MysqlConfig 数据库配置
 type MysqlConfig struct {
-	Host            string `mapstructure:"host"`
-	Port            int    `mapstructure:"port"`
-	Database        string `mapstructure:"database"`
-	Username        string `mapstructure:"username"`
-	Password        string `mapstructure:"password"`
-	MaxOpenConns    int    `mapstructure:"max_open_conns"`
-	MaxIdleConns    int    `mapstructure:"max_idle_conns"`
-	ConnMaxLifetime int    `mapstructure:"conn_max_lifetime"`
+	Host              string `mapstructure:"host"`
+	Port              int    `mapstructure:"port"`
+	Database          string `mapstructure:"database"`
+	Username          string `mapstructure:"username"`
+	Password          string `mapstructure:"password"`
+	MaxOpenConns      int    `mapstructure:"max_open_conns"`
+	MaxIdleConns      int    `mapstructure:"max_idle_conns"`
+	ConnMaxLifetime   int    `mapstructure:"conn_max_lifetime"`
+	EnableAutoMigrate bool   `mapstructure:"enable_auto_migrate"`
 }
 
 // ElasticsearchConfig 数据库配置

@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	keyEmailVerify = "Auth:Email:%s:Verify"
+	keyEmailVerify = "GSF:auth:email:verify:%s:code"
 )
 
 func KeyEmailVerify(key string) string {

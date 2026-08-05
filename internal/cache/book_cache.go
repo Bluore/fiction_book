@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	keyBook = "Catch:Book:%s"
+	keyBook = "GSF:book:cache:book:%s:detail"
 )
 
 type BookCache interface {
@@ -39,7 +39,7 @@ func KeyBook(bookId string) string {
 }
 
 func (c *bookCache) GetBook(ctx context.Context, id string) (*model.Book, bool, error) {
-	bookRes, err := c.redis.Get(ctx, fmt.Sprintf(keyBook, id)).Result()
+	bookRes, err := c.redis.Get(ctx, KeyBook(id)).Result()
 	if err == redis.Nil {
 		return nil, false, nil
 	}
@@ -173,7 +173,7 @@ func (c *bookCache) GetBookThermalWeekly(ctx context.Context, page int, size int
 	startOffset := int64((page - 1) * size)
 	endOffset := int64(page*size - 1)
 	rankArgs := redis.ZRangeArgs{
-		Key:   constant.RedisBookThermalDailyTotal,
+		Key:   constant.RedisBookThermalWeeklyTotal,
 		Start: startOffset,
 		Stop:  endOffset,
 		Rev:   true,
@@ -214,7 +214,7 @@ func (c *bookCache) GetBookThermalMonthly(ctx context.Context, page int, size in
 	startOffset := int64((page - 1) * size)
 	endOffset := int64(page*size - 1)
 	rankArgs := redis.ZRangeArgs{
-		Key:   constant.RedisBookThermalDailyTotal,
+		Key:   constant.RedisBookThermalMonthlyTotal,
 		Start: startOffset,
 		Stop:  endOffset,
 		Rev:   true,

@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	keyOrder          = "Cache:Order:%s"
-	keyOrderGoroutine = "Lock:Order:Goroutine:%s"
+	keyOrder          = "GSF:order:cache:order:%s:detail"
+	keyOrderGoroutine = "GSF:order:lock:goroutine:%s:mutex"
 
 	ErrorOrderCreateGoroutineExist = errors.New("ErrorOrderCreateGoroutineExist")
 )

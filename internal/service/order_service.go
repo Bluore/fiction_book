@@ -121,7 +121,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 	}
 
 	var submitSuccess bool = false
-	if err := s.orderCache.LockGoroutine(ctx, orderID, time.Minute); err != nil {
+	if err := s.orderCache.LockGoroutine(ctx, orderID, time.Minute); err == nil {
 		// 默认等待 60s
 		contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
 
@@ -246,7 +246,6 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 	return agilePool.TaskFunc(
 		func() error {
 			time.Sleep(time.Millisecond * 5 * 1000) // 5000ms
-			var ctx context.Context = context.Background()
 			for {
 				select {
 				case <-ctx.Done():

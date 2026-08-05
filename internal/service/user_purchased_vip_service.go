@@ -128,15 +128,9 @@ func (s *buyVIPService) UpgradeVIP(ctx context.Context, userID string, req *dto.
 	}
 
 	var upgradedVIP *model.UserAsset
-	upgradePrice, err := s.upgradeVIPPrice()
-	if err != nil {
-		return nil, err
-	}
-	if req.Price != upgradePrice {
-		return nil, ErrParam
-	}
+	var upgradePrice int64
 
-	err = s.db.Transaction(func(tx *gorm.DB) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
 		user, err := s.userRepo.GetByID(ctx, tx, userID)
 		if err != nil {
 			return err
@@ -157,6 +151,15 @@ func (s *buyVIPService) UpgradeVIP(ctx context.Context, userID string, req *dto.
 		if currentVIP != vipLevel1 || currentVIP != req.OriginalVIPLevel {
 			return ErrParam
 		}
+
+		upgradePrice, err = s.upgradeVIPPrice(*userAsset.VIPActiveAt)
+		if err != nil {
+			return err
+		}
+		if req.Price != upgradePrice {
+			return ErrParam
+		}
+
 		if userAsset.Gold < upgradePrice {
 			return ErrSufficientFunds
 		}
@@ -207,7 +210,7 @@ func (s *buyVIPService) ShopListOfVIP(ctx context.Context, userID string) (*dto.
 	case vipLevel1:
 		shop = append(shop, s.shopPlan(vipShopTypeRenew, vipLevel1, vipDurationMonth, *userAsset.VIPActiveAt))
 		shop = append(shop, s.shopPlan(vipShopTypeRenew, vipLevel1, vipDurationYear, *userAsset.VIPActiveAt))
-		upgradePrice, err := s.upgradeVIPPrice()
+		upgradePrice, err := s.upgradeVIPPrice(*userAsset.VIPActiveAt)
 		if err != nil {
 			return nil, err
 		}
@@ -252,12 +255,20 @@ func (s *buyVIPService) vipPrice(currentVIP string, targetVIP string, duration s
 	}
 }
 
-func (s *buyVIPService) upgradeVIPPrice() (int64, error) {
-	upgradePrice := s.cfg.Purchased.VIP2.Month - s.cfg.Purchased.VIP1.Month
-	if upgradePrice <= 0 {
+// upgradeVIPPrice 计算从 VIP1 升级到 VIP2 的差价。
+// 公式：((过期时间 - 当前时间) / 30 + 1) * 每月差价
+func (s *buyVIPService) upgradeVIPPrice(vipActiveAt time.Time) (int64, error) {
+	monthlyDiff := s.cfg.Purchased.VIP2.Month - s.cfg.Purchased.VIP1.Month
+	if monthlyDiff <= 0 {
 		return 0, ErrParam
 	}
-	return upgradePrice, nil
+	now := time.Now()
+	remainingDays := int64(vipActiveAt.Sub(now).Hours() / 24)
+	if remainingDays < 0 {
+		remainingDays = 0
+	}
+	price := (remainingDays/30 + 1) * monthlyDiff
+	return price, nil
 }
 
 func (s *buyVIPService) shopPlan(shopType string, vipLevel string, duration string, baseAt time.Time) dto.ShopVIPItem {

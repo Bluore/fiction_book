@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	keyIsUserBrowse1Min         = "Added:User:%s:Browse:1Min"
-	keyIsUserBrowseBook5Min     = "Added:User:%s:Browse:%s:5Min"
-	keyIsUserBookshelfBook1Hour = "Added:User:%s:Bookshelf:%s:1Hour"
+	keyIsUserBrowse1Min         = "GSF:user:limit:browse:%s:1m"
+	keyIsUserBrowseBook5Min     = "GSF:user:limit:browse_book:%s_%s:5m"
+	keyIsUserBookshelfBook1Hour = "GSF:user:limit:bookshelf_book:%s_%s:1h"
 )
 
 type LimitCache interface {

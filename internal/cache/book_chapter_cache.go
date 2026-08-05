@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	keyBookChapter = "Catch:Chapter:%s"
+	keyBookChapter = "GSF:book:cache:chapter:%s:detail"
 )
 
 func KeyBookChapter(chapterId string) string {
@@ -40,7 +40,7 @@ func (c bookChapterCache) UpdateBookChapter(ctx context.Context, chapter *model.
 }
 
 func (c bookChapterCache) GetBookChapter(ctx context.Context, chapter string) (*model.BookChapter, bool, error) {
-	chapterRes, err := c.redis.Get(ctx, fmt.Sprintf(keyBook, chapter)).Result()
+	chapterRes, err := c.redis.Get(ctx, KeyBookChapter(chapter)).Result()
 	if err == redis.Nil {
 		return nil, false, nil
 	}

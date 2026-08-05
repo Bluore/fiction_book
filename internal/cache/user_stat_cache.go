@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	keyUserStatReadBookNum     = "Data:User:%s:Stat:ReadBook:Num"
-	keyUserStatReadBookList    = "Data:User:%s:Stat:ReadBook:List"
-	keyUserStatReadBookListBAK = "Data:User:%s:Stat:ReadBook:BAK:List"
-	keyUserStatReadBookHash    = "Data:User:%s:Stat:ReadBook:Hash"
-	keyUserStatReadWordsNum    = "Data:User:%s:Stat:ReadWordsNum"
+	keyUserStatReadBookNum     = "GSF:user:stat:read_book:%s:num"
+	keyUserStatReadBookList    = "GSF:user:stat:read_book:%s:list"
+	keyUserStatReadBookListBAK = "GSF:user:stat:read_book:%s:bak_list"
+	keyUserStatReadBookHash    = "GSF:user:stat:read_book:%s:hash"
+	keyUserStatReadWordsNum    = "GSF:user:stat:read_words:%s:num"
 )
 
 func KeyUserStatReadBookNum(userId string) string {
@@ -93,7 +93,7 @@ func (c userStatCache) AddReadBook(ctx context.Context, userId string, bookId st
 				hashInsert = append(hashInsert, "1")
 			}
 
-			err = c.redis.HSet(ctx, KeyUserStatReadBookNum(userId), hashInsert).Err()
+			err = c.redis.HSet(ctx, KeyUserStatReadBookHash(userId), hashInsert).Err()
 			if err != nil {
 				return err
 			}

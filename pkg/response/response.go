@@ -2,9 +2,11 @@ package response
 
 import (
 	"errors"
+	"fiction-book/pkg/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // Response 统一响应结构
@@ -68,8 +70,10 @@ func PushError(c *gin.Context, err error) {
 	for key, resp := range *errList {
 		if errors.Is(err, key) {
 			Error(c, resp.Code, resp.Message)
+			logger.Info("response Error:", zap.Any("error", resp))
 			return
 		}
 	}
+	logger.Error("response Error:", zap.Error(err))
 	InternalError(c, err)
 }

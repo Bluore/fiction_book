@@ -47,36 +47,38 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(time.Duration(cfg.Database.ConnMaxLifetime) * time.Second)
 
-	// 自动迁移
-	if err := db.AutoMigrate(&model.User{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.Book{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.BookChapter{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.UserAsset{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.UserPurchasedBook{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.UserPurchasedChapter{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.UserBookshelf{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.UserHistory{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.Order{}); err != nil {
-		return nil, err
-	}
-	if err := db.AutoMigrate(&model.Outbox{}); err != nil {
-		return nil, err
+	if cfg.Database.EnableAutoMigrate {
+		// 自动迁移
+		if err := db.AutoMigrate(&model.User{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.Book{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.BookChapter{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserAsset{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserPurchasedBook{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserPurchasedChapter{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserBookshelf{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserHistory{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.Order{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.Outbox{}); err != nil {
+			return nil, err
+		}
 	}
 
 	return db, nil

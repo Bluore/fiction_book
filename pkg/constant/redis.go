@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	redisBookThermalDaily        = "Rank:book:thermal:Daily:%s"
-	redisBookThermalDay          = "Rank:book:thermal:%s"
-	RedisBookThermalDailyTotal   = "Rank:book:thermal:Daily:total"
-	RedisBookThermalWeeklyTotal  = "Rank:book:thermal:Weekly:total"
-	RedisBookThermalMonthlyTotal = "Rank:book:thermal:Monthly:total"
+	redisBookThermalDaily        = "GSF:book:rank:thermal:%s:daily"
+	redisBookThermalDay          = "GSF:book:rank:thermal:%s:history"
+	RedisBookThermalDailyTotal   = "GSF:book:rank:thermal:total:daily"
+	RedisBookThermalWeeklyTotal  = "GSF:book:rank:thermal:total:weekly"
+	RedisBookThermalMonthlyTotal = "GSF:book:rank:thermal:total:monthly"
 )
 
 func RedisBookThermalDaily(time time.Time) string {

@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	keyUserAssetGold = "Cache:User:Asset:%s:Gold"
-	keyUserAsset     = "Cache:User:Asset:%s"
+	keyUserAssetGold = "GSF:user:asset:user_asset:%s:gold"
+	keyUserAsset     = "GSF:user:asset:user_asset:%s:detail"
 )
 
 func KeyUserAssetGold(userId string) string {
@@ -39,7 +39,7 @@ func NewUserAssetCache(redis *redis.Client) UserAssetCache {
 }
 
 func (c userAssetCache) UpdateGold(ctx context.Context, userId string, gold int) error {
-	return c.redis.Set(ctx, fmt.Sprintf(keyUserStatReadBookNum, userId), gold, time.Hour).Err()
+	return c.redis.Set(ctx, KeyUserAssetGold(userId), gold, time.Hour).Err()
 }
 
 func (c userAssetCache) GetGold(ctx context.Context, userId string) (int64, bool, error) {
@@ -74,7 +74,7 @@ func (c userAssetCache) Get(ctx context.Context, userId string) (*model.UserAsse
 		return nil, false, err
 	}
 	var asset model.UserAsset
-	err = json.Unmarshal([]byte(cache), asset)
+	err = json.Unmarshal([]byte(cache), &asset)
 	if err != nil {
 		return nil, false, err
 	}
