@@ -2,7 +2,7 @@
 chcp 65001 >nul
 REM 创建20个测试用户
 
-set "BASE_URL=http://localhost:9929/api/v1/users"
+set "BASE_URL=http://localhost:19928/api/v1/users"
 
 echo ===== 开始创建20个用户 =====
 

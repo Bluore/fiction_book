@@ -55,8 +55,9 @@ API响应示例：
 import requests
 import json
 import time
+import random
 
-BASE_URL = "http://localhost:9929"
+BASE_URL = "http://localhost:19928"
 
 HANDER = {
     "Authorization": "Bearer ",
@@ -1378,6 +1379,14 @@ BOOKS = [
     }
 ]
 
+def rand_viplevel():
+    item = [
+        '',
+        'vip_0',
+        'vip_1',
+        'vip_2'
+    ]
+    return random.choice(item)
 
 def create_book(book_data):
     """创建书籍"""
@@ -1392,7 +1401,9 @@ def create_chapter(book_id, chapter_num, title, content):
     data = {
         "book_id": book_id,
         "title": title,
-        "content": content
+        "content": content,
+        "vip_level": rand_viplevel(),
+        "price": random.randint(0,3)*100
     }
     response = requests.post(url, json=data, headers=HANDER)
     return response.json()

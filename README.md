@@ -17,4 +17,8 @@ swag init -g cmd/server/main.go -o openapi
 ## wire依赖注入
 go run github.com/google/wire/cmd/wire ./...
 
+## 文档
+
+[API 文档](./doc/API.md)
+
 > 致谢 由[github.com/d60-Lab/gin-template](http://github.com/d60-Lab/gin-template)提供的项目模板
