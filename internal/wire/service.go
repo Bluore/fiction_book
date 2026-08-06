@@ -58,6 +58,7 @@ func ProvideBookService(
 	outboxRepo repository.OutboxRepository,
 	bookCatch cache.BookCache,
 	userStatCache cache.UserStatCache,
+	bookThermalCache cache.BookThermalCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookService {
@@ -70,6 +71,7 @@ func ProvideBookService(
 		outboxRepo,
 		bookCatch,
 		userStatCache,
+		bookThermalCache,
 		db,
 		cfg,
 	)
