@@ -155,7 +155,7 @@ func bookThermalCacheAddByBookshelfTask(ctx context.Context, s *userBookshelfSer
 
 	// 更新数据
 	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
-		return bookThermalCacheAddValueTask(constant.DoneServerCtx, s.db, s.bookThermalCache, s.bookCache, s.bookRepo, s.pool, userID, 10)
+		return bookThermalCacheAddValueTask(constant.DoneServerCtx, s.db, s.bookThermalCache, s.bookCache, s.bookRepo, s.pool, req.BookID, 10)
 	}))
 
 	return nil
