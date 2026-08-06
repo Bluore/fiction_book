@@ -87,11 +87,13 @@ func ProvideBookChapterService(
 	userAssetRepo repository.UserAssetRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCatch cache.BookCache,
+	bookThermalCache cache.BookThermalCache,
 	bookChapterCatch cache.BookChapterCache,
 	userStatCache cache.UserStatCache,
 	limitCatch cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilepool.Pool,
 ) service.BookChapterService {
 	return service.NewBookChapterService(
 		userRepo,
@@ -102,11 +104,13 @@ func ProvideBookChapterService(
 		userAssetRepo,
 		outboxRepo,
 		bookCatch,
+		bookThermalCache,
 		bookChapterCatch,
 		userStatCache,
 		limitCatch,
 		db,
 		cfg,
+		pool,
 	)
 }
 
@@ -160,18 +164,22 @@ func ProvideUserBookshelfService(
 	bookRepo repository.BookRepository,
 	userBookshelfRepo repository.UserBookshelfRepository,
 	bookCatch cache.BookCache,
+	bookThermalCache cache.BookThermalCache,
 	limitCatch cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilepool.Pool,
 ) service.UserBookshelfService {
 	return service.NewUserBookshelfService(
 		userRepo,
 		bookRepo,
 		userBookshelfRepo,
 		bookCatch,
+		bookThermalCache,
 		limitCatch,
 		db,
 		cfg,
+		pool,
 	)
 }
 

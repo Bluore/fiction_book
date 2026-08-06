@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"time"
@@ -18,10 +19,13 @@ type BookRepository interface {
 	ListWithOption(ctx context.Context, opt BookListOption) ([]*model.Book, error)
 	Create(ctx context.Context, db *gorm.DB, model *model.Book) error
 	Update(ctx context.Context, db *gorm.DB, model *model.Book) error
+	UpdateBookThermal(ctx context.Context, db *gorm.DB, id string, value cache.BookThermalValue) error
 	Delete(ctx context.Context, db *gorm.DB, id string) error
 	Count(ctx context.Context) (int, error)
 	CountByOwner(ctx context.Context, ownerID string) (int, error)
+	// Deprecated: use redis to increase value
 	IncreaseOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
+	// Deprecated: use redis to reduce value
 	ReduceOfBookShelf(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 	IncreaseOfBrowseAmount(ctx context.Context, db *gorm.DB, shelfID string) (int, error)
 }
@@ -215,4 +219,8 @@ func (r *bookRepository) CountByOwner(ctx context.Context, ownerID string) (int,
 		return 0, err
 	}
 	return int(count), nil
+}
+
+func (r *bookRepository) UpdateBookThermal(ctx context.Context, db *gorm.DB, id string, value cache.BookThermalValue) error {
+	return db.WithContext(ctx).Model(&model.Book{}).Where("id = ?", id).Update("thermal_value", value).Error
 }

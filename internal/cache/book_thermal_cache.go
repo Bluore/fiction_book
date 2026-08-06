@@ -20,16 +20,18 @@ const (
 var (
 	// ErrorBookThermalLockExist 热度更新锁已存在，说明该书籍在锁有效期内已经更新过
 	ErrorBookThermalLockExist = errors.New("ErrorBookThermalLockExist")
+	// ErrorBookThermalValueNotExist 热度值缓存不存在，需先从数据库加载后用 UpdateBookThermalValue 创建
+	ErrorBookThermalValueNotExist = errors.New("ErrorBookThermalValueNotExist")
 )
 
-type BookThermalValue int64
+type BookThermalValue = uint64
 
 type BookThermalCache interface {
 	// GetBookThermalValue Get BookThermalValue value
 	GetBookThermalValue(ctx context.Context, bookId string) (value BookThermalValue, exist bool, err error)
 	// UpdateBookThermalValue Create BookThermalValue Key, if key is nil
 	UpdateBookThermalValue(ctx context.Context, bookId string, value BookThermalValue) (err error)
-	// AddBookThermalValue Add BookThermalValue value
+	// AddBookThermalValue Add BookThermalValue value, if key is not nil
 	AddBookThermalValue(ctx context.Context, bookId string, value BookThermalValue) (err error)
 
 	// LockBookThermalValue Create BookThermalTimeLock key
@@ -70,6 +72,13 @@ func (c *bookThermalCache) UpdateBookThermalValue(ctx context.Context, bookId st
 
 func (c *bookThermalCache) AddBookThermalValue(ctx context.Context, bookId string, value BookThermalValue) error {
 	key := KeyBookThermalValue(bookId)
+	if err := c.redis.Get(ctx, key).Err(); err != nil {
+		if err == redis.Nil {
+			return ErrorBookThermalValueNotExist
+		}
+		return err
+	}
+
 	// 热度值自增，key 不存在时 redis 会先初始化为 0 再自增
 	if err := c.redis.IncrBy(ctx, key, int64(value)).Err(); err != nil {
 		return err
