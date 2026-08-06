@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -16,12 +17,21 @@ import (
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/service"
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/response"
 	customValidator "fiction-book/pkg/validator"
 )
 
 func init() {
 	customValidator.Init()
+}
+
+// TestMain 初始化 logger，response.PushError 等会直接使用全局 logger
+func TestMain(m *testing.M) {
+	if err := logger.Init("debug"); err != nil {
+		panic(err)
+	}
+	os.Exit(m.Run())
 }
 
 // MockUserService 模拟用户服务
