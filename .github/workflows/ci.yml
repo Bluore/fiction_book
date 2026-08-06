@@ -39,6 +39,31 @@ jobs:
           go-version: '1.24.x'
           cache: true
 
+      - name: Run tests
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.txt
+          if-no-files-found: warn
+
+  go-fmt:
+    name: Go format
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: true
+
       - name: Check formatting
         run: |
           unformatted=$(gofmt -l $(git ls-files '*.go'))
@@ -50,14 +75,3 @@ jobs:
 
       - name: Vet packages
         run: go vet ./...
-
-      - name: Run tests
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
-
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage.txt
-          if-no-files-found: warn
