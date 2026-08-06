@@ -42,27 +42,28 @@ func InitializeApp() (*App, error) {
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	outboxRepository := ProvideOutboxRepository(db)
 	bookCache := ProvideBookCatch(client)
-	bookService := ProvideBookService(bookRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, db, config)
+	bookThermalCache := ProvideBookThermalCache(client)
+	bookService := ProvideBookService(bookRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, bookThermalCache, db, config)
 	bookChapterRepository := ProvideBookChapterRepository(db)
 	bookChapterESRepository := ProvideBookChapterESRepository(elasticsearchClient)
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)
 	limitCache := ProvideLimitCatch(client)
-	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, outboxRepository, bookCache, bookChapterCache, userStatCache, limitCache, db, config)
+	pool, err := ProvideAgilePool(config)
+	if err != nil {
+		return nil, err
+	}
+	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, db, config, pool)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)
 	userBookshelfRepository := ProvideUserBookshelfRepository(db)
-	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, bookCache, limitCache, db, config)
+	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, bookCache, bookThermalCache, limitCache, db, config, pool)
 	userHistoryRepository := ProvideUserHistoryRepository(db)
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
 	orderRepository := ProvideOrderRepository(db)
 	orderCache := ProvideOrderCache(client)
 	strategy, err := ProvideAlipayStrategy(config)
-	if err != nil {
-		return nil, err
-	}
-	pool, err := ProvideAgilePool(config)
 	if err != nil {
 		return nil, err
 	}

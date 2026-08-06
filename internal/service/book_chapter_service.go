@@ -9,12 +9,13 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/utils"
-	"fmt"
 	"strings"
 	"time"
 
+	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -47,11 +48,13 @@ type bookChapterService struct {
 	userAssetRepo            repository.UserAssetRepository
 	outboxRepo               repository.OutboxRepository
 	bookCache                cache.BookCache
+	bookThermalCache         cache.BookThermalCache
 	bookChapterCache         cache.BookChapterCache
 	userStatCache            cache.UserStatCache
 	limitCache               cache.LimitCache
 	db                       *gorm.DB
 	cfg                      *config.Config
+	pool                     *agilePool.Pool
 }
 
 func NewBookChapterService(
@@ -63,11 +66,13 @@ func NewBookChapterService(
 	userAssetRepo repository.UserAssetRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCache cache.BookCache,
+	bookThermalCache cache.BookThermalCache,
 	bookChapterCache cache.BookChapterCache,
 	userStatCache cache.UserStatCache,
 	limitCache cache.LimitCache,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilePool.Pool,
 ) BookChapterService {
 	return &bookChapterService{
 		userRepo:                 userRepo,
@@ -78,11 +83,13 @@ func NewBookChapterService(
 		userAssetRepo:            userAssetRepo,
 		outboxRepo:               outboxRepo,
 		bookCache:                bookCache,
+		bookThermalCache:         bookThermalCache,
 		bookChapterCache:         bookChapterCache,
 		userStatCache:            userStatCache,
 		limitCache:               limitCache,
 		db:                       db,
 		cfg:                      cfg,
+		pool:                     pool,
 	}
 }
 
@@ -186,7 +193,7 @@ func (s bookChapterService) GuestGetChapter(ctx context.Context, bookID string) 
 	return toBookChapterResponse(s.cfg, bookChapter, book), nil
 }
 
-func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error) {
+func (s *bookChapterService) GetChapter(ctx context.Context, userID string, bookChapterID string) (*dto.BookChapterResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, s.db, userID)
 	if err != nil {
 		return nil, err
@@ -228,48 +235,57 @@ func (s bookChapterService) GetChapter(ctx context.Context, userID string, bookC
 	}
 
 	// 向redis里面添加热力值
-	err = func() error {
-		// 用户添加对应书籍数量
-		_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
-
-		// 阅读频次需要大于1min
-		exist, _ := s.limitCache.CheckUserBrowse1Min(ctx, userID)
-		if exist {
-			return nil
-		}
-
-		// 用户添加对应阅读量
-		pageWords := int64(utils.CountPassageWord(bookChapter.Content))
-		addReadWordsErr := s.userStatCache.IncreaseReadWordsNum(ctx, userID, pageWords)
-		if addReadWordsErr != nil {
-			logger.Fatal(fmt.Sprintf("increase read words fail: %v", err))
-		}
-
-		// 每阅读5min记录到书籍
-		exist, _ = s.limitCache.CheckUserBrowseBook5Min(ctx, userID, book.ID)
-		if exist {
-			return nil
-		}
-		// 热力值限流
-		_ = s.limitCache.AddUserBrowseBook5Min(ctx, userID, book.ID)
-
-		_ = s.limitCache.AddUserBrowse1Min(ctx, userID)
-
-		_ = s.bookCache.IncreaseBookThermalDaily(ctx, book.ID, 1)
-
-		// 数据库添加数据
-		_, err = s.bookRepo.IncreaseOfBrowseAmount(ctx, s.db, book.ID)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}()
-	if err != nil {
-		logger.Error(fmt.Sprintf("addThermalDaily error: %v", err))
-	}
+	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
+		return bookThermalCacheAddByReadTask(constant.DoneServerCtx, s, userID, book, bookChapter)
+	}))
 
 	return toBookChapterResponse(s.cfg, bookChapter, book), nil
+}
+
+func bookThermalCacheAddByReadTask(ctx context.Context, s *bookChapterService, userID string, book *model.Book, bookChapter *model.BookChapter) error {
+	var err error
+	// 用户添加对应书籍数量
+	_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
+
+	// 阅读频次需要大于1min
+	exist, _ := s.limitCache.CheckUserBrowse1Min(ctx, userID)
+	if exist {
+		return nil
+	}
+
+	// 用户添加对应阅读量
+	pageWords := int64(utils.CountPassageWord(bookChapter.Content))
+	// todo perf:性能优化
+	addReadWordsErr := s.userStatCache.IncreaseReadWordsNum(ctx, userID, pageWords)
+	if addReadWordsErr != nil {
+		logger.Fatal("increase read words fail: %v", zap.String("bookChapterId", bookChapter.ID))
+	}
+
+	// 每阅读5min记录到书籍
+	exist, _ = s.limitCache.CheckUserBrowseBook5Min(ctx, userID, book.ID)
+	if exist {
+		return nil
+	}
+	// 热力值限流
+	_ = s.limitCache.AddUserBrowseBook5Min(ctx, userID, book.ID)
+
+	_ = s.limitCache.AddUserBrowse1Min(ctx, userID)
+
+	_ = s.bookCache.IncreaseBookThermalDaily(ctx, book.ID, 1)
+
+	// 数据库添加数据
+	// todo perf:性能优化
+	_, err = s.bookRepo.IncreaseOfBrowseAmount(ctx, s.db, book.ID)
+	if err != nil {
+		return err
+	}
+
+	// 更新数据
+	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
+		return bookThermalCacheAddValueTask(constant.DoneServerCtx, s.db, s.bookThermalCache, s.bookCache, s.bookRepo, s.pool, book.ID, 1)
+	}))
+
+	return nil
 }
 
 func VIPStrToLevel(vipStr string) int {

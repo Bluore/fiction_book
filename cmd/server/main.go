@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fiction-book/internal/kafka/outbox"
+	"fiction-book/pkg/constant"
 	"fmt"
 	"net/http"
 	"os"
@@ -141,6 +142,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
+	constant.DoneServer()
 	logger.Info("Shutting down server...")
 
 	// 设置 5 秒的超时时间用于优雅关闭

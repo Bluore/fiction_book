@@ -53,6 +53,7 @@ type bookService struct {
 	outboxRepo        repository.OutboxRepository
 	bookCache         cache.BookCache
 	userStatCache     cache.UserStatCache
+	bookThermalCache  cache.BookThermalCache
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -67,6 +68,7 @@ func NewBookService(
 	outboxRepo repository.OutboxRepository,
 	bookCache cache.BookCache,
 	userStatCache cache.UserStatCache,
+	bookThermalCache cache.BookThermalCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookService {
@@ -79,6 +81,7 @@ func NewBookService(
 		outboxRepo:        outboxRepo,
 		bookCache:         bookCache,
 		userStatCache:     userStatCache,
+		bookThermalCache:  bookThermalCache,
 		db:                db,
 		cfg:               cfg,
 	}
@@ -679,7 +682,7 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 			Limit:  req.Limit,
 		},
 	}
-	
+
 	if req.VIPLevel != "" {
 		filter.VIPLevel = strings.Split(req.VIPLevel, ",")
 	}
