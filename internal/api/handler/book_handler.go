@@ -293,6 +293,39 @@ func (h *Handler) UpdateBookInformation(c *gin.Context) {
 	response.Success(c, res)
 }
 
+// UpdateBookTag 更新书籍标签
+// @Summary 更新书籍标签
+// @Description 更新用户书籍的标签，会先删除旧标签，再添加新标签；每本书标签数量为 1~3 个
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param id path string true "书籍ID"
+// @Param request body dto.UpdateBookTagRequest true "更新标签"
+// @Success 200 {object} dto.UpdateBookTagResponse
+// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 401 {object} response.Response "用户登录失效"
+// @Failure 4001 {object} response.Response "书籍未找到"
+// @Failure 4017 {object} response.Response "参数错误"
+// @Failure 4020 {object} response.Response "你没有该书籍的所有权"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v2/books/{id}/tags [put]
+func (h *Handler) UpdateBookTag(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.UpdateBookTagRequest](c)
+	userID := transmit.GetStr(c, "userID")
+	if userID == "" {
+		response.PushError(c, ErrGetParam)
+		return
+	}
+
+	res, err := h.bookService.UpdateBookTag(c.Request.Context(), userID, req)
+	if err != nil {
+		response.PushError(c, err)
+		return
+	}
+	response.Success(c, res)
+}
+
 // GetBookListThermalWeekly 获取每周热度榜单
 // @Summary 获取每周热度榜单
 // @Description 榜单每5分钟刷新，缓存优化，获取今天到前6天的排行总汇

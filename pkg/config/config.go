@@ -21,6 +21,7 @@ type Config struct {
 	Kafka         KafkaConfig         `mapstructure:"kafka"`
 	Purchased     PurchasedConfig     `mapstructure:"purchased"`
 	Payment       payment.Config      `mapstructure:"payment"`
+	BookTags      []string            `mapstructure:"book_tags"`
 }
 
 // OSSConfig 对象存储配置

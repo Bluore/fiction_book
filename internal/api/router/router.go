@@ -156,6 +156,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		books := v2.Group("/books")
 		{
 			books.GET("/search", middleware.Validation(&dto.SearchBooksV2Request{}), h.SearchBooksV2)
+			books.PUT("/:id/tags", middleware.Auth(cfg), middleware.Validation(&dto.UpdateBookTagRequest{}), h.UpdateBookTag)
 		}
 
 		chapters := v2.Group("/chapters")
