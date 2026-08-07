@@ -3,6 +3,7 @@ package outbox
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fiction-book/internal/model"
 	"fiction-book/internal/wire"
 	"fiction-book/pkg/config"
@@ -30,6 +31,7 @@ func outboxConsumerClient(ctx context.Context, cfg *config.Config, h *wire.Massa
 		case <-ticker.C:
 			consumeMassage(ctx, h, reader)
 		case <-ctx.Done():
+			logger.Info("exit outbox consumer")
 			return
 		}
 	}
@@ -37,11 +39,20 @@ func outboxConsumerClient(ctx context.Context, cfg *config.Config, h *wire.Massa
 
 func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) {
 	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
 		massage, err := r.FetchMessage(ctx)
 		if err == io.ErrUnexpectedEOF {
 			return
 		}
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
 			logger.Error(fmt.Sprintf("Error reading message: %s", err))
 			return
 		}
@@ -50,19 +61,28 @@ func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) 
 
 		err = json.Unmarshal(massage.Value, &massageDecodeData)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
 			logger.Error(fmt.Sprintf("Error unmarshalling message: %s", err))
 			return
 		}
 
 		err = syncData(ctx, h, massageDecodeData)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
 			logger.Error(fmt.Sprintf("Error syncing data: %s", err))
 			logger.Warn(fmt.Sprintf("Error syncing data: %s", err))
 			return
 		}
 
-		err = r.CommitMessages(context.Background(), massage)
+		err = r.CommitMessages(ctx, massage)
 		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
 			logger.Error(fmt.Sprintf("Error committing message: %s", err))
 			logger.Warn(fmt.Sprintf("Error committing message: %s", err))
 			return

@@ -8,6 +8,7 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/payment"
 	"fmt"
@@ -122,12 +123,9 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 
 	var submitSuccess bool = false
 	if err := s.orderCache.LockGoroutine(ctx, orderID, time.Minute); err == nil {
-		// 默认等待 60s
-		contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
-
 		// 添加到线程池异步返回结果
 		submitSuccess = s.pool.TrySubmit(s.taskCheckOrderTradeSuccess(
-			contextWithCancelTime,
+			constant.DoneServerCtx,
 			userId,
 			&order,
 		))
@@ -195,11 +193,8 @@ func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*
 	if order.Status == StatusPending {
 		err := s.orderCache.LockGoroutine(ctx, order.ID, time.Minute)
 		if err == nil {
-			// 默认等待 60s
-			contextWithCancelTime, _ := context.WithTimeout(context.Background(), time.Minute)
-
 			s.pool.Submit(s.taskCheckOrderTradeSuccess(
-				contextWithCancelTime,
+				constant.DoneServerCtx,
 				userId,
 				order,
 			))
@@ -241,20 +236,35 @@ func (s orderService) GetOrderListByUserID(ctx context.Context, userId string, r
 }
 
 func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId string, order *model.Order) agilePool.TaskFunc {
+	// 默认等待 60s
+	contextWithCancelTime, contextWithCancelTimeCancel := context.WithTimeout(context.Background(), time.Minute)
+	defer contextWithCancelTimeCancel()
+
 	var orderID string = order.ID
 	var orderNo string = strings.ReplaceAll(orderID, "-", "_")
 	return agilePool.TaskFunc(
 		func() error {
 			time.Sleep(time.Millisecond * 5 * 1000) // 5000ms
 			for {
+				time.Sleep(time.Millisecond * 1000) // 1000ms
+
 				select {
 				case <-ctx.Done():
-					s.orderCache.UnlockGoroutine(context.Background(), orderID)
+					err := s.orderCache.UnlockGoroutine(context.Background(), orderID)
+					if err != nil {
+						logger.Error("Failed to Unlock order Goroutine", zap.String("orderId", orderID), zap.Error(err))
+						return err
+					}
+					return nil
+				case <-contextWithCancelTime.Done():
+					err := s.orderCache.UnlockGoroutine(context.Background(), orderID)
+					if err != nil {
+						logger.Error("Failed to Unlock order Goroutine", zap.String("orderId", orderID), zap.Error(err))
+						return err
+					}
 					return nil
 				default:
 				}
-
-				time.Sleep(time.Millisecond * 1000) // 1000ms
 
 				status, paidTime, err := s.alipayStrategy.QueryOrder(orderNo)
 				if err != nil {

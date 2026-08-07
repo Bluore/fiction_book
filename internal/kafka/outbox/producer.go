@@ -25,14 +25,15 @@ func outboxProducerClient(ctx context.Context, cfg *config.Config, h *wire.Massa
 	for {
 		select {
 		case <-tick.C:
-			syncOutboxToMassageQueue(h, writer)
+			syncOutboxToMassageQueue(h, &writer)
 		case <-ctx.Done():
+			logger.Info("exit outbox producer")
 			return
 		}
 	}
 }
 
-func syncOutboxToMassageQueue(h *wire.MassageQueue, w kafka.Writer) {
+func syncOutboxToMassageQueue(h *wire.MassageQueue, w *kafka.Writer) {
 	for {
 		var err error
 		msg, err := h.Handler.OutboxRepository.GetEventByTableName(context.Background(), h.Handler.DB, model.Outbox{})
