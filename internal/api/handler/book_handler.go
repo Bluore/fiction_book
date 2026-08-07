@@ -293,6 +293,28 @@ func (h *Handler) UpdateBookInformation(c *gin.Context) {
 	response.Success(c, res)
 }
 
+// GetBookTag 获取书籍标签
+// @Summary 获取书籍标签
+// @Description 获取指定书籍的标签列表，缓存优先
+// @Tags 书籍管理
+// @Accept json
+// @Produce json
+// @Param id path string true "书籍ID"
+// @Success 200 {object} response.Response{data=dto.GetBookTagResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v2/books/{id}/tags [get]
+func (h *Handler) GetBookTag(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.GetBookTagRequest](c)
+
+	res, err := h.bookService.GetBookTags(c.Request.Context(), req.BookID)
+	if err != nil {
+		response.InternalError(c, err)
+		return
+	}
+	response.Success(c, res)
+}
+
 // UpdateBookTag 更新书籍标签
 // @Summary 更新书籍标签
 // @Description 更新用户书籍的标签，会先删除旧标签，再添加新标签；每本书标签数量为 1~3 个

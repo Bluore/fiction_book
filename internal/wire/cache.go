@@ -17,6 +17,7 @@ var CatchSet = wire.NewSet(
 	ProvideAuthCache,
 	ProvideOrderCache,
 	ProvideBookThermalCache,
+	ProvideBookTagCache,
 )
 
 // ProvideBookCatch 创建Book缓存仓库
@@ -56,4 +57,9 @@ func ProvideOrderCache(redis *redis.Client) cache.OrderCache {
 // ProvideBookThermalCache 创建书籍热度缓存
 func ProvideBookThermalCache(redis *redis.Client) cache.BookThermalCache {
 	return cache.NewBookThermalCache(redis)
+}
+
+// ProvideBookTagCache 创建BookTag缓存
+func ProvideBookTagCache(redis *redis.Client) cache.BookTagCache {
+	return cache.NewBookTagCache(redis)
 }

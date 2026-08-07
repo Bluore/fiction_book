@@ -51,6 +51,7 @@ func ProvideUserService(
 // ProvideBookService 提供书籍服务
 func ProvideBookService(
 	bookRepo repository.BookRepository,
+	bookTagRepo repository.BookTagRepository,
 	bookESRepo repository.BookESRepository,
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
@@ -59,11 +60,13 @@ func ProvideBookService(
 	bookCatch cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
+	bookTagCache cache.BookTagCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BookService {
 	return service.NewBookService(
 		bookRepo,
+		bookTagRepo,
 		bookESRepo,
 		userRepo,
 		userAssetRepo,
@@ -72,6 +75,7 @@ func ProvideBookService(
 		bookCatch,
 		userStatCache,
 		bookThermalCache,
+		bookTagCache,
 		db,
 		cfg,
 	)

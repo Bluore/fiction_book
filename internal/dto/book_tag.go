@@ -9,3 +9,12 @@ type UpdateBookTagResponse struct {
 	BookID string   `json:"book_id"`
 	Tags   []string `json:"tags"`
 }
+
+type GetBookTagRequest struct {
+	BookID string `uri:"id" binding:"required"`
+}
+
+type GetBookTagResponse struct {
+	BookID string   `json:"book_id"`
+	Tags   []string `json:"tags"`
+}

@@ -134,9 +134,21 @@ func Load() (*Config, error) {
 	// 支持环境变量覆盖
 	viper.AutomaticEnv()
 
-	// 尝试读取配置文件
+	// 读取主配置文件
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
+	}
+
+	// 合并 data.yaml（book_tags 等数据配置）
+	dataViper := viper.New()
+	dataViper.SetConfigName("data")
+	dataViper.SetConfigType("yaml")
+	dataViper.AddConfigPath("./config")
+	dataViper.AddConfigPath(".")
+	if err := dataViper.ReadInConfig(); err == nil {
+		if err := viper.MergeConfigMap(dataViper.AllSettings()); err != nil {
+			return nil, err
+		}
 	}
 
 	var config Config
@@ -157,6 +169,18 @@ func LoadWithFile(configFile string) (*Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
+	}
+
+	// 合并 data.yaml（book_tags 等数据配置）
+	dataViper := viper.New()
+	dataViper.SetConfigName("data")
+	dataViper.SetConfigType("yaml")
+	dataViper.AddConfigPath("./config")
+	dataViper.AddConfigPath(".")
+	if err := dataViper.ReadInConfig(); err == nil {
+		if err := viper.MergeConfigMap(dataViper.AllSettings()); err != nil {
+			return nil, err
+		}
 	}
 
 	var config Config

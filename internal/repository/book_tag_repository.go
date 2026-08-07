@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fiction-book/internal/model"
 
 	"gorm.io/gorm"
@@ -24,7 +25,13 @@ func NewBookTagRepository(db *gorm.DB) BookTagRepository {
 func (r *bookTagRepository) ListByBookID(ctx context.Context, bookID string) ([]model.BookTag, error) {
 	tags := []model.BookTag{}
 	err := r.db.WithContext(ctx).Where("book_id = ?", bookID).Find(&tags).Error
-	return tags, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return make([]model.BookTag, 0), nil
+		}
+		return nil, err
+	}
+	return tags, nil
 }
 
 func (r *bookTagRepository) DeleteAllByBookID(ctx context.Context, db *gorm.DB, bookID string) error {

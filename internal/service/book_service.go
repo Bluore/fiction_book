@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -39,6 +40,8 @@ type BookService interface {
 	GetListByOwnerID(ctx context.Context, userID string, req *dto.GetBookListByOwnerIDRequest) (*dto.BookListResponse, error)
 	GetReadHistoryRecently(ctx context.Context, userID string, page int, size int) (*dto.BookListResponse, error)
 	UpdateBook(ctx context.Context, userID string, req *dto.UpdateBookRequest) (*dto.BookResponse, error)
+	UpdateBookTag(ctx context.Context, userID string, req *dto.UpdateBookTagRequest) (*dto.UpdateBookTagResponse, error)
+	GetBookTags(ctx context.Context, bookID string) (*dto.GetBookTagResponse, error)
 	GetBookListByThermalWeekly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 	GetBookListByThermalMonthly(ctx context.Context, req *dto.GetBookListByThermalDaily) (*dto.BookListResponse, error)
 	SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2Request) (*dto.SearchBooksV2Response, error)
@@ -46,6 +49,7 @@ type BookService interface {
 
 type bookService struct {
 	bookRepo          repository.BookRepository
+	bookTagRepo       repository.BookTagRepository
 	bookESRepo        repository.BookESRepository
 	userRepo          repository.UserRepository
 	userAssetRepo     repository.UserAssetRepository
@@ -54,6 +58,7 @@ type bookService struct {
 	bookCache         cache.BookCache
 	userStatCache     cache.UserStatCache
 	bookThermalCache  cache.BookThermalCache
+	bookTagCache      cache.BookTagCache
 	db                *gorm.DB
 	cfg               *config.Config
 }
@@ -61,6 +66,7 @@ type bookService struct {
 // NewBookService 创建书籍服务实例
 func NewBookService(
 	bookRepo repository.BookRepository,
+	bookTagRepo repository.BookTagRepository,
 	bookESRepo repository.BookESRepository,
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
@@ -69,11 +75,13 @@ func NewBookService(
 	bookCache cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
+	bookTagCache cache.BookTagCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BookService {
 	return &bookService{
 		bookRepo:          bookRepo,
+		bookTagRepo:       bookTagRepo,
 		bookESRepo:        bookESRepo,
 		userRepo:          userRepo,
 		userAssetRepo:     userAssetRepo,
@@ -82,6 +90,7 @@ func NewBookService(
 		bookCache:         bookCache,
 		userStatCache:     userStatCache,
 		bookThermalCache:  bookThermalCache,
+		bookTagCache:      bookTagCache,
 		db:                db,
 		cfg:               cfg,
 	}
@@ -657,6 +666,91 @@ func (s *bookService) GetBookListByThermalMonthly(ctx context.Context, req *dto.
 	res.Books = bookListTemp
 
 	return res, nil
+}
+
+// UpdateBookTag 更新书籍标签（先删除旧标签，再批量插入新标签，并刷新缓存）
+func (s *bookService) UpdateBookTag(ctx context.Context, userID string, req *dto.UpdateBookTagRequest) (*dto.UpdateBookTagResponse, error) {
+	// 验证书籍存在
+	book, err := s.bookRepo.GetByID(ctx, req.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
+	}
+
+	// 验证所有权
+	if book.OwnerID != userID {
+		return nil, ErrPermission
+	}
+
+	// 校验标签合法性并构造 model 列表
+	now := time.Now()
+	tags := make([]model.BookTag, 0, len(req.Tags))
+	for _, tagStr := range req.Tags {
+		singleTag, err := model.StringToSingleBookTag(tagStr)
+		if err != nil {
+			return nil, ErrParam
+		}
+		tags = append(tags, model.BookTag{
+			ID:        uuid.New().String(),
+			BookID:    req.BookID,
+			Tag:       singleTag,
+			CreatedAt: now,
+		})
+	}
+
+	// 事务：先删除旧标签，再批量插入新标签
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.bookTagRepo.DeleteAllByBookID(ctx, tx, req.BookID); err != nil {
+			return err
+		}
+		return s.bookTagRepo.CreateBatch(ctx, tx, tags)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 刷新 Redis 缓存（写入最新标签，TTL 1h）
+	_ = s.bookTagCache.SetBookTags(ctx, req.BookID, tags)
+
+	tagStrs := make([]string, 0, len(tags))
+	for _, t := range tags {
+		tagStrs = append(tagStrs, t.Tag.Tag())
+	}
+	return &dto.UpdateBookTagResponse{
+		BookID: req.BookID,
+		Tags:   tagStrs,
+	}, nil
+}
+
+// GetBookTags 获取书籍标签（缓存优先，miss 时查 DB 并回填缓存）
+func (s *bookService) GetBookTags(ctx context.Context, bookID string) (*dto.GetBookTagResponse, error) {
+	// 尝试从缓存获取
+	cachedTags, hit, err := s.bookTagCache.GetBookTags(ctx, bookID)
+	if err == nil && hit {
+		tagStrs := make([]string, 0, len(cachedTags))
+		for _, t := range cachedTags {
+			tagStrs = append(tagStrs, t.Tag.Tag())
+		}
+		return &dto.GetBookTagResponse{BookID: bookID, Tags: tagStrs}, nil
+	}
+
+	// 缓存未命中，查数据库
+	tags, err := s.bookTagRepo.ListByBookID(ctx, bookID)
+	if err != nil {
+		logger.Error("book tags get error", zap.String("book_id", bookID), zap.Error(err))
+		return nil, err
+	}
+
+	// 回填缓存（忽略缓存写入错误）
+	_ = s.bookTagCache.SetBookTags(ctx, bookID, tags)
+
+	tagStrs := make([]string, 0, len(tags))
+	for _, t := range tags {
+		tagStrs = append(tagStrs, t.Tag.Tag())
+	}
+	return &dto.GetBookTagResponse{BookID: bookID, Tags: tagStrs}, nil
 }
 
 // SearchBooksV2 v2 版本的搜索方法，使用 Elasticsearch

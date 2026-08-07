@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fiction-book/internal/api/middleware"
+	"fiction-book/internal/dto"
 	"fiction-book/pkg/response"
 	"fiction-book/pkg/transmit"
 
@@ -20,6 +22,7 @@ import (
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/assets [get]
 func (h *Handler) GetUserAsset(c *gin.Context) {
+	middleware.MustGetRequest[dto.GetUserAssetRequest](c)
 	userID := transmit.GetStr(c, "userID")
 	if userID == "" {
 		response.PushError(c, ErrGetParam)
