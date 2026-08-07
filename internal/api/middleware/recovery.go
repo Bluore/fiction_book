@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	
+
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/response"
 )

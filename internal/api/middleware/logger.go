@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"time"
-	
+
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	
+
 	"fiction-book/pkg/logger"
 )
 
@@ -15,11 +15,11 @@ func Logger() gin.HandlerFunc {
 		start := time.Now()
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
-		
+
 		c.Next()
-		
+
 		latency := time.Since(start)
-		
+
 		logger.Info("request",
 			zap.String("method", c.Request.Method),
 			zap.String("path", path),

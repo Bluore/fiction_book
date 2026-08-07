@@ -37,5 +37,8 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
-/.claude/
-/.agents/
+
+# Agent
+.claude/
+.agents/
+.trae/
