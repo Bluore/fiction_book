@@ -567,10 +567,15 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 	}
 
 	resp := &dto.UserStatResponse{
-		UserResponse:      *s.toUserResponse(user),
-		UserAssetResponse: *toUserAssetResponse(userAsset),
-		ReadBooksNum:      userStatReadBooksNum,
-		ReadWordsNum:      userStatReadWordsNum,
+		UserResponse: *s.toUserResponse(user),
+
+		Gold:        userAsset.Gold,
+		VIPLevel:    VIPStrToLevel(userAsset.VIPLevel),
+		VIPActiveAt: userAsset.VIPActiveAt,
+		VIPMark:     userAsset.VIPLevel,
+
+		ReadBooksNum: userStatReadBooksNum,
+		ReadWordsNum: userStatReadWordsNum,
 	}
 
 	return resp, nil

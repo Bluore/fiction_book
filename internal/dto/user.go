@@ -1,6 +1,9 @@
 package dto
 
-import "mime/multipart"
+import (
+	"mime/multipart"
+	"time"
+)
 
 // CreateUserRequest 创建用户请求
 type CreateUserRequest struct {
@@ -100,7 +103,13 @@ type UploadAvatarRequest struct {
 // UserStatResponse 用户详情响应
 type UserStatResponse struct {
 	UserResponse
-	UserAssetResponse
+
+	/* UserAssetResponse */
+	Gold        int64      `json:"gold"`
+	VIPMark     string     `json:"vip_mark"`
+	VIPLevel    int        `json:"vip_level"`
+	VIPActiveAt *time.Time `json:"vip_active_at"`
+
 	ReadBooksNum int64 `json:"read_books_num"`
 	ReadWordsNum int64 `json:"read_words_num"`
 }

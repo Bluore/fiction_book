@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fiction-book/internal/kafka/outbox"
 	"fiction-book/pkg/constant"
 	"fmt"
@@ -132,7 +133,7 @@ func main() {
 		logger.Info("Server is running",
 			zap.String("addr", srv.Addr),
 		)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatal("Failed to start server", zap.Error(err))
 		}
 	}()

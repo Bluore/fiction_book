@@ -2,6 +2,7 @@ package outbox
 
 import (
 	"context"
+	"errors"
 	"fiction-book/internal/wire"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
@@ -22,7 +23,7 @@ func createTopic(k *kafka.Conn, topicName string) {
 		NumPartitions:     1,
 		ReplicationFactor: 1,
 	})
-	if err != nil && err != kafka.TopicAlreadyExists {
+	if err != nil && !errors.Is(err, kafka.TopicAlreadyExists) {
 		logger.Fatal(fmt.Sprintf("outbox client create topic err: %v", err))
 	}
 }
