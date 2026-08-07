@@ -670,18 +670,35 @@ func (s *bookService) GetBookListByThermalMonthly(ctx context.Context, req *dto.
 
 // UpdateBookTag 更新书籍标签（先删除旧标签，再批量插入新标签，并刷新缓存）
 func (s *bookService) UpdateBookTag(ctx context.Context, userID string, req *dto.UpdateBookTagRequest) (*dto.UpdateBookTagResponse, error) {
+	var book *model.Book
+	var bookHit bool
+	var err error
+
 	// 验证书籍存在
-	book, err := s.bookRepo.GetByID(ctx, req.BookID)
-	if err != nil {
-		return nil, err
-	}
-	if book == nil {
-		return nil, ErrBookNotFound
+	book, bookHit, _ = s.bookCache.GetBook(ctx, req.BookID)
+	if !bookHit {
+		var err error
+		book, err = s.bookRepo.GetByID(ctx, req.BookID)
+		if err != nil {
+			return nil, err
+		}
+		if book == nil {
+			return nil, ErrBookNotFound
+		}
 	}
 
 	// 验证所有权
 	if book.OwnerID != userID {
 		return nil, ErrPermission
+	}
+
+	// 验证标签是否重复
+	tagsSet := make(map[string]struct{})
+	for _, tag := range req.Tags {
+		if _, ok := tagsSet[tag]; ok {
+			return nil, ErrParam
+		}
+		tagsSet[tag] = struct{}{}
 	}
 
 	// 校验标签合法性并构造 model 列表
@@ -726,6 +743,19 @@ func (s *bookService) UpdateBookTag(ctx context.Context, userID string, req *dto
 
 // GetBookTags 获取书籍标签（缓存优先，miss 时查 DB 并回填缓存）
 func (s *bookService) GetBookTags(ctx context.Context, bookID string) (*dto.GetBookTagResponse, error) {
+	// 验证书籍存在
+	book, bookHit, _ := s.bookCache.GetBook(ctx, bookID)
+	if !bookHit {
+		var err error
+		book, err = s.bookRepo.GetByID(ctx, bookID)
+		if err != nil {
+			return nil, err
+		}
+		if book == nil {
+			return nil, ErrBookNotFound
+		}
+	}
+
 	// 尝试从缓存获取
 	cachedTags, hit, err := s.bookTagCache.GetBookTags(ctx, bookID)
 	if err == nil && hit {

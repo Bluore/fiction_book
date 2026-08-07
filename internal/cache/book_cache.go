@@ -17,7 +17,7 @@ const (
 )
 
 type BookCache interface {
-	GetBook(ctx context.Context, id string) (*model.Book, bool, error)
+	GetBook(ctx context.Context, id string) (book *model.Book, hit bool, err error)
 	UpdateBook(ctx context.Context, book *model.Book) error
 	DeleteBook(ctx context.Context, id string) error
 	GetBookThermalDaily(ctx context.Context, page int, size int) ([]string, error)

@@ -302,6 +302,8 @@ func (h *Handler) UpdateBookInformation(c *gin.Context) {
 // @Param id path string true "书籍ID"
 // @Success 200 {object} response.Response{data=dto.GetBookTagResponse}
 // @Failure 400 {object} response.Response "参数错误"
+// @Failure 4017 {object} response.Response "参数错误"
+// @Failure 4001 {object} response.Response "书籍未找到"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v2/books/{id}/tags [get]
 func (h *Handler) GetBookTag(c *gin.Context) {
@@ -309,7 +311,7 @@ func (h *Handler) GetBookTag(c *gin.Context) {
 
 	res, err := h.bookService.GetBookTags(c.Request.Context(), req.BookID)
 	if err != nil {
-		response.InternalError(c, err)
+		response.PushError(c, err)
 		return
 	}
 	response.Success(c, res)
