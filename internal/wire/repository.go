@@ -12,6 +12,7 @@ import (
 var RepositorySet = wire.NewSet(
 	ProvideUserRepository,
 	ProvideBookRepository,
+	ProvideBookTagRepository,
 	ProvideBookChapterRepository,
 	ProvideUserAssetRepository,
 	ProvideUserPurchasedBookRepository,
@@ -32,6 +33,10 @@ func ProvideUserRepository(db *gorm.DB) repository.UserRepository {
 // ProvideBookRepository 提供书籍仓储
 func ProvideBookRepository(db *gorm.DB) repository.BookRepository {
 	return repository.NewBookRepository(db)
+}
+
+func ProvideBookTagRepository(db *gorm.DB) repository.BookTagRepository {
+	return repository.NewBookTagRepository(db)
 }
 
 // ProvideBookChapterRepository 提供书籍章节仓库

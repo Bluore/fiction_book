@@ -247,7 +247,7 @@ func bookThermalCacheAddByReadTask(ctx context.Context, s *bookChapterService, u
 	// 用户添加对应书籍数量
 	_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
 
-	// 阅读频次需要大于1min
+	// 检查锁：阅读频次需要大于1min
 	exist, _ := s.limitCache.CheckUserBrowse1Min(ctx, userID)
 	if exist {
 		return nil
@@ -261,17 +261,14 @@ func bookThermalCacheAddByReadTask(ctx context.Context, s *bookChapterService, u
 		logger.Fatal("increase read words fail: %v", zap.String("bookChapterId", bookChapter.ID))
 	}
 
-	// 每阅读5min记录到书籍
+	// 检查锁：每阅读5min记录到书籍
 	exist, _ = s.limitCache.CheckUserBrowseBook5Min(ctx, userID, book.ID)
 	if exist {
 		return nil
 	}
-	// 热力值限流
+	// 添加锁：热力值限流
 	_ = s.limitCache.AddUserBrowseBook5Min(ctx, userID, book.ID)
-
 	_ = s.limitCache.AddUserBrowse1Min(ctx, userID)
-
-	_ = s.bookCache.IncreaseBookThermalDaily(ctx, book.ID, 1)
 
 	// 数据库添加数据
 	// todo perf:性能优化

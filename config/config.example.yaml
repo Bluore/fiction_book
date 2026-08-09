@@ -61,15 +61,6 @@ kafka:
   topic:
     database_sync: "database_sync"
 
-# VIP价格
-purchased:
-  vip_1:
-    month: 1000
-    year: 11900
-  vip_2:
-    month: 3000
-    year: 30000
-
 # 支付配置
 payment:
   alipay:
@@ -87,3 +78,12 @@ payment:
     api_v3_key: ""
     private_key_path: ""
     notify_url: ""
+
+# VIP价格
+purchased:
+  vip_1:
+    month: 1000
+    year: 11900
+  vip_2:
+    month: 3000
+    year: 30000

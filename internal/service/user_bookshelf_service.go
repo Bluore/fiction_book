@@ -161,6 +161,8 @@ func bookThermalCacheAddByBookshelfTask(ctx context.Context, s *userBookshelfSer
 	return nil
 }
 
+// 1. 添加热力值到Redis和Mysql（自动侧载读取和持久化）
+// 2. 添加热力值到排行榜
 func bookThermalCacheAddValueTask(ctx context.Context, db *gorm.DB, bookThermalCache cache.BookThermalCache, bookCache cache.BookCache, d repository.BookRepository, p *agilePool.Pool, bookID string, value cache.BookThermalValue) error {
 	err := bookThermalCache.AddBookThermalValue(ctx, bookID, value)
 	updateBookThermalValueFunc := func() error {

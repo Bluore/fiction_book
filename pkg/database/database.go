@@ -1,6 +1,7 @@
 package database
 
 import (
+	zaplogger "fiction-book/pkg/logger"
 	"fmt"
 	"time"
 
@@ -55,6 +56,9 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		if err := db.AutoMigrate(&model.Book{}); err != nil {
 			return nil, err
 		}
+		if err := db.AutoMigrate(&model.BookTag{}); err != nil {
+			return nil, err
+		}
 		if err := db.AutoMigrate(&model.BookChapter{}); err != nil {
 			return nil, err
 		}
@@ -79,6 +83,13 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		if err := db.AutoMigrate(&model.Outbox{}); err != nil {
 			return nil, err
 		}
+	}
+
+	// 初始化常量
+	if cfg.BookTags != nil {
+		model.InitBookTags(cfg.BookTags)
+	} else {
+		zaplogger.Error("book tags not exist")
 	}
 
 	return db, nil
