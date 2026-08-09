@@ -30,6 +30,7 @@ func ProvideHandler(
 	userHistoryService service.UserHistoryService,
 	orderService service.OrderService,
 	buyVIPService service.BuyVIP,
+	feedService service.FeedService,
 	cfg *config.Config,
 ) *handler.Handler {
 	return handler.NewHandler(
@@ -43,6 +44,7 @@ func ProvideHandler(
 		userHistoryService,
 		orderService,
 		buyVIPService,
+		feedService,
 		cfg,
 	)
 }

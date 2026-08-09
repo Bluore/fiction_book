@@ -1967,6 +1967,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/feed/list": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "游标分页获取 Feed，获取后自动标记为已读；cursor 到底后自动从头开始",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "获取当前用户 Feed 流",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "游标",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每次获取数量，默认20，最大50",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/fiction-book_internal_dto.GetFeedListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/history/{user_id}": {
             "get": {
                 "description": "获取指定用户的浏览历史（分页）",
@@ -4215,6 +4287,38 @@ const docTemplate = `{
                 }
             }
         },
+        "fiction-book_internal_dto.FeedItemResponse": {
+            "type": "object",
+            "properties": {
+                "book_cover": {
+                    "type": "string"
+                },
+                "book_id": {
+                    "type": "string"
+                },
+                "book_name": {
+                    "type": "string"
+                },
+                "chapter_id": {
+                    "type": "string"
+                },
+                "chapter_title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "$ref": "#/definitions/fiction-book_internal_model.FeedEventType"
+                },
+                "feed_id": {
+                    "type": "string"
+                }
+            }
+        },
         "fiction-book_internal_dto.ForgetPasswordRequest": {
             "type": "object",
             "required": [
@@ -4246,6 +4350,26 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "fiction-book_internal_dto.GetFeedListResponse": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/fiction-book_internal_dto.FeedItemResponse"
+                    }
+                },
+                "has_more": {
+                    "type": "boolean"
+                },
+                "next_cursor": {
+                    "type": "string"
+                },
+                "restarted": {
+                    "type": "boolean"
                 }
             }
         },
@@ -4757,6 +4881,17 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "fiction-book_internal_model.FeedEventType": {
+            "type": "string",
+            "enum": [
+                "book_update",
+                "new_chapter"
+            ],
+            "x-enum-varnames": [
+                "FeedEventBookUpdate",
+                "FeedEventNewChapter"
+            ]
         },
         "fiction-book_pkg_response.Response": {
             "type": "object",

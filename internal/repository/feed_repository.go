@@ -19,7 +19,7 @@ type FeedRepository interface {
 	CountUserUnread(ctx context.Context, userID string) (int64, error)
 
 	// MarkAsRead 标记为已读
-	MarkAsRead(ctx context.Context, userID string, feedIDs []string) error
+	MarkAsRead(ctx context.Context, userID string, feedIDs []string) (int64, error)
 
 	// MarkAllAsRead 标记所有为已读
 	MarkAllAsRead(ctx context.Context, userID string) error
@@ -85,13 +85,17 @@ func (r *feedRepository) GetUserFeeds(ctx context.Context, filter model.FeedFilt
 		query = query.Where("is_read = ?", *filter.IsRead)
 	}
 
-	// ID 分页
-	if filter.LastID != nil {
-		query = query.Where("id < ?", filter.LastID)
+	// 游标分页：与 ORDER BY created_at DESC, id ASC 保持一致
+	if !filter.LastTime.IsZero() && filter.LastID != nil {
+		query = query.Where(
+			"(created_at < ? OR (created_at = ? AND id < ?))",
+			filter.LastTime,
+			filter.LastTime,
+			*filter.LastID,
+		)
 	}
 
-	// 按创建时间倒序
-	query = query.Order("created_at DESC")
+	query = query.Order("created_at DESC").Order("id DESC")
 
 	// 限制数量
 	if filter.Limit > 0 {
@@ -118,17 +122,19 @@ func (r *feedRepository) CountUserUnread(ctx context.Context, userID string) (in
 	return count, err
 }
 
-func (r *feedRepository) MarkAsRead(ctx context.Context, userID string, feedIDs []string) error {
+func (r *feedRepository) MarkAsRead(ctx context.Context, userID string, feedIDs []string) (int64, error) {
 	if len(feedIDs) == 0 {
-		return nil
+		return 0, nil
 	}
 
-	return r.db.WithContext(ctx).
+	res := r.db.WithContext(ctx).
 		Model(&model.FeedInbox{}).
-		Where("user_id = ? AND id IN ?", userID, feedIDs).
-		Update("is_read", true).
-		Update("updated_at", time.Now()).
-		Error
+		Where("user_id = ? AND id IN ? AND is_read = ?", userID, feedIDs, false).
+		Updates(map[string]interface{}{
+			"is_read":    true,
+			"updated_at": time.Now(),
+		})
+	return res.RowsAffected, res.Error
 }
 
 func (r *feedRepository) MarkAllAsRead(ctx context.Context, userID string) error {

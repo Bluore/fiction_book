@@ -141,6 +141,12 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			history.GET("/:user_id", middleware.Validation(&dto.ListUserHistoryRequest{}), h.ListUserHistory)
 		}
 
+		// Feed 管理
+		feed := v1.Group("/feed")
+		{
+			feed.GET("/list", middleware.Auth(cfg), middleware.Validation(&dto.GetFeedListRequest{}), h.GetFeedList)
+		}
+
 		// 订单管理
 		orders := v1.Group("/orders")
 		{

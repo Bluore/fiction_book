@@ -66,8 +66,12 @@ func (r *feedCursorRepository) UpdateUnreadCount(ctx context.Context, userID str
 		Model(&model.FeedCursor{}).
 		Where("user_id = ?", userID).
 		Updates(map[string]interface{}{
-			"unread_count": gorm.Expr("unread_count + ?", delta),
-			"updated_at":   time.Now(),
+			"unread_count": gorm.Expr(
+				"CASE WHEN unread_count + ? < 0 THEN 0 ELSE unread_count + ? END",
+				delta,
+				delta,
+			),
+			"updated_at": time.Now(),
 		}).Error
 }
 
@@ -106,16 +110,27 @@ func (r *feedCursorRepository) BatchUpdateUnreadCount(ctx context.Context, userI
 			end = len(userIDs)
 		}
 
-		batch := userIDs[i:end]
+		now := time.Now()
+		cursors := make([]model.FeedCursor, 0, end-i)
+		for _, userID := range userIDs[i:end] {
+			cursors = append(cursors, model.FeedCursor{
+				UserID:      userID,
+				UnreadCount: delta,
+				UpdatedAt:   now,
+			})
+		}
 
-		// 使用 ON DUPLICATE KEY UPDATE 语法（MySQL）
-		err := r.db.WithContext(ctx).Exec(`
-			INSERT INTO feed_cursor (user_id, unread_count, updated_at)
-			VALUES ` + r.buildBatchValues(batch, delta) + `
-			ON DUPLICATE KEY UPDATE
-				unread_count = unread_count + VALUES(unread_count),
-				updated_at = VALUES(updated_at)
-		`).Error
+		err := r.db.WithContext(ctx).
+			Clauses(clause.OnConflict{
+				Columns: []clause.Column{{Name: "user_id"}},
+				DoUpdates: clause.Assignments(map[string]interface{}{
+					"unread_count": gorm.Expr(
+						"CASE WHEN unread_count + VALUES(unread_count) < 0 THEN 0 ELSE unread_count + VALUES(unread_count) END",
+					),
+					"updated_at": now,
+				}),
+			}).
+			Create(&cursors).Error
 
 		if err != nil {
 			return err
@@ -123,16 +138,4 @@ func (r *feedCursorRepository) BatchUpdateUnreadCount(ctx context.Context, userI
 	}
 
 	return nil
-}
-
-func (r *feedCursorRepository) buildBatchValues(userIDs []string, delta int) string {
-	now := time.Now().Format("2006-01-02 15:04:05.000")
-	values := ""
-	for i, userID := range userIDs {
-		if i > 0 {
-			values += ","
-		}
-		values += "('" + userID + "', " + string(rune(delta)) + ", '" + now + "')"
-	}
-	return values
 }

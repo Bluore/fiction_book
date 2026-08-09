@@ -71,7 +71,11 @@ func InitializeApp() (*App, error) {
 	}
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
-	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, config)
+	feedRepository := ProvideFeedRepository(db)
+	feedCursorRepository := ProvideFeedCursorRepository(db)
+	feedCache := ProvideFeedCache(client)
+	feedService := ProvideFeedService(feedRepository, feedCursorRepository, feedCache)
+	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, feedService, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer)

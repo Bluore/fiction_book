@@ -25,6 +25,7 @@ var ServiceSet = wire.NewSet(
 	ProvideUserBookshelfService,
 	ProvideUserHistoryService,
 	ProvideOrderService,
+	ProvideFeedService,
 )
 
 // ProvideUserService 提供用户服务
@@ -210,4 +211,13 @@ func ProvideOrderService(
 	pool *agilepool.Pool,
 ) service.OrderService {
 	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderCache, db, cfg, alipayStrategy, pool)
+}
+
+// ProvideFeedService 提供 Feed 服务
+func ProvideFeedService(
+	feedRepo repository.FeedRepository,
+	feedCursorRepo repository.FeedCursorRepository,
+	feedCache cache.FeedCache,
+) service.FeedService {
+	return service.NewFeedService(feedRepo, feedCursorRepo, feedCache)
 }
