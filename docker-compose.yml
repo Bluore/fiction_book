@@ -14,9 +14,12 @@ services:
       - DB_PASSWORD=root
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
     depends_on:
       - mysql
       - redis
+      - elasticsearch
     networks:
       - app-network
 
@@ -43,9 +46,43 @@ services:
     networks:
       - app-network
 
+  # Elasticsearch 搜索引擎（单节点，开发环境）
+  elasticsearch:
+    image: elasticsearch:8.15.3
+    environment:
+      - discovery.type=single-node
+      # 开发环境关闭安全认证，生产环境请开启并配置证书
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:9200/_cluster/health || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - app-network
+
 volumes:
   mysql-data:
   redis-data:
+  elasticsearch-data:
 
 networks:
   app-network:
