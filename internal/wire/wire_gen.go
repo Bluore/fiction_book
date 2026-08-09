@@ -49,17 +49,17 @@ func InitializeApp() (*App, error) {
 	bookChapterRepository := ProvideBookChapterRepository(db)
 	bookChapterESRepository := ProvideBookChapterESRepository(elasticsearchClient)
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
+	userBookshelfRepository := ProvideUserBookshelfRepository(db)
+	feedRepository := ProvideFeedRepository(db)
+	feedCursorRepository := ProvideFeedCursorRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)
 	limitCache := ProvideLimitCatch(client)
+	feedCache := ProvideFeedCache(client)
+	feedClient := ProvideFeedClient()
 	pool, err := ProvideAgilePool(config)
 	if err != nil {
 		return nil, err
 	}
-	userBookshelfRepository := ProvideUserBookshelfRepository(db)
-	feedRepository := ProvideFeedRepository(db)
-	feedCursorRepository := ProvideFeedCursorRepository(db)
-	feedCache := ProvideFeedCache(client)
-	feedClient := ProvideFeedClient()
 	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, userBookshelfRepository, feedRepository, feedCursorRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, feedCache, feedClient, db, config, pool)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
@@ -79,7 +79,8 @@ func InitializeApp() (*App, error) {
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, feedService, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
-	feedServer := ProvideFeedServer(feedCursorRepository, feedCache, db)
+	consumeRecordRepository := ProvideConsumeRecordRepository(db)
+	feedServer := ProvideFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository)
 	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
 	app := NewApp(handler, kafkaHandler)
 	return app, nil

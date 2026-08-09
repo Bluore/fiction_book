@@ -25,6 +25,7 @@ var RepositorySet = wire.NewSet(
 	ProvideBookChapterESRepository,
 	ProvideFeedRepository,
 	ProvideFeedCursorRepository,
+	ProvideConsumeRecordRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -99,4 +100,9 @@ func ProvideFeedRepository(db *gorm.DB) repository.FeedRepository {
 // ProvideFeedCursorRepository 提供 Feed 游标仓储
 func ProvideFeedCursorRepository(db *gorm.DB) repository.FeedCursorRepository {
 	return repository.NewFeedCursorRepository(db)
+}
+
+// ProvideConsumeRecordRepository 提供 Kafka 消费记录仓储（用于幂等防重复消费）
+func ProvideConsumeRecordRepository(db *gorm.DB) repository.ConsumeRecordRepository {
+	return repository.NewConsumeRecordRepository(db)
 }
