@@ -65,12 +65,14 @@ type BookChapterServiceTestSuite struct {
 	esRepo        *MockBookChapterESRepository
 	purchasedRepo *MockUserPurchasedChapterRepository
 	assetRepo     *MockUserAssetRepository
+	bookshelfRepo *MockUserBookshelfRepository
 	outboxRepo    *MockOutboxRepository
 	bookCache     *MockBookCache
 	thermalCache  *MockBookThermalCache
 	chapterCache  *MockBookChapterCache
 	userStatCache *MockUserStatCache
 	limitCache    *MockLimitCache
+	feedClient    *MockFeedClient
 	db            *gorm.DB
 	pool          *agilePool.Pool
 	svc           BookChapterService
@@ -83,20 +85,23 @@ func (suite *BookChapterServiceTestSuite) SetupTest() {
 	suite.esRepo = new(MockBookChapterESRepository)
 	suite.purchasedRepo = new(MockUserPurchasedChapterRepository)
 	suite.assetRepo = new(MockUserAssetRepository)
+	suite.bookshelfRepo = new(MockUserBookshelfRepository)
 	suite.outboxRepo = new(MockOutboxRepository)
 	suite.bookCache = new(MockBookCache)
 	suite.thermalCache = new(MockBookThermalCache)
 	suite.chapterCache = new(MockBookChapterCache)
 	suite.userStatCache = new(MockUserStatCache)
 	suite.limitCache = new(MockLimitCache)
+	suite.feedClient = new(MockFeedClient)
 	suite.db = newTestDB(suite.T())
 	suite.pool = newTestPool()
 
 	suite.svc = NewBookChapterService(
 		suite.userRepo, suite.bookRepo, suite.chapterRepo, suite.esRepo,
-		suite.purchasedRepo, suite.assetRepo, suite.outboxRepo,
+		suite.purchasedRepo, suite.assetRepo, suite.bookshelfRepo,
+		nil, nil, suite.outboxRepo,
 		suite.bookCache, suite.thermalCache, suite.chapterCache,
-		suite.userStatCache, suite.limitCache,
+		suite.userStatCache, suite.limitCache, nil, suite.feedClient,
 		suite.db, newTestConfig(), suite.pool,
 	)
 }
@@ -110,12 +115,14 @@ func (suite *BookChapterServiceTestSuite) chapterSvc() *bookChapterService {
 		bookChapterESRepo:        suite.esRepo,
 		userPurchasedChapterRepo: suite.purchasedRepo,
 		userAssetRepo:            suite.assetRepo,
+		userBookshelfRepo:        suite.bookshelfRepo,
 		outboxRepo:               suite.outboxRepo,
 		bookCache:                suite.bookCache,
 		bookThermalCache:         suite.thermalCache,
 		bookChapterCache:         suite.chapterCache,
 		userStatCache:            suite.userStatCache,
 		limitCache:               suite.limitCache,
+		feedClient:               suite.feedClient,
 		db:                       suite.db,
 		cfg:                      newTestConfig(),
 		pool:                     suite.pool,
@@ -415,8 +422,11 @@ func (suite *BookChapterServiceTestSuite) TestAddByBookID() {
 	suite.bookRepo.On("GetByID", ctx, "b1").Return(book, nil)
 	suite.chapterRepo.On("AddByBookID", ctx, mock.AnythingOfType("*model.BookChapter")).Return(created, nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(nil)
+	suite.bookshelfRepo.On("ListUserIDsByBookID", mock.Anything, suite.db, "b1").Return([]string{}, nil)
 
 	res, err := suite.svc.AddByBookID(ctx, "u1", req)
+	suite.pool.Wait()
+
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "第一章", res.Title)
 	assert.Equal(suite.T(), "vip_1", res.VIPLevel)

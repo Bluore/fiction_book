@@ -120,6 +120,7 @@ func (r *feedCursorRepository) BatchUpdateUnreadCount(ctx context.Context, userI
 			})
 		}
 
+		// FOCUS MySQL计数器累加语句（CASE 表达式）
 		err := r.db.WithContext(ctx).
 			Clauses(clause.OnConflict{
 				Columns: []clause.Column{{Name: "user_id"}},

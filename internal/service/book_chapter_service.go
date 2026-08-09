@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
+	"fiction-book/internal/kafka/kafka_client"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/utils"
+	"fmt"
 	"strings"
 	"time"
 
@@ -46,12 +48,17 @@ type bookChapterService struct {
 	bookChapterESRepo        repository.BookChapterESRepository
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository
 	userAssetRepo            repository.UserAssetRepository
+	userBookshelfRepo        repository.UserBookshelfRepository
+	feedRepo                 repository.FeedRepository
+	feedCursorRepo           repository.FeedCursorRepository
 	outboxRepo               repository.OutboxRepository
 	bookCache                cache.BookCache
 	bookThermalCache         cache.BookThermalCache
 	bookChapterCache         cache.BookChapterCache
 	userStatCache            cache.UserStatCache
 	limitCache               cache.LimitCache
+	feedCache                cache.FeedCache
+	feedClient               kafka_client.FeedClient
 	db                       *gorm.DB
 	cfg                      *config.Config
 	pool                     *agilePool.Pool
@@ -64,12 +71,17 @@ func NewBookChapterService(
 	bookChapterESRepo repository.BookChapterESRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userBookshelfRepo repository.UserBookshelfRepository,
+	feedRepo repository.FeedRepository,
+	feedCursorRepo repository.FeedCursorRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCache cache.BookCache,
 	bookThermalCache cache.BookThermalCache,
 	bookChapterCache cache.BookChapterCache,
 	userStatCache cache.UserStatCache,
 	limitCache cache.LimitCache,
+	feedCache cache.FeedCache,
+	feedClient kafka_client.FeedClient,
 	db *gorm.DB,
 	cfg *config.Config,
 	pool *agilePool.Pool,
@@ -81,12 +93,17 @@ func NewBookChapterService(
 		bookChapterESRepo:        bookChapterESRepo,
 		userPurchasedChapterRepo: userPurchasedChapterRepo,
 		userAssetRepo:            userAssetRepo,
+		userBookshelfRepo:        userBookshelfRepo,
+		feedRepo:                 feedRepo,
+		feedCursorRepo:           feedCursorRepo,
 		outboxRepo:               outboxRepo,
 		bookCache:                bookCache,
 		bookThermalCache:         bookThermalCache,
 		bookChapterCache:         bookChapterCache,
 		userStatCache:            userStatCache,
 		limitCache:               limitCache,
+		feedCache:                feedCache,
+		feedClient:               feedClient,
 		db:                       db,
 		cfg:                      cfg,
 		pool:                     pool,
@@ -143,8 +160,107 @@ func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 		return nil, err
 	}
 
+	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
+		err := addNewChapterFeedTask(
+			constant.DoneServerCtx,
+			&s,
+			book,
+			bookChapter,
+		)
+		if err != nil {
+			logger.Error("add new chapter feed fail", zap.Error(err))
+		}
+		return err
+	}))
+
 	return toBookChapterResponse(s.cfg, bookChapterResp, book), nil
 
+}
+
+func addNewChapterFeedTask(
+	ctx context.Context,
+	s *bookChapterService,
+	book *model.Book,
+	chapter *model.BookChapter,
+) error {
+	userIDs, err := s.userBookshelfRepo.ListUserIDsByBookID(ctx, s.db, book.ID)
+	if err != nil {
+		return err
+	}
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	feeds := buildNewChapterFeeds(book, chapter, userIDs)
+	if len(feeds) > 50 {
+		return s.feedClient.PublishFeeds(ctx, s.cfg, feeds)
+	}
+
+	if err := s.feedRepo.CreateBatch(ctx, feeds); err != nil {
+		return err
+	}
+	if err := s.feedCursorRepo.BatchUpdateUnreadCount(ctx, userIDs, 1); err != nil {
+		return err
+	}
+	return warmFeedCache(ctx, s.feedCache, feeds)
+}
+
+func buildNewChapterFeeds(
+	book *model.Book,
+	chapter *model.BookChapter,
+	userIDs []string,
+) []*model.FeedInbox {
+	now := time.Now()
+	chapterID := chapter.ID
+	chapterTitle := chapter.Title
+	feeds := make([]*model.FeedInbox, 0, len(userIDs))
+
+	for _, userID := range userIDs {
+		feeds = append(feeds, &model.FeedInbox{
+			ID:           newChapterFeedID(userID, chapter.ID),
+			UserID:       userID,
+			EventType:    model.FeedEventNewChapter,
+			BookID:       book.ID,
+			ChapterID:    &chapterID,
+			BookName:     book.Name,
+			BookCover:    book.CoverImage,
+			ChapterTitle: &chapterTitle,
+			Content:      fmt.Sprintf("《%s》更新了章节：%s", book.Name, chapter.Title),
+			IsRead:       false,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
+	}
+
+	return feeds
+}
+
+func newChapterFeedID(userID string, chapterID string) string {
+	return uuid.NewSHA1(
+		uuid.NameSpaceURL,
+		[]byte(fmt.Sprintf("feed:new_chapter:%s:%s", userID, chapterID)),
+	).String()
+}
+
+func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*model.FeedInbox) error {
+	userFeeds := make(map[string][]*model.FeedInbox)
+	userIDs := make([]string, 0)
+	for _, feed := range feeds {
+		if _, ok := userFeeds[feed.UserID]; !ok {
+			userIDs = append(userIDs, feed.UserID)
+		}
+		userFeeds[feed.UserID] = append(userFeeds[feed.UserID], feed)
+	}
+
+	if err := feedCache.BatchIncrUnreadCount(ctx, userIDs, 1); err != nil {
+		return err
+	}
+	for userID, feeds := range userFeeds {
+		if err := feedCache.PushFeeds(ctx, userID, feeds); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func toBookChapterInfoResponse(cfg *config.Config, info *model.BookChapterInfo, book *model.Book) *dto.BookChapterInfoResponse {

@@ -55,11 +55,15 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, db, config, pool)
+	userBookshelfRepository := ProvideUserBookshelfRepository(db)
+	feedRepository := ProvideFeedRepository(db)
+	feedCursorRepository := ProvideFeedCursorRepository(db)
+	feedCache := ProvideFeedCache(client)
+	feedClient := ProvideFeedClient()
+	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, userBookshelfRepository, feedRepository, feedCursorRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, feedCache, feedClient, db, config, pool)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)
-	userBookshelfRepository := ProvideUserBookshelfRepository(db)
 	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, bookCache, bookThermalCache, limitCache, db, config, pool)
 	userHistoryRepository := ProvideUserHistoryRepository(db)
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
@@ -71,9 +75,6 @@ func InitializeApp() (*App, error) {
 	}
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
-	feedRepository := ProvideFeedRepository(db)
-	feedCursorRepository := ProvideFeedCursorRepository(db)
-	feedCache := ProvideFeedCache(client)
 	feedService := ProvideFeedService(feedRepository, feedCursorRepository, feedCache)
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, feedService, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)

@@ -2,6 +2,7 @@ package wire
 
 import (
 	"fiction-book/internal/cache"
+	"fiction-book/internal/kafka/kafka_client"
 
 	agilepool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/wire"
@@ -90,12 +91,17 @@ func ProvideBookChapterService(
 	bookChapterESRepo repository.BookChapterESRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userBookshelfRepo repository.UserBookshelfRepository,
+	feedRepo repository.FeedRepository,
+	feedCursorRepo repository.FeedCursorRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCatch cache.BookCache,
 	bookThermalCache cache.BookThermalCache,
 	bookChapterCatch cache.BookChapterCache,
 	userStatCache cache.UserStatCache,
 	limitCatch cache.LimitCache,
+	feedCache cache.FeedCache,
+	feedClient kafka_client.FeedClient,
 	db *gorm.DB,
 	cfg *config.Config,
 	pool *agilepool.Pool,
@@ -107,12 +113,17 @@ func ProvideBookChapterService(
 		bookChapterESRepo,
 		userPurchasedChapterRepo,
 		userAssetRepo,
+		userBookshelfRepo,
+		feedRepo,
+		feedCursorRepo,
 		outboxRepo,
 		bookCatch,
 		bookThermalCache,
 		bookChapterCatch,
 		userStatCache,
 		limitCatch,
+		feedCache,
+		feedClient,
 		db,
 		cfg,
 		pool,

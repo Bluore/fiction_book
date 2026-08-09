@@ -182,6 +182,12 @@ func (m *MockUserBookshelfRepository) ListByUserID(ctx context.Context, db *gorm
 	return list, args.Error(1)
 }
 
+func (m *MockUserBookshelfRepository) ListUserIDsByBookID(ctx context.Context, db *gorm.DB, bookID string) ([]string, error) {
+	args := m.Called(ctx, db, bookID)
+	userIDs, _ := args.Get(0).([]string)
+	return userIDs, args.Error(1)
+}
+
 func (m *MockUserBookshelfRepository) CreateByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error {
 	return m.Called(ctx, db, userID, bookID).Error(0)
 }
@@ -298,6 +304,16 @@ func (m *MockLimitCache) CheckUserBookshelfBook1Hour(ctx context.Context, userId
 
 func (m *MockLimitCache) AddUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) error {
 	return m.Called(ctx, userId, bookId).Error(0)
+}
+
+// ---------- FeedClient ----------
+
+type MockFeedClient struct {
+	mock.Mock
+}
+
+func (m *MockFeedClient) PublishFeeds(ctx context.Context, cfg *config.Config, feeds []*model.FeedInbox) error {
+	return m.Called(ctx, cfg, feeds).Error(0)
 }
 
 // ---------- UserStatCache ----------
