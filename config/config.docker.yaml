@@ -60,6 +60,7 @@ kafka:
     - "localhost:9092"
   topic:
     database_sync: "database_sync"
+    feed: "feed_push"
 
 # 支付配置
 payment:

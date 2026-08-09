@@ -53,6 +53,7 @@ func ProvideHandler(
 func ProvideKafkaHandler(
 	outboxClient kafka_client.OutboxClient,
 	outboxServer kafka_server.OutboxServer,
+	feedServer kafka_server.FeedServer,
 ) *kafka.Handler {
-	return kafka.NewHandler(outboxClient, outboxServer)
+	return kafka.NewHandler(outboxClient, outboxServer, feedServer)
 }

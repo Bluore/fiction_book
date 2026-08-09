@@ -15,15 +15,19 @@ import (
 type Handler struct {
 	outboxClient kafka_client.OutboxClient
 	outboxServer kafka_server.OutboxServer
+
+	feedServer kafka_server.FeedServer
 }
 
 func NewHandler(
 	outboxClient kafka_client.OutboxClient,
 	outboxServer kafka_server.OutboxServer,
+	feedServer kafka_server.FeedServer,
 ) *Handler {
 	return &Handler{
 		outboxClient: outboxClient,
 		outboxServer: outboxServer,
+		feedServer:   feedServer,
 	}
 }
 
@@ -31,6 +35,8 @@ func (h *Handler) KafkaInit(ctx context.Context, cfg *config.Config) {
 
 	go h.outboxClient.OutboxProducerClient(ctx, cfg)
 	go h.outboxServer.OutboxConsumerClient(ctx, cfg)
+
+	go h.feedServer.FeedConsumerClient(ctx, cfg)
 }
 
 func createTopic(k *kafka.Conn, topicName string) {

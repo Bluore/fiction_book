@@ -78,7 +78,8 @@ func InitializeApp() (*App, error) {
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, feedService, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
-	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer)
+	feedServer := ProvideFeedServer(feedCursorRepository, feedCache, db)
+	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
 	app := NewApp(handler, kafkaHandler)
 	return app, nil
 }

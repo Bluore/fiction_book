@@ -112,6 +112,7 @@ type KafkaConfig struct {
 
 type TopicKafkaConfig struct {
 	DatabaseSync string `mapstructure:"database_sync"`
+	Feed         string `mapstructure:"feed"`
 }
 
 type PurchasedConfig struct {

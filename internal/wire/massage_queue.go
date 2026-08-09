@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"fiction-book/internal/cache"
 	"fiction-book/internal/kafka/kafka_client"
 	"fiction-book/internal/kafka/kafka_server"
 	"fiction-book/internal/repository"
@@ -13,6 +14,8 @@ import (
 var MassageQueueSet = wire.NewSet(
 	ProvideOutboxClient,
 	ProvideOutboxServer,
+	ProvideFeedClient,
+	ProvideFeedServer,
 )
 
 // ProvideOutboxClient 提供 outbox 生产者客户端
@@ -33,4 +36,18 @@ func ProvideOutboxServer(
 	db *gorm.DB,
 ) kafka_server.OutboxServer {
 	return kafka_server.NewOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
+}
+
+// ProvideFeedClient 提供 Feed 推送生产者
+func ProvideFeedClient() kafka_client.FeedClient {
+	return kafka_client.NewFeedClient()
+}
+
+// ProvideFeedServer 提供 Feed 推送消费者
+func ProvideFeedServer(
+	feedCursorRepository repository.FeedCursorRepository,
+	feedCache cache.FeedCache,
+	db *gorm.DB,
+) kafka_server.FeedServer {
+	return kafka_server.NewFeedServer(feedCursorRepository, feedCache, db)
 }
