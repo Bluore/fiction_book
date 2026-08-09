@@ -1,28 +1,45 @@
 package kafka
 
 import (
-	"fiction-book/internal/repository"
+	"context"
+	"errors"
+	"fiction-book/internal/kafka/kafka_client"
+	"fiction-book/internal/kafka/kafka_server"
+	"fiction-book/pkg/config"
+	"fiction-book/pkg/logger"
+	"fmt"
 
-	"gorm.io/gorm"
+	"github.com/segmentio/kafka-go"
 )
 
 type Handler struct {
-	OutboxRepository        repository.OutboxRepository
-	BookESRepository        repository.BookESRepository
-	BookChapterESRepository repository.BookChapterESRepository
-	DB                      *gorm.DB
+	outboxClient kafka_client.OutboxClient
+	outboxServer kafka_server.OutboxServer
 }
 
 func NewHandler(
-	outboxRepository repository.OutboxRepository,
-	bookESRepository repository.BookESRepository,
-	bookChapterESRepository repository.BookChapterESRepository,
-	db *gorm.DB,
+	outboxClient kafka_client.OutboxClient,
+	outboxServer kafka_server.OutboxServer,
 ) *Handler {
 	return &Handler{
-		OutboxRepository:        outboxRepository,
-		BookESRepository:        bookESRepository,
-		BookChapterESRepository: bookChapterESRepository,
-		DB:                      db,
+		outboxClient: outboxClient,
+		outboxServer: outboxServer,
+	}
+}
+
+func (h *Handler) KafkaInit(ctx context.Context, cfg *config.Config) {
+
+	go h.outboxClient.OutboxProducerClient(ctx, cfg)
+	go h.outboxServer.OutboxConsumerClient(ctx, cfg)
+}
+
+func createTopic(k *kafka.Conn, topicName string) {
+	err := k.CreateTopics(kafka.TopicConfig{
+		Topic:             topicName,
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+	})
+	if err != nil && !errors.Is(err, kafka.TopicAlreadyExists) {
+		logger.Fatal(fmt.Sprintf("outbox client create topic err: %v", err))
 	}
 }

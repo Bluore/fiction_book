@@ -72,29 +72,11 @@ func InitializeApp() (*App, error) {
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, config)
-	app := NewApp(handler)
+	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
+	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
+	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer)
+	app := NewApp(handler, kafkaHandler)
 	return app, nil
-}
-
-func InitializeMassageQueue() (*MassageQueue, error) {
-	config, err := ProvideConfig()
-	if err != nil {
-		return nil, err
-	}
-	db, err := ProvideDatabase(config)
-	if err != nil {
-		return nil, err
-	}
-	outboxRepository := ProvideOutboxRepository(db)
-	client, err := ProvideESClient(config)
-	if err != nil {
-		return nil, err
-	}
-	bookESRepository := ProvideBookESRepository(client)
-	bookChapterESRepository := ProvideBookChapterESRepository(client)
-	handler := ProvideMassageHandlerSer(outboxRepository, bookESRepository, bookChapterESRepository, db)
-	massageQueue := NewMassageQueue(handler)
-	return massageQueue, nil
 }
 
 // wire.go:
@@ -102,17 +84,10 @@ func InitializeMassageQueue() (*MassageQueue, error) {
 // App 应用容器
 type App struct {
 	Handler *handler.Handler
+	Kafka   *kafka.Handler
 }
 
 // NewApp 创建 App 实例
-func NewApp(h *handler.Handler) *App {
-	return &App{Handler: h}
-}
-
-type MassageQueue struct {
-	Handler *kafka.Handler
-}
-
-func NewMassageQueue(h *kafka.Handler) *MassageQueue {
-	return &MassageQueue{Handler: h}
+func NewApp(h *handler.Handler, k *kafka.Handler) *App {
+	return &App{Handler: h, Kafka: k}
 }
