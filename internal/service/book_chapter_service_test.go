@@ -72,6 +72,8 @@ type BookChapterServiceTestSuite struct {
 	chapterCache  *MockBookChapterCache
 	userStatCache *MockUserStatCache
 	limitCache    *MockLimitCache
+	feedRepo      *MockFeedRepository
+	feedCache     *MockFeedCache
 	feedClient    *MockFeedClient
 	db            *gorm.DB
 	pool          *agilePool.Pool
@@ -92,6 +94,8 @@ func (suite *BookChapterServiceTestSuite) SetupTest() {
 	suite.chapterCache = new(MockBookChapterCache)
 	suite.userStatCache = new(MockUserStatCache)
 	suite.limitCache = new(MockLimitCache)
+	suite.feedRepo = new(MockFeedRepository)
+	suite.feedCache = new(MockFeedCache)
 	suite.feedClient = new(MockFeedClient)
 	suite.db = newTestDB(suite.T())
 	suite.pool = newTestPool()
@@ -99,9 +103,9 @@ func (suite *BookChapterServiceTestSuite) SetupTest() {
 	suite.svc = NewBookChapterService(
 		suite.userRepo, suite.bookRepo, suite.chapterRepo, suite.esRepo,
 		suite.purchasedRepo, suite.assetRepo, suite.bookshelfRepo,
-		nil, nil, suite.outboxRepo,
+		suite.feedRepo, suite.outboxRepo,
 		suite.bookCache, suite.thermalCache, suite.chapterCache,
-		suite.userStatCache, suite.limitCache, nil, suite.feedClient,
+		suite.userStatCache, suite.limitCache, suite.feedCache, suite.feedClient,
 		suite.db, newTestConfig(), suite.pool,
 	)
 }
@@ -116,12 +120,14 @@ func (suite *BookChapterServiceTestSuite) chapterSvc() *bookChapterService {
 		userPurchasedChapterRepo: suite.purchasedRepo,
 		userAssetRepo:            suite.assetRepo,
 		userBookshelfRepo:        suite.bookshelfRepo,
+		feedRepo:                 suite.feedRepo,
 		outboxRepo:               suite.outboxRepo,
 		bookCache:                suite.bookCache,
 		bookThermalCache:         suite.thermalCache,
 		bookChapterCache:         suite.chapterCache,
 		userStatCache:            suite.userStatCache,
 		limitCache:               suite.limitCache,
+		feedCache:                suite.feedCache,
 		feedClient:               suite.feedClient,
 		db:                       suite.db,
 		cfg:                      newTestConfig(),

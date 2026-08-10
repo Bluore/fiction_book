@@ -27,7 +27,6 @@ type FeedServer interface {
 
 type feedServer struct {
 	feedRepo          repository.FeedRepository
-	feedCursorRepo    repository.FeedCursorRepository
 	feedCache         cache.FeedCache
 	consumeRecordRepo repository.ConsumeRecordRepository
 	db                *gorm.DB
@@ -35,14 +34,12 @@ type feedServer struct {
 
 func NewFeedServer(
 	feedRepo repository.FeedRepository,
-	feedCursorRepo repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
 	consumeRecordRepo repository.ConsumeRecordRepository,
 	db *gorm.DB,
 ) FeedServer {
 	return &feedServer{
 		feedRepo:          feedRepo,
-		feedCursorRepo:    feedCursorRepo,
 		feedCache:         feedCache,
 		consumeRecordRepo: consumeRecordRepo,
 		db:                db,
@@ -113,9 +110,6 @@ func (s *feedServer) handleFeedMessage(ctx context.Context, messageValue []byte)
 	if err != nil {
 		return err
 	}
-	if err := s.feedCache.BatchIncrUnreadCount(ctx, message.Users, 1); err != nil {
-		return err
-	}
 	if err := s.warmFeeds(ctx, message.Feeds); err != nil {
 		logger.Warn("warm feed error", zap.Error(err))
 	}
@@ -139,11 +133,6 @@ func (s *feedServer) consumeFeedsInTx(
 		if _, err := s.feedRepo.CreateBatchIgnoreConflict(ctx, tx, message.Feeds); err != nil {
 			return err
 		}
-		// 添加未读消息
-		err = s.feedCursorRepo.BatchUpdateUnreadCount(ctx, tx, message.Users, 1)
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 	if err != nil {
@@ -162,7 +151,7 @@ func (s *feedServer) warmFeeds(ctx context.Context, feeds []*model.FeedInbox) er
 	}
 
 	for userID, feeds := range userFeeds {
-		if err := s.feedCache.PushFeeds(ctx, userID, feeds); err != nil {
+		if _, err := s.feedCache.WarmFeeds(ctx, userID, feeds); err != nil {
 			return err
 		}
 	}

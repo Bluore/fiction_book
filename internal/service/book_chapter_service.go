@@ -50,7 +50,6 @@ type bookChapterService struct {
 	userAssetRepo            repository.UserAssetRepository
 	userBookshelfRepo        repository.UserBookshelfRepository
 	feedRepo                 repository.FeedRepository
-	feedCursorRepo           repository.FeedCursorRepository
 	outboxRepo               repository.OutboxRepository
 	bookCache                cache.BookCache
 	bookThermalCache         cache.BookThermalCache
@@ -73,7 +72,6 @@ func NewBookChapterService(
 	userAssetRepo repository.UserAssetRepository,
 	userBookshelfRepo repository.UserBookshelfRepository,
 	feedRepo repository.FeedRepository,
-	feedCursorRepo repository.FeedCursorRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCache cache.BookCache,
 	bookThermalCache cache.BookThermalCache,
@@ -95,7 +93,6 @@ func NewBookChapterService(
 		userAssetRepo:            userAssetRepo,
 		userBookshelfRepo:        userBookshelfRepo,
 		feedRepo:                 feedRepo,
-		feedCursorRepo:           feedCursorRepo,
 		outboxRepo:               outboxRepo,
 		bookCache:                bookCache,
 		bookThermalCache:         bookThermalCache,
@@ -110,7 +107,7 @@ func NewBookChapterService(
 	}
 }
 
-func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterResponse, error) {
+func (s *bookChapterService) AddByBookID(ctx context.Context, userID string, req *dto.CreatBookChapterRequest) (*dto.BookChapterResponse, error) {
 	book, err := s.bookRepo.GetByID(ctx, req.BookID)
 	if err != nil {
 		return nil, err
@@ -163,7 +160,7 @@ func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
 		err := addNewChapterFeedTask(
 			constant.DoneServerCtx,
-			&s,
+			s,
 			book,
 			bookChapter,
 			s.db,
@@ -201,9 +198,6 @@ func addNewChapterFeedTask(
 	if _, err := s.feedRepo.CreateBatchIgnoreConflict(ctx, db, feeds); err != nil {
 		return err
 	}
-	if err := s.feedCursorRepo.BatchUpdateUnreadCount(ctx, db, userIDs, 1); err != nil {
-		return err
-	}
 	return warmFeedCache(ctx, s.feedCache, feeds)
 }
 
@@ -237,25 +231,18 @@ func buildNewChapterFeeds(
 	return feeds
 }
 
-func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*model.FeedInbox) error {
+func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*model.FeedInbox) (err error) {
 	userFeeds := make(map[string][]*model.FeedInbox)
-	userIDs := make([]string, 0)
 	for _, feed := range feeds {
-		if _, ok := userFeeds[feed.UserID]; !ok {
-			userIDs = append(userIDs, feed.UserID)
-		}
 		userFeeds[feed.UserID] = append(userFeeds[feed.UserID], feed)
 	}
-
-	if err := feedCache.BatchIncrUnreadCount(ctx, userIDs, 1); err != nil {
-		return err
-	}
-	for userID, feeds := range userFeeds {
-		if err := feedCache.PushFeeds(ctx, userID, feeds); err != nil {
-			return err
+	for userID, feed := range userFeeds {
+		if _, feedWarmErr := feedCache.WarmFeeds(ctx, userID, feed); feedWarmErr != nil {
+			logger.Warn("warm feed fail", zap.Error(feedWarmErr))
+			err = feedWarmErr
 		}
 	}
-	return nil
+	return
 }
 
 func toBookChapterInfoResponse(cfg *config.Config, info *model.BookChapterInfo, book *model.Book) *dto.BookChapterInfoResponse {
@@ -281,7 +268,7 @@ func toBookChapterResponse(cfg *config.Config, info *model.BookChapter, book *mo
 	}
 }
 
-func (s bookChapterService) GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error) {
+func (s *bookChapterService) GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error) {
 	bookChapter, err := s.bookChapterRepo.GetByID(ctx, bookID)
 	if err != nil {
 		return nil, err
@@ -432,7 +419,7 @@ func VIPLevelToStr(vipLevel int) string {
 	}
 }
 
-func (s bookChapterService) UpdateChapter(ctx context.Context, userID string, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
+func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
 	old, err := s.bookChapterRepo.GetByID(ctx, req.ID)
 	if err != nil {
 		return nil, err
@@ -501,7 +488,7 @@ func (s bookChapterService) UpdateChapter(ctx context.Context, userID string, re
 
 }
 
-func (s bookChapterService) DeleteChapter(ctx context.Context, userID string, chapterID string) error {
+func (s *bookChapterService) DeleteChapter(ctx context.Context, userID string, chapterID string) error {
 	// 检查章节是否存在
 	chapter, err := s.bookChapterRepo.GetByID(ctx, chapterID)
 	if err != nil {
@@ -557,7 +544,7 @@ func (s bookChapterService) DeleteChapter(ctx context.Context, userID string, ch
 	return nil
 }
 
-func (s bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error) {
+func (s *bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBookChapterListRequest) (*dto.GetBookChapterListResponse, error) {
 	exist, err := s.bookRepo.GetByID(ctx, req.BookID)
 	if err != nil {
 		return nil, err
@@ -596,7 +583,7 @@ func (s bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBook
 	return resp, nil
 }
 
-func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error {
+func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, req *dto.BuyBookChapterRequest) error {
 	bookChapter, err := s.bookChapterRepo.GetByID(ctx, req.ChapterID)
 	if err != nil {
 		return err
@@ -664,7 +651,7 @@ func (s bookChapterService) BuyBookChapter(ctx context.Context, userID string, r
 	return nil
 }
 
-func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error) {
+func (s *bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error) {
 	bookChapter, exist, _ := s.bookChapterCache.GetBookChapter(ctx, bookChapterID)
 	var err error
 	if !exist {
@@ -701,7 +688,7 @@ func (s bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID st
 }
 
 // SearchBookChaptersV2 v2 版本的搜索章节方法，使用 Elasticsearch
-func (s bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.SearchBookChaptersV2Request) (*dto.SearchBookChaptersV2Response, error) {
+func (s *bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.SearchBookChaptersV2Request) (*dto.SearchBookChaptersV2Response, error) {
 	filter := model.BookChapterFilterWithIDPage{
 		Query:          req.Query,
 		BookID:         req.BookID,

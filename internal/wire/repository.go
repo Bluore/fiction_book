@@ -24,7 +24,6 @@ var RepositorySet = wire.NewSet(
 	ProvideBookESRepository,
 	ProvideBookChapterESRepository,
 	ProvideFeedRepository,
-	ProvideFeedCursorRepository,
 	ProvideConsumeRecordRepository,
 )
 
@@ -95,11 +94,6 @@ func ProvideBookChapterESRepository(esClient *elasticsearch.Client) repository.B
 // ProvideFeedRepository 提供 Feed 仓储
 func ProvideFeedRepository(db *gorm.DB) repository.FeedRepository {
 	return repository.NewFeedRepository(db)
-}
-
-// ProvideFeedCursorRepository 提供 Feed 游标仓储
-func ProvideFeedCursorRepository(db *gorm.DB) repository.FeedCursorRepository {
-	return repository.NewFeedCursorRepository(db)
 }
 
 // ProvideConsumeRecordRepository 提供 Kafka 消费记录仓储（用于幂等防重复消费）

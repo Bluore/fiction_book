@@ -93,7 +93,6 @@ func ProvideBookChapterService(
 	userAssetRepo repository.UserAssetRepository,
 	userBookshelfRepo repository.UserBookshelfRepository,
 	feedRepo repository.FeedRepository,
-	feedCursorRepo repository.FeedCursorRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCatch cache.BookCache,
 	bookThermalCache cache.BookThermalCache,
@@ -115,7 +114,6 @@ func ProvideBookChapterService(
 		userAssetRepo,
 		userBookshelfRepo,
 		feedRepo,
-		feedCursorRepo,
 		outboxRepo,
 		bookCatch,
 		bookThermalCache,
@@ -227,9 +225,8 @@ func ProvideOrderService(
 // ProvideFeedService 提供 Feed 服务
 func ProvideFeedService(
 	feedRepo repository.FeedRepository,
-	feedCursorRepo repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
 	db *gorm.DB,
 ) service.FeedService {
-	return service.NewFeedService(feedRepo, feedCursorRepo, feedCache, db)
+	return service.NewFeedService(feedRepo, feedCache, db)
 }

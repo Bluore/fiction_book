@@ -31,24 +31,28 @@ func (FeedInbox) TableName() string {
 	return "feed_inbox"
 }
 
-// FeedCursor 用户 feed 游标
+// FeedCursor Redis 中保存的用户 feed 游标
 type FeedCursor struct {
-	UserID      string     `json:"user_id" gorm:"primaryKey;type:varchar(36)"`
-	LastReadAt  *time.Time `json:"last_read_at"`
-	LastFeedID  *string    `json:"last_feed_id" gorm:"type:varchar(36)"`
-	UnreadCount int        `json:"unread_count" gorm:"type:integer;default:0;not null"`
-	UpdatedAt   time.Time  `json:"updated_at" gorm:"index:idx_feed_cursor_updated"`
+	UserID     string    `json:"user_id"`
+	LastReadAt time.Time `json:"last_read_at"`
+	LastFeedID string    `json:"last_feed_id"`
 }
 
-func (FeedCursor) TableName() string {
-	return "feed_cursor"
+func (fc *FeedCursor) HasValue() bool {
+	if fc == nil {
+		return false
+	}
+	if fc.UserID == "" || fc.LastReadAt.IsZero() || fc.LastFeedID == "" {
+		return false
+	}
+	return true
 }
 
-// FeedFilterWithIDPage FeedInbox 查询过滤器
+// FeedFilterWithTimePage FeedInbox 查询过滤器
 type FeedFilterWithTimePage struct {
-	UserID     string          `json:"user_id"`
+	UserID     *string         `json:"user_id"`
 	EventTypes []FeedEventType `json:"event_types"`
-	BookID     string          `json:"book_id"`
+	BookID     *string         `json:"book_id"`
 	IsRead     *bool           `json:"is_read"`
 	TimePage
 }

@@ -5,20 +5,6 @@ import (
 	"time"
 )
 
-type GetFeedListRequest struct {
-	Cursor string `form:"cursor"`
-	Limit  int    `form:"limit"`
-}
-
-func (r *GetFeedListRequest) ToStandard() {
-	if r.Limit < 1 {
-		r.Limit = 20
-	}
-	if r.Limit > 50 {
-		r.Limit = 50
-	}
-}
-
 type FeedItemResponse struct {
 	FeedID       string              `json:"feed_id"`
 	EventType    model.FeedEventType `json:"event_type"`
@@ -32,8 +18,6 @@ type FeedItemResponse struct {
 }
 
 type GetFeedListResponse struct {
-	Feeds      []*FeedItemResponse `json:"feeds"`
-	NextCursor string              `json:"next_cursor"`
-	HasMore    bool                `json:"has_more"`
-	Restarted  bool                `json:"restarted"`
+	Feeds     []*FeedItemResponse `json:"feeds"`
+	Restarted bool                `json:"restarted"`
 }

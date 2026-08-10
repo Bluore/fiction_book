@@ -144,7 +144,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		// Feed 管理
 		feed := v1.Group("/feed")
 		{
-			feed.GET("/list", middleware.Auth(cfg), middleware.Validation(&dto.GetFeedListRequest{}), h.GetFeedList)
+			feed.GET("/list", middleware.Auth(cfg), h.GetFeedList)
 		}
 
 		// 订单管理

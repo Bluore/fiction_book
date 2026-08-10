@@ -4,12 +4,14 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"fiction-book/internal/cache"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
@@ -522,4 +524,93 @@ func (m *MockBookChapterCache) GetBookChapter(ctx context.Context, chapter strin
 	args := m.Called(ctx, chapter)
 	item, _ := args.Get(0).(*model.BookChapter)
 	return item, args.Bool(1), args.Error(2)
+}
+
+// ---------- FeedRepository ----------
+
+type MockFeedRepository struct {
+	mock.Mock
+}
+
+func (m *MockFeedRepository) CreateBatchIgnoreConflict(
+	ctx context.Context,
+	db *gorm.DB,
+	feeds []*model.FeedInbox,
+) (int64, error) {
+	args := m.Called(ctx, db, feeds)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFeedRepository) GetUserFeeds(
+	ctx context.Context,
+	db *gorm.DB,
+	filter model.FeedFilterWithTimePage,
+) ([]*model.FeedInbox, error) {
+	args := m.Called(ctx, db, filter)
+	feeds, _ := args.Get(0).([]*model.FeedInbox)
+	return feeds, args.Error(1)
+}
+
+func (m *MockFeedRepository) MarkAsRead(
+	ctx context.Context,
+	db *gorm.DB,
+	userID string,
+	feedIDs []string,
+) (int64, error) {
+	args := m.Called(ctx, db, userID, feedIDs)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFeedRepository) MarkAllAsRead(ctx context.Context, db *gorm.DB, userID string) error {
+	return m.Called(ctx, db, userID).Error(0)
+}
+
+func (m *MockFeedRepository) DeleteOldFeeds(ctx context.Context, db *gorm.DB, before time.Time) error {
+	return m.Called(ctx, db, before).Error(0)
+}
+
+func (m *MockFeedRepository) DeleteByBookID(ctx context.Context, db *gorm.DB, bookID string) error {
+	return m.Called(ctx, db, bookID).Error(0)
+}
+
+// ---------- FeedCache ----------
+
+type MockFeedCache struct {
+	mock.Mock
+}
+
+func (m *MockFeedCache) PushFeeds(ctx context.Context, userID string, feeds []*model.FeedInbox) error {
+	return m.Called(ctx, userID, feeds).Error(0)
+}
+
+func (m *MockFeedCache) GetFeeds(
+	ctx context.Context,
+	userID string,
+	cursor cache.FeedListCursor,
+) ([]*model.FeedInbox, bool, error) {
+	args := m.Called(ctx, userID, cursor)
+	feeds, _ := args.Get(0).([]*model.FeedInbox)
+	return feeds, args.Bool(1), args.Error(2)
+}
+
+func (m *MockFeedCache) TrimFeeds(ctx context.Context, userID string, maxLen int64) error {
+	return m.Called(ctx, userID, maxLen).Error(0)
+}
+
+func (m *MockFeedCache) WarmFeeds(ctx context.Context, userID string, feeds []*model.FeedInbox) error {
+	return m.Called(ctx, userID, feeds).Error(0)
+}
+
+func (m *MockFeedCache) GetCursor(ctx context.Context, userID string) (*model.FeedCursor, bool, error) {
+	args := m.Called(ctx, userID)
+	cursor, _ := args.Get(0).(*model.FeedCursor)
+	return cursor, args.Bool(1), args.Error(2)
+}
+
+func (m *MockFeedCache) SetCursor(ctx context.Context, userID string, cursor *model.FeedCursor) error {
+	return m.Called(ctx, userID, cursor).Error(0)
+}
+
+func (m *MockFeedCache) DeleteCursor(ctx context.Context, userID string) error {
+	return m.Called(ctx, userID).Error(0)
 }

@@ -51,7 +51,6 @@ func InitializeApp() (*App, error) {
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
 	userBookshelfRepository := ProvideUserBookshelfRepository(db)
 	feedRepository := ProvideFeedRepository(db)
-	feedCursorRepository := ProvideFeedCursorRepository(db)
 	bookChapterCache := ProvideBookChapterCatch(client)
 	limitCache := ProvideLimitCatch(client)
 	feedCache := ProvideFeedCache(client)
@@ -60,7 +59,7 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, userBookshelfRepository, feedRepository, feedCursorRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, feedCache, feedClient, db, config, pool)
+	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, userBookshelfRepository, feedRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, feedCache, feedClient, db, config, pool)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)
@@ -75,12 +74,12 @@ func InitializeApp() (*App, error) {
 	}
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
-	feedService := ProvideFeedService(feedRepository, feedCursorRepository, feedCache, db)
+	feedService := ProvideFeedService(feedRepository, feedCache, db)
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, feedService, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	consumeRecordRepository := ProvideConsumeRecordRepository(db)
-	feedServer := ProvideFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository, db)
+	feedServer := ProvideFeedServer(feedRepository, feedCache, consumeRecordRepository, db)
 	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
 	app := NewApp(handler, kafkaHandler)
 	return app, nil

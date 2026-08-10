@@ -47,10 +47,9 @@ func ProvideFeedClient(cfg *config.Config) kafka_client.FeedClient {
 // ProvideFeedServer 提供 Feed 推送消费者
 func ProvideFeedServer(
 	feedRepository repository.FeedRepository,
-	feedCursorRepository repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
 	consumeRecordRepository repository.ConsumeRecordRepository,
 	db *gorm.DB,
 ) kafka_server.FeedServer {
-	return kafka_server.NewFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository, db)
+	return kafka_server.NewFeedServer(feedRepository, feedCache, consumeRecordRepository, db)
 }
