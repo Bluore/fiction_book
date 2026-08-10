@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const feedConsumerGroupID = "feed_syncer"
@@ -26,26 +26,26 @@ type FeedServer interface {
 }
 
 type feedServer struct {
-	feedCursorRepo repository.FeedCursorRepository
-	feedCache      cache.FeedCache
-	db             *gorm.DB
-}
-
-type feedPushMessage struct {
-	Type      string             `json:"type"`
-	Feeds     []*model.FeedInbox `json:"feeds"`
-	CreatedAt time.Time          `json:"created_at"`
+	feedRepo          repository.FeedRepository
+	feedCursorRepo    repository.FeedCursorRepository
+	feedCache         cache.FeedCache
+	consumeRecordRepo repository.ConsumeRecordRepository
+	db                *gorm.DB
 }
 
 func NewFeedServer(
+	feedRepo repository.FeedRepository,
 	feedCursorRepo repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
+	consumeRecordRepo repository.ConsumeRecordRepository,
 	db *gorm.DB,
 ) FeedServer {
 	return &feedServer{
-		feedCursorRepo: feedCursorRepo,
-		feedCache:      feedCache,
-		db:             db,
+		feedRepo:          feedRepo,
+		feedCursorRepo:    feedCursorRepo,
+		feedCache:         feedCache,
+		consumeRecordRepo: consumeRecordRepo,
+		db:                db,
 	}
 }
 
@@ -92,81 +92,62 @@ func (s *feedServer) consumeMessage(ctx context.Context, reader *kafka.Reader) e
 }
 
 func (s *feedServer) handleFeedMessage(ctx context.Context, messageValue []byte) error {
-	var message feedPushMessage
+	var message kafka_client.FeedPushMessage
 	if err := json.Unmarshal(messageValue, &message); err != nil {
 		return err
 	}
 	if message.Type != kafka_client.FeedPushMessageType {
 		return nil
 	}
+	if message.ID == "" {
+		return fmt.Errorf("feed push message id is empty")
+	}
 	if len(message.Feeds) == 0 {
 		return nil
 	}
+	if len(message.Feeds) != len(message.Users) {
+		return fmt.Errorf("feed push message feeds and users count mismatch")
+	}
 
-	newFeeds, err := s.filterNewFeeds(ctx, message.Feeds)
+	err := s.consumeFeedsInTx(ctx, &message)
 	if err != nil {
 		return err
 	}
-
-	if len(newFeeds) > 0 {
-		if err := s.createFeeds(ctx, newFeeds); err != nil {
-			return err
-		}
-		if err := s.increaseUnread(ctx, newFeeds); err != nil {
-			return err
-		}
+	if err := s.feedCache.BatchIncrUnreadCount(ctx, message.Users, 1); err != nil {
+		return err
 	}
-
-	return s.warmFeeds(ctx, message.Feeds)
+	if err := s.warmFeeds(ctx, message.Feeds); err != nil {
+		logger.Warn("warm feed error", zap.Error(err))
+	}
+	return nil
 }
 
-func (s *feedServer) filterNewFeeds(
+func (s *feedServer) consumeFeedsInTx(
 	ctx context.Context,
-	feeds []*model.FeedInbox,
-) ([]*model.FeedInbox, error) {
-	feedIDs := make([]string, 0, len(feeds))
-	for _, feed := range feeds {
-		feedIDs = append(feedIDs, feed.ID)
-	}
-
-	existingFeedIDs := make([]string, 0)
-	if err := s.db.WithContext(ctx).
-		Model(&model.FeedInbox{}).
-		Where("id IN ?", feedIDs).
-		Pluck("id", &existingFeedIDs).Error; err != nil {
-		return nil, err
-	}
-
-	existing := make(map[string]struct{}, len(existingFeedIDs))
-	for _, feedID := range existingFeedIDs {
-		existing[feedID] = struct{}{}
-	}
-
-	newFeeds := make([]*model.FeedInbox, 0, len(feeds))
-	for _, feed := range feeds {
-		if _, ok := existing[feed.ID]; ok {
-			continue
-		}
-		newFeeds = append(newFeeds, feed)
-	}
-	return newFeeds, nil
-}
-
-func (s *feedServer) createFeeds(ctx context.Context, feeds []*model.FeedInbox) error {
-	return s.db.WithContext(ctx).
-		Clauses(clause.OnConflict{DoNothing: true}).
-		CreateInBatches(feeds, 1000).Error
-}
-
-func (s *feedServer) increaseUnread(ctx context.Context, feeds []*model.FeedInbox) error {
-	counts := feedUnreadCounts(feeds)
-	for count, userIDs := range groupUserIDsByCount(counts) {
-		if err := s.feedCursorRepo.BatchUpdateUnreadCount(ctx, userIDs, count); err != nil {
+	message *kafka_client.FeedPushMessage,
+) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		firstConsume, err := s.consumeRecordRepo.TryMarkConsumed(ctx, tx, message.ID)
+		if err != nil {
 			return err
 		}
-		if err := s.feedCache.BatchIncrUnreadCount(ctx, userIDs, int64(count)); err != nil {
+		if !firstConsume {
+			return nil
+		}
+
+		// 写推送：创建Feed
+		if _, err := s.feedRepo.CreateBatchIgnoreConflict(ctx, tx, message.Feeds); err != nil {
 			return err
 		}
+		// 添加未读消息
+		err = s.feedCursorRepo.BatchUpdateUnreadCount(ctx, tx, message.Users, 1)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -174,6 +155,9 @@ func (s *feedServer) increaseUnread(ctx context.Context, feeds []*model.FeedInbo
 func (s *feedServer) warmFeeds(ctx context.Context, feeds []*model.FeedInbox) error {
 	userFeeds := make(map[string][]*model.FeedInbox)
 	for _, feed := range feeds {
+		if feed == nil || feed.UserID == "" {
+			continue
+		}
 		userFeeds[feed.UserID] = append(userFeeds[feed.UserID], feed)
 	}
 
@@ -183,20 +167,4 @@ func (s *feedServer) warmFeeds(ctx context.Context, feeds []*model.FeedInbox) er
 		}
 	}
 	return nil
-}
-
-func feedUnreadCounts(feeds []*model.FeedInbox) map[string]int {
-	counts := make(map[string]int)
-	for _, feed := range feeds {
-		counts[feed.UserID]++
-	}
-	return counts
-}
-
-func groupUserIDsByCount(counts map[string]int) map[int][]string {
-	groups := make(map[int][]string)
-	for userID, count := range counts {
-		groups[count] = append(groups[count], userID)
-	}
-	return groups
 }

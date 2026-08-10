@@ -312,8 +312,8 @@ type MockFeedClient struct {
 	mock.Mock
 }
 
-func (m *MockFeedClient) PublishFeeds(ctx context.Context, cfg *config.Config, feeds []*model.FeedInbox) error {
-	return m.Called(ctx, cfg, feeds).Error(0)
+func (m *MockFeedClient) PublishFeeds(ctx context.Context, cfg *config.Config, feeds []*model.FeedInbox, users []string) error {
+	return m.Called(ctx, cfg, feeds, users).Error(0)
 }
 
 // ---------- UserStatCache ----------

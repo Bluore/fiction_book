@@ -229,6 +229,7 @@ func ProvideFeedService(
 	feedRepo repository.FeedRepository,
 	feedCursorRepo repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
+	db *gorm.DB,
 ) service.FeedService {
-	return service.NewFeedService(feedRepo, feedCursorRepo, feedCache)
+	return service.NewFeedService(feedRepo, feedCursorRepo, feedCache, db)
 }

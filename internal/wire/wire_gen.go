@@ -55,7 +55,7 @@ func InitializeApp() (*App, error) {
 	bookChapterCache := ProvideBookChapterCatch(client)
 	limitCache := ProvideLimitCatch(client)
 	feedCache := ProvideFeedCache(client)
-	feedClient := ProvideFeedClient()
+	feedClient := ProvideFeedClient(config)
 	pool, err := ProvideAgilePool(config)
 	if err != nil {
 		return nil, err
@@ -75,12 +75,12 @@ func InitializeApp() (*App, error) {
 	}
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
-	feedService := ProvideFeedService(feedRepository, feedCursorRepository, feedCache)
+	feedService := ProvideFeedService(feedRepository, feedCursorRepository, feedCache, db)
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, feedService, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	consumeRecordRepository := ProvideConsumeRecordRepository(db)
-	feedServer := ProvideFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository)
+	feedServer := ProvideFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository, db)
 	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
 	app := NewApp(handler, kafkaHandler)
 	return app, nil

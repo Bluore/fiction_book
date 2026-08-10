@@ -6,29 +6,32 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
+const batchMaxSize = 1000
+
 type FeedRepository interface {
-	// CreateBatch 批量创建 feed（写扩散）
-	CreateBatch(ctx context.Context, feeds []*model.FeedInbox) error
+	// CreateBatchIgnoreConflict 在指定事务中批量创建 feed，主键冲突时忽略（写扩散）
+	CreateBatchIgnoreConflict(ctx context.Context, db *gorm.DB, feeds []*model.FeedInbox) (successNum int64, err error)
 
 	// GetUserFeeds 获取用户的 feed 流
-	GetUserFeeds(ctx context.Context, filter model.FeedFilterWithTimePage) ([]*model.FeedInbox, error)
+	GetUserFeeds(ctx context.Context, db *gorm.DB, filter model.FeedFilterWithTimePage) (feeds []*model.FeedInbox, err error)
 
 	// CountUserUnread 统计用户未读数量
-	CountUserUnread(ctx context.Context, userID string) (int64, error)
+	CountUserUnread(ctx context.Context, db *gorm.DB, userID string) (unreadNum int64, err error)
 
 	// MarkAsRead 标记为已读
-	MarkAsRead(ctx context.Context, userID string, feedIDs []string) (int64, error)
+	MarkAsRead(ctx context.Context, db *gorm.DB, userID string, feedIDs []string) (int64, error)
 
 	// MarkAllAsRead 标记所有为已读
-	MarkAllAsRead(ctx context.Context, userID string) error
+	MarkAllAsRead(ctx context.Context, db *gorm.DB, userID string) error
 
 	// DeleteOldFeeds 删除过期 feed（清理任务）
-	DeleteOldFeeds(ctx context.Context, before time.Time) error
+	DeleteOldFeeds(ctx context.Context, db *gorm.DB, before time.Time) error
 
 	// DeleteByBookID 删除指定书籍的所有 feed
-	DeleteByBookID(ctx context.Context, bookID string) error
+	DeleteByBookID(ctx context.Context, db *gorm.DB, bookID string) error
 }
 
 type feedRepository struct {
@@ -60,10 +63,43 @@ func (r *feedRepository) CreateBatch(ctx context.Context, feeds []*model.FeedInb
 	return nil
 }
 
-func (r *feedRepository) GetUserFeeds(ctx context.Context, filter model.FeedFilterWithTimePage) ([]*model.FeedInbox, error) {
+func (r *feedRepository) CreateBatchIgnoreConflict(
+	ctx context.Context,
+	db *gorm.DB,
+	feeds []*model.FeedInbox,
+) (int64, error) {
+	if len(feeds) == 0 {
+		return 0, nil
+	}
+
+	var affected int64
+
+	for i := 0; i < len(feeds); i += batchMaxSize {
+		end := i + batchMaxSize
+		if end > len(feeds) {
+			end = len(feeds)
+		}
+
+		res := db.WithContext(ctx).
+			Clauses(clause.OnConflict{DoNothing: true}).
+			CreateInBatches(feeds[i:end], batchMaxSize)
+		if res.Error != nil {
+			return 0, res.Error
+		}
+		affected += res.RowsAffected
+	}
+
+	return affected, nil
+}
+
+func (r *feedRepository) GetUserFeeds(
+	ctx context.Context,
+	db *gorm.DB,
+	filter model.FeedFilterWithTimePage,
+) ([]*model.FeedInbox, error) {
 	var feeds []*model.FeedInbox
 
-	query := r.db.WithContext(ctx).Model(&model.FeedInbox{})
+	query := db.WithContext(ctx).Model(&model.FeedInbox{})
 
 	// 用户ID过滤
 	if filter.UserID != "" {
@@ -111,10 +147,10 @@ func (r *feedRepository) GetUserFeeds(ctx context.Context, filter model.FeedFilt
 	return feeds, nil
 }
 
-func (r *feedRepository) CountUserUnread(ctx context.Context, userID string) (int64, error) {
+func (r *feedRepository) CountUserUnread(ctx context.Context, db *gorm.DB, userID string) (int64, error) {
 	var count int64
 
-	err := r.db.WithContext(ctx).
+	err := db.WithContext(ctx).
 		Model(&model.FeedInbox{}).
 		Where("user_id = ? AND is_read = ?", userID, false).
 		Count(&count).Error
@@ -122,12 +158,12 @@ func (r *feedRepository) CountUserUnread(ctx context.Context, userID string) (in
 	return count, err
 }
 
-func (r *feedRepository) MarkAsRead(ctx context.Context, userID string, feedIDs []string) (int64, error) {
+func (r *feedRepository) MarkAsRead(ctx context.Context, db *gorm.DB, userID string, feedIDs []string) (int64, error) {
 	if len(feedIDs) == 0 {
 		return 0, nil
 	}
 
-	res := r.db.WithContext(ctx).
+	res := db.WithContext(ctx).
 		Model(&model.FeedInbox{}).
 		Where("user_id = ? AND id IN ? AND is_read = ?", userID, feedIDs, false).
 		Updates(map[string]interface{}{
@@ -137,8 +173,8 @@ func (r *feedRepository) MarkAsRead(ctx context.Context, userID string, feedIDs 
 	return res.RowsAffected, res.Error
 }
 
-func (r *feedRepository) MarkAllAsRead(ctx context.Context, userID string) error {
-	return r.db.WithContext(ctx).
+func (r *feedRepository) MarkAllAsRead(ctx context.Context, db *gorm.DB, userID string) error {
+	return db.WithContext(ctx).
 		Model(&model.FeedInbox{}).
 		Where("user_id = ? AND is_read = ?", userID, false).
 		Updates(map[string]interface{}{
@@ -147,15 +183,15 @@ func (r *feedRepository) MarkAllAsRead(ctx context.Context, userID string) error
 		}).Error
 }
 
-func (r *feedRepository) DeleteOldFeeds(ctx context.Context, before time.Time) error {
-	return r.db.WithContext(ctx).
+func (r *feedRepository) DeleteOldFeeds(ctx context.Context, db *gorm.DB, before time.Time) error {
+	return db.WithContext(ctx).
 		Where("created_at < ?", before).
 		Delete(&model.FeedInbox{}).
 		Error
 }
 
-func (r *feedRepository) DeleteByBookID(ctx context.Context, bookID string) error {
-	return r.db.WithContext(ctx).
+func (r *feedRepository) DeleteByBookID(ctx context.Context, db *gorm.DB, bookID string) error {
+	return db.WithContext(ctx).
 		Where("book_id = ?", bookID).
 		Delete(&model.FeedInbox{}).
 		Error

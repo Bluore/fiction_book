@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ConsumeRecordRepository interface {
 	// IsConsumed 检查消息是否已经被消费过（幂等检查）
-	IsConsumed(ctx context.Context, messageID string) (bool, error)
+	IsConsumed(ctx context.Context, db *gorm.DB, messageID string) (bool, error)
 
-	// MarkConsumed 标记消息已消费
-	MarkConsumed(ctx context.Context, messageID string) error
+	// TryMarkConsumed 在事务中尝试标记消息已消费，返回是否首次写入
+	TryMarkConsumed(ctx context.Context, db *gorm.DB, messageID string) (isFirstConsume bool, err error)
 }
 
 type consumeRecordRepository struct {
@@ -25,9 +26,9 @@ func NewConsumeRecordRepository(db *gorm.DB) ConsumeRecordRepository {
 	return &consumeRecordRepository{db: db}
 }
 
-func (r *consumeRecordRepository) IsConsumed(ctx context.Context, messageID string) (bool, error) {
+func (r *consumeRecordRepository) IsConsumed(ctx context.Context, db *gorm.DB, messageID string) (bool, error) {
 	var record model.ConsumeRecord
-	err := r.db.WithContext(ctx).
+	err := db.WithContext(ctx).
 		Where("id = ?", messageID).
 		First(&record).Error
 	if err != nil {
@@ -39,10 +40,22 @@ func (r *consumeRecordRepository) IsConsumed(ctx context.Context, messageID stri
 	return true, nil
 }
 
-func (r *consumeRecordRepository) MarkConsumed(ctx context.Context, messageID string) error {
+func (r *consumeRecordRepository) TryMarkConsumed(
+	ctx context.Context,
+	db *gorm.DB,
+	messageID string,
+) (bool, error) {
 	record := &model.ConsumeRecord{
 		ID:        messageID,
 		CreatedAt: time.Now(),
 	}
-	return r.db.WithContext(ctx).Create(record).Error
+
+	// FOCUS 冲突时继续
+	res := db.WithContext(ctx).
+		Clauses(clause.OnConflict{DoNothing: true}).
+		Create(record)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected > 0, nil
 }

@@ -166,6 +166,7 @@ func (s bookChapterService) AddByBookID(ctx context.Context, userID string, req 
 			&s,
 			book,
 			bookChapter,
+			s.db,
 		)
 		if err != nil {
 			logger.Error("add new chapter feed fail", zap.Error(err))
@@ -182,6 +183,7 @@ func addNewChapterFeedTask(
 	s *bookChapterService,
 	book *model.Book,
 	chapter *model.BookChapter,
+	db *gorm.DB,
 ) error {
 	userIDs, err := s.userBookshelfRepo.ListUserIDsByBookID(ctx, s.db, book.ID)
 	if err != nil {
@@ -193,13 +195,13 @@ func addNewChapterFeedTask(
 
 	feeds := buildNewChapterFeeds(book, chapter, userIDs)
 	if len(feeds) > 50 {
-		return s.feedClient.PublishFeeds(ctx, s.cfg, feeds)
+		return s.feedClient.PublishFeeds(ctx, s.cfg, feeds, userIDs)
 	}
 
-	if err := s.feedRepo.CreateBatch(ctx, feeds); err != nil {
+	if _, err := s.feedRepo.CreateBatchIgnoreConflict(ctx, db, feeds); err != nil {
 		return err
 	}
-	if err := s.feedCursorRepo.BatchUpdateUnreadCount(ctx, userIDs, 1); err != nil {
+	if err := s.feedCursorRepo.BatchUpdateUnreadCount(ctx, db, userIDs, 1); err != nil {
 		return err
 	}
 	return warmFeedCache(ctx, s.feedCache, feeds)
@@ -217,7 +219,7 @@ func buildNewChapterFeeds(
 
 	for _, userID := range userIDs {
 		feeds = append(feeds, &model.FeedInbox{
-			ID:           newChapterFeedID(userID, chapter.ID),
+			ID:           uuid.New().String(),
 			UserID:       userID,
 			EventType:    model.FeedEventNewChapter,
 			BookID:       book.ID,
@@ -233,13 +235,6 @@ func buildNewChapterFeeds(
 	}
 
 	return feeds
-}
-
-func newChapterFeedID(userID string, chapterID string) string {
-	return uuid.NewSHA1(
-		uuid.NameSpaceURL,
-		[]byte(fmt.Sprintf("feed:new_chapter:%s:%s", userID, chapterID)),
-	).String()
 }
 
 func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*model.FeedInbox) error {

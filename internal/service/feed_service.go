@@ -10,6 +10,8 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const feedReadBatchSize = 10
@@ -24,6 +26,7 @@ type feedService struct {
 	feedRepo       repository.FeedRepository
 	feedCursorRepo repository.FeedCursorRepository
 	feedCache      cache.FeedCache
+	db             *gorm.DB
 }
 
 // feedPageCursor 是对外 cursor 的内部载荷。
@@ -37,11 +40,13 @@ func NewFeedService(
 	feedRepo repository.FeedRepository,
 	feedCursorRepo repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
+	db *gorm.DB,
 ) FeedService {
 	return &feedService{
 		feedRepo:       feedRepo,
 		feedCursorRepo: feedCursorRepo,
 		feedCache:      feedCache,
+		db:             db,
 	}
 }
 
@@ -148,7 +153,7 @@ func (s *feedService) loadFeedPageFromDB(
 		filter.LastID = &cursor.LastFeedID
 	}
 
-	feeds, err := s.feedRepo.GetUserFeeds(ctx, filter)
+	feeds, err := s.feedRepo.GetUserFeeds(ctx, s.db, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +177,7 @@ func (s *feedService) markFeedsAsRead(ctx context.Context, userID string, feeds 
 
 	var markedCount int64
 	for _, feedIDs := range chunkFeedIDs(feedIDsFromFeeds(feeds), feedReadBatchSize) {
-		count, err := s.feedRepo.MarkAsRead(ctx, userID, feedIDs)
+		count, err := s.feedRepo.MarkAsRead(ctx, s.db, userID, feedIDs)
 		if err != nil {
 			return err
 		}

@@ -23,7 +23,7 @@ type FeedCursorRepository interface {
 	ResetUnreadCount(ctx context.Context, userID string) error
 
 	// BatchUpdateUnreadCount 批量增加未读数（写扩散时使用）
-	BatchUpdateUnreadCount(ctx context.Context, userIDs []string, delta int) error
+	BatchUpdateUnreadCount(ctx context.Context, db *gorm.DB, userIDs []string, delta int) error
 }
 
 type feedCursorRepository struct {
@@ -97,7 +97,12 @@ func (r *feedCursorRepository) ResetUnreadCount(ctx context.Context, userID stri
 		}).Error
 }
 
-func (r *feedCursorRepository) BatchUpdateUnreadCount(ctx context.Context, userIDs []string, delta int) error {
+func (r *feedCursorRepository) BatchUpdateUnreadCount(
+	ctx context.Context,
+	db *gorm.DB,
+	userIDs []string,
+	delta int,
+) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
@@ -121,7 +126,7 @@ func (r *feedCursorRepository) BatchUpdateUnreadCount(ctx context.Context, userI
 		}
 
 		// FOCUS MySQL计数器累加语句（CASE 表达式）
-		err := r.db.WithContext(ctx).
+		err := db.WithContext(ctx).
 			Clauses(clause.OnConflict{
 				Columns: []clause.Column{{Name: "user_id"}},
 				DoUpdates: clause.Assignments(map[string]interface{}{

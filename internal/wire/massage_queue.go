@@ -5,6 +5,7 @@ import (
 	"fiction-book/internal/kafka/kafka_client"
 	"fiction-book/internal/kafka/kafka_server"
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/config"
 
 	"github.com/google/wire"
 	"gorm.io/gorm"
@@ -39,8 +40,8 @@ func ProvideOutboxServer(
 }
 
 // ProvideFeedClient 提供 Feed 推送生产者
-func ProvideFeedClient() kafka_client.FeedClient {
-	return kafka_client.NewFeedClient()
+func ProvideFeedClient(cfg *config.Config) kafka_client.FeedClient {
+	return kafka_client.NewFeedClient(cfg)
 }
 
 // ProvideFeedServer 提供 Feed 推送消费者
@@ -49,6 +50,7 @@ func ProvideFeedServer(
 	feedCursorRepository repository.FeedCursorRepository,
 	feedCache cache.FeedCache,
 	consumeRecordRepository repository.ConsumeRecordRepository,
+	db *gorm.DB,
 ) kafka_server.FeedServer {
-	return kafka_server.NewFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository)
+	return kafka_server.NewFeedServer(feedRepository, feedCursorRepository, feedCache, consumeRecordRepository, db)
 }
