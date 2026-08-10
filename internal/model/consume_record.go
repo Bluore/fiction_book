@@ -10,5 +10,5 @@ type ConsumeRecord struct {
 }
 
 func (ConsumeRecord) TableName() string {
-	return "kafka_consume"
+	return "consume_record"
 }

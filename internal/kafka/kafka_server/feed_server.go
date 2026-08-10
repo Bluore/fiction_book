@@ -97,7 +97,7 @@ func (s *feedServer) handleFeedMessage(ctx context.Context, messageValue []byte)
 		return err
 	}
 	if message.Type != kafka_client.FeedPushMessageType {
-		return nil
+		return fmt.Errorf("invalid feed message type: %v", message.Type)
 	}
 	if message.ID == "" {
 		return fmt.Errorf("feed push message id is empty")
