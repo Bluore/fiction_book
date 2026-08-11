@@ -245,44 +245,17 @@ func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*mode
 	return
 }
 
-func toBookChapterInfoResponse(cfg *config.Config, info *model.BookChapterInfo, book *model.Book) *dto.BookChapterInfoResponse {
-	return &dto.BookChapterInfoResponse{
-		ChapterID: info.ID,
-		Title:     info.Title,
-		Order:     info.Order,
-		VIPLevel:  info.VIPLevel,
-		Price:     info.Price,
-		Book:      toBookResponse(cfg, book),
-	}
-}
+func (s *bookChapterService) GuestGetChapter(ctx context.Context, chapterID string) (*dto.BookChapterResponse, error) {
+	var err error
+	bookChapter, err := queryBookChapterDetailWithCache(ctx, s.db, s.bookChapterCache, s.bookChapterRepo, chapterID)
 
-func toBookChapterResponse(cfg *config.Config, info *model.BookChapter, book *model.Book) *dto.BookChapterResponse {
-	return &dto.BookChapterResponse{
-		ChapterID: info.ID,
-		Title:     info.Title,
-		Content:   info.Content,
-		Order:     info.Order,
-		VIPLevel:  info.VIPLevel,
-		Price:     info.Price,
-		Book:      toBookResponse(cfg, book),
-	}
-}
-
-func (s *bookChapterService) GuestGetChapter(ctx context.Context, bookID string) (*dto.BookChapterResponse, error) {
-	bookChapter, err := s.bookChapterRepo.GetByID(ctx, bookID)
 	if err != nil {
 		return nil, err
 	}
-	if bookChapter == nil {
-		return nil, ErrBookChapterNotFound
-	}
 
-	book, err := s.bookRepo.GetByID(ctx, bookChapter.BookID)
+	book, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapter.BookID)
 	if err != nil {
 		return nil, err
-	}
-	if book == nil {
-		return nil, ErrBookNotFound
 	}
 
 	if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel("") {

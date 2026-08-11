@@ -11,6 +11,8 @@ const (
 	RedisBookThermalDailyTotal   = "GSF:book:rank:thermal:total:daily"
 	RedisBookThermalWeeklyTotal  = "GSF:book:rank:thermal:total:weekly"
 	RedisBookThermalMonthlyTotal = "GSF:book:rank:thermal:total:monthly"
+
+	RedisValueEmpty = "EMPTY"
 )
 
 func RedisBookThermalDaily(time time.Time) string {

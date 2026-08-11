@@ -9,21 +9,29 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
 	keyBook = "GSF:book:cache:book:%s:detail"
+
+	keyBookLock = "GSF:book:lock:book:%s:lock"
+
+	timeBook = time.Hour
 )
 
 type BookCache interface {
 	GetBook(ctx context.Context, id string) (book *model.Book, hit bool, err error)
-	UpdateBook(ctx context.Context, book *model.Book) error
+	UpdateBook(ctx context.Context, bookID string, book *model.Book) error
 	DeleteBook(ctx context.Context, id string) error
 	GetBookThermalDaily(ctx context.Context, page int, size int) ([]string, error)
 	IncreaseBookThermalDaily(ctx context.Context, bookId string, score int) error
 	GetBookThermalWeekly(ctx context.Context, page int, size int) ([]string, error)
 	GetBookThermalMonthly(ctx context.Context, page int, size int) ([]string, error)
+
+	LockBook(ctx context.Context, bookID string) (string, bool, error)
+	UnlockBook(ctx context.Context, bookID string, token string) error
 }
 
 type bookCache struct {
@@ -33,9 +41,15 @@ type bookCache struct {
 func NewBookCatch(redis *redis.Client) BookCache {
 	return &bookCache{redis: redis}
 }
+func TimeBook() time.Duration {
+	return timeBook + TimeShakeDuration(timeBook)
+}
 
 func KeyBook(bookId string) string {
 	return fmt.Sprintf(keyBook, bookId)
+}
+func KeyBookLock(bookId string) string {
+	return fmt.Sprintf(keyBookLock, bookId)
 }
 
 func (c *bookCache) GetBook(ctx context.Context, id string) (*model.Book, bool, error) {
@@ -54,12 +68,20 @@ func (c *bookCache) GetBook(ctx context.Context, id string) (*model.Book, bool, 
 	return &bookDecode, true, nil
 }
 
-func (c *bookCache) UpdateBook(ctx context.Context, book *model.Book) error {
-	bookEncode, err := json.Marshal(book)
-	if err != nil {
-		return err
+func (c *bookCache) UpdateBook(ctx context.Context, bookID string, book *model.Book) error {
+	var bookEncode []byte
+	var err error
+
+	if book != nil {
+		bookEncode, err = json.Marshal(book)
+		if err != nil {
+			return err
+		}
+	} else {
+		bookEncode = []byte(constant.RedisValueEmpty)
 	}
-	return c.redis.Set(ctx, KeyBook(book.ID), bookEncode, time.Hour).Err()
+
+	return c.redis.Set(ctx, KeyBook(bookID), bookEncode, TimeBook()).Err()
 }
 
 func (c *bookCache) DeleteBook(ctx context.Context, id string) error {
@@ -225,4 +247,45 @@ func (c *bookCache) GetBookThermalMonthly(ctx context.Context, page int, size in
 		return nil, err
 	}
 	return rank, nil
+}
+
+func (c *bookCache) LockBook(ctx context.Context, bookID string) (string, bool, error) {
+	token := uuid.New().String()
+	result, err := c.redis.SetArgs(
+		ctx,
+		KeyBookLock(bookID),
+		token,
+		redis.SetArgs{
+			Mode: "NX",
+			TTL:  5 * time.Second,
+		},
+	).Result()
+	if err != nil {
+		return "", false, err
+	}
+	if result != "OK" {
+		return "", false, fmt.Errorf("unlock book lock fail: error token: %s", token)
+	}
+	return token, true, nil
+}
+
+func (c *bookCache) UnlockBook(ctx context.Context, bookID string, token string) error {
+	delKeyScript := redis.NewScript(`
+if redis.call('get', KEYS[1]) == ARGV[1] then
+	return redis.call('del', KEYS[1])
+return 0
+`)
+	result, err := delKeyScript.Run(
+		ctx,
+		c.redis,
+		[]string{KeyBookLock(bookID)},
+		token,
+	).Result()
+	if err != nil {
+		return err
+	}
+	if result != "1" {
+		return fmt.Errorf("unlock book lock fail: error token: %s", token)
+	}
+	return nil
 }
