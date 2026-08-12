@@ -130,7 +130,7 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 
 		outbox := &model.Outbox{
 			ID:        uuid.New().String(),
-			Type:      model.Book{}.TableName(),
+			Type:      (&model.Book{}).TableName(),
 			Operation: model.DatabaseOperationCreate,
 			Payload:   bookJSON,
 			Status:    model.OutboxStatusCreated,
@@ -375,7 +375,7 @@ func (s *bookService) UploadBookCover(ctx context.Context, userID string, req *d
 
 		outbox := &model.Outbox{
 			ID:        uuid.New().String(),
-			Type:      model.Book{}.TableName(),
+			Type:      (&model.Book{}).TableName(),
 			Operation: model.DatabaseOperationUpdate,
 			Payload:   bookJSON,
 			Status:    model.OutboxStatusCreated,
@@ -430,7 +430,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			_ = s.bookCache.UpdateBook(ctx, book)
+			_ = s.bookCache.UpdateBook(ctx, book.ID, book)
 		}
 		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 	}
@@ -503,7 +503,7 @@ func (s *bookService) GetReadHistoryRecently(ctx context.Context, userID string,
 			if err != nil {
 				return nil, err
 			}
-			_ = s.bookCache.UpdateBook(ctx, bookCache)
+			_ = s.bookCache.UpdateBook(ctx, bookCache.ID, bookCache)
 		}
 		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, bookCache))
 	}
@@ -560,7 +560,7 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 
 		outbox := &model.Outbox{
 			ID:        uuid.New().String(),
-			Type:      model.Book{}.TableName(),
+			Type:      (&model.Book{}).TableName(),
 			Operation: model.DatabaseOperationUpdate,
 			Payload:   bookJSON,
 			Status:    model.OutboxStatusCreated,
@@ -577,7 +577,7 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 		return nil, err
 	}
 
-	_ = s.bookCache.UpdateBook(ctx, book)
+	_ = s.bookCache.UpdateBook(ctx, book.ID, book)
 
 	return toBookResponse(s.cfg, book), nil
 }
@@ -630,7 +630,7 @@ func (s *bookService) bookListToResponse(ctx context.Context, rankRes []string) 
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			_ = s.bookCache.UpdateBook(ctx, book)
+			_ = s.bookCache.UpdateBook(ctx, book.ID, book)
 		}
 		bookResponse = append(bookResponse, toBookResponse(s.cfg, book))
 	}

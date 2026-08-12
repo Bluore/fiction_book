@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	keyBookChapterInfo    = "GSF:book:cache:chapter:%s:info:detail"
-	keyBookChapterContent = "GSF:book:cache:chapter:%s:content:detail"
+	keyBookChapterInfo    = "GSF:book:cache:chapter:%s:info"
+	keyBookChapterContent = "GSF:book:cache:chapter:%s:content"
 
-	keyBookChapterInfoLock    = "GSF:book:lock:chapter:%s:info:lock"
-	keyBookChapterContentLock = "GSF:book:lock:chapter:%s:content:lock"
+	keyBookChapterInfoLock    = "GSF:book:lock:chapter:%s:info"
+	keyBookChapterContentLock = "GSF:book:lock:chapter:%s:content"
 
 	timeBookChapterInfo    = time.Hour
 	timeBookChapterContent = time.Hour

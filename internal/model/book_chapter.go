@@ -28,17 +28,20 @@ type BookChapter struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
-func (BookChapter) TableName() string {
+func (*BookChapter) TableName() string {
 	return TableNameBookChapter
 }
 
 type BookChapterInfo struct {
-	ID       string `json:"id"`
-	BookID   string `json:"book_id"`
-	Title    string `json:"title"`
-	Order    int    `json:"order"`
-	VIPLevel string `json:"vip_level"`
-	Price    int64  `json:"price"`
+	ID        string         `json:"id"`
+	BookID    string         `json:"book_id"`
+	Title     string         `json:"title"`
+	Order     int            `json:"order"`
+	VIPLevel  string         `json:"vip_level"`
+	Price     int64          `json:"price"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 func (*BookChapterInfo) TableName() string {
@@ -46,8 +49,11 @@ func (*BookChapterInfo) TableName() string {
 }
 
 type BookChapterContent struct {
-	ID      string `json:"id"`
-	Content string `json:"content"`
+	ID        string         `json:"id"`
+	Content   string         `json:"content"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 func (*BookChapterContent) TableName() string {

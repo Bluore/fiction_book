@@ -118,9 +118,9 @@ func (s *outboxServer) consumeMassage(ctx context.Context, r *kafka.Reader) {
 // syncData 同步数据
 func (s *outboxServer) syncData(ctx context.Context, massageDecodeData *model.Outbox) error {
 	switch massageDecodeData.Type {
-	case model.Book{}.TableName():
+	case (&model.Book{}).TableName():
 		return s.syncBookES(ctx, massageDecodeData.Operation, &massageDecodeData.Payload)
-	case model.BookChapter{}.TableName():
+	case (&model.BookChapter{}).TableName():
 		return s.syncBookChapterES(ctx, massageDecodeData.Operation, &massageDecodeData.Payload)
 	default:
 	}

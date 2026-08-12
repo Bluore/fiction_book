@@ -273,19 +273,19 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 		return nil, ErrUserNotFound
 	}
 
-	bookChapter, err := s.bookChapterRepo.GetByID(ctx, bookChapterID)
+	bookChapterDetail, err := queryBookChapterDetailWithCache(ctx, s.db, s.bookChapterCache, s.bookChapterRepo, bookChapterID)
 	if err != nil {
 		return nil, err
 	}
-	if bookChapter == nil {
+	if bookChapterDetail == nil {
 		return nil, ErrBookChapterNotFound
 	}
 
-	book, err := s.bookRepo.GetByID(ctx, bookChapter.BookID)
+	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapterDetail.BookID)
 	if err != nil {
 		return nil, err
 	}
-	if book == nil {
+	if bookDetail == nil {
 		return nil, ErrBookNotFound
 	}
 
@@ -300,17 +300,17 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 		if err != nil {
 			return nil, err
 		}
-		if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel(userAsset.VIPLevel) {
+		if VIPStrToLevel(bookChapterDetail.VIPLevel) > VIPStrToLevel(userAsset.VIPLevel) {
 			return nil, ErrVIPLevel
 		}
 	}
 
 	// 向redis里面添加热力值
 	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
-		return bookThermalCacheAddByReadTask(constant.DoneServerCtx, s, userID, book, bookChapter)
+		return bookThermalCacheAddByReadTask(constant.DoneServerCtx, s, userID, bookDetail, bookChapterDetail)
 	}))
 
-	return toBookChapterResponse(s.cfg, bookChapter, book), nil
+	return toBookChapterResponse(s.cfg, bookChapterDetail, bookDetail), nil
 }
 
 func bookThermalCacheAddByReadTask(ctx context.Context, s *bookChapterService, userID string, book *model.Book, bookChapter *model.BookChapter) error {
@@ -393,72 +393,100 @@ func VIPLevelToStr(vipLevel int) string {
 }
 
 func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
-	old, err := s.bookChapterRepo.GetByID(ctx, req.ID)
+	var err error
+	bookChapterDetail, err := queryBookChapterDetailWithCache(ctx, s.db, s.bookChapterCache, s.bookChapterRepo, req.ID)
 	if err != nil {
 		return nil, err
 	}
-	if old == nil {
+	if bookChapterDetail == nil {
 		return nil, ErrBookChapterNotFound
 	}
 
-	book, err := s.bookRepo.GetByID(ctx, old.BookID)
+	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapterDetail.BookID)
 	if err != nil {
 		return nil, err
 	}
-	if book == nil {
+	if bookDetail == nil {
 		return nil, ErrBookNotFound
 	}
 
-	if book.OwnerID != userID {
+	if bookDetail.OwnerID != userID {
 		return nil, ErrPermission
 	}
 
-	cur := old
+	var curBookChapterDetail = *bookChapterDetail
+
+	// 更改BookChapterInfo
+	var isAlterBookChapterInfo bool = false
+	curBookChapterInfo := &model.BookChapterInfo{
+		ID:       bookChapterDetail.ID,
+		BookID:   bookChapterDetail.BookID,
+		Title:    bookChapterDetail.Title,
+		Order:    bookChapterDetail.Order,
+		VIPLevel: bookChapterDetail.VIPLevel,
+		Price:    bookChapterDetail.Price,
+	}
 
 	if req.Title != nil && *req.Title != "" {
-		cur.Title = *req.Title
-	}
-	if req.Content != nil && *req.Content != "" {
-		cur.Content = *req.Content
+		isAlterBookChapterInfo = true
+		curBookChapterInfo.Title = *req.Title
+		curBookChapterDetail.Title = *req.Title
 	}
 	if req.VIPLevel != nil {
-		cur.VIPLevel = VIPLevelToStr(VIPStrToLevel(*req.VIPLevel))
+		isAlterBookChapterInfo = true
+		curBookChapterInfo.VIPLevel = VIPLevelToStr(VIPStrToLevel(*req.VIPLevel))
+		curBookChapterDetail.VIPLevel = VIPLevelToStr(VIPStrToLevel(*req.VIPLevel))
 	}
 	if req.Price != nil {
-		cur.Price = *req.Price
+		isAlterBookChapterInfo = true
+		curBookChapterInfo.Price = *req.Price
+		curBookChapterDetail.Price = *req.Price
 	}
 
-	err = s.db.Transaction(func(tx *gorm.DB) error {
-		err = s.bookChapterRepo.Update(ctx, old.ID, cur)
+	if isAlterBookChapterInfo {
+		err := updateBookChapterInfoWithCacheInTx(
+			ctx,
+			s.db,
+			s.bookChapterCache,
+			s.bookChapterRepo,
+			s.outboxRepo,
+			bookChapterDetail,
+			curBookChapterInfo,
+		)
 		if err != nil {
-			return err
+			return nil, err
 		}
-
-		bookJSON, err := json.Marshal(cur)
-		if err != nil {
-			return err
-		}
-
-		outbox := &model.Outbox{
-			ID:        uuid.New().String(),
-			Type:      model.TableNameBookChapter,
-			Operation: model.DatabaseOperationUpdate,
-			Payload:   bookJSON,
-			Status:    model.OutboxStatusCreated,
-			CreatedAt: time.Now(),
-		}
-
-		return s.outboxRepo.AddEvent(ctx, tx, outbox)
-	})
-	if err != nil {
-		return nil, err
 	}
 
-	// 更新缓存
-	_ = s.bookChapterCache.UpdateBookChapter(ctx, cur)
+	// 更改BookChapterContent
+	var isAlterBookChapterContent bool = false
+	curBookChapterContent := &model.BookChapterContent{
+		ID:      bookChapterDetail.ID,
+		Content: bookChapterDetail.Content,
+	}
 
-	return toBookChapterResponse(s.cfg, cur, book), nil
+	if req.Content != nil && *req.Content != "" {
+		isAlterBookChapterContent = true
+		curBookChapterContent.Content = *req.Content
+		curBookChapterDetail.Content = *req.Content
+	}
 
+	if isAlterBookChapterContent {
+		err := updateBookChapterContentWithCacheInTx(
+			ctx,
+			s.db,
+			s.bookChapterCache,
+			s.bookChapterRepo,
+			s.outboxRepo,
+			bookChapterDetail,
+			curBookChapterContent,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return toBookChapterResponse(s.cfg, &curBookChapterDetail, bookDetail), nil
 }
 
 func (s *bookChapterService) DeleteChapter(ctx context.Context, userID string, chapterID string) error {
@@ -625,38 +653,29 @@ func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, 
 }
 
 func (s *bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID string) (*dto.BookChapterInfoResponse, error) {
-	bookChapter, exist, _ := s.bookChapterCache.GetBookChapter(ctx, bookChapterID)
-	var err error
-	if !exist {
-		bookChapter, err = s.bookChapterRepo.GetByID(ctx, bookChapterID)
-		if err != nil {
-			return nil, err
-		}
-		if bookChapter == nil {
-			return nil, ErrBookChapterNotFound
-		}
-		_ = s.bookChapterCache.UpdateBookChapter(ctx, bookChapter)
+	bookChapterInfo, err := queryBookChapterInfoWithCache(ctx, s.db, s.bookChapterCache, s.bookChapterRepo, bookChapterID)
+	if err != nil {
+		return nil, err
+	}
+	if bookChapterInfo == nil {
+		return nil, ErrBookChapterNotFound
 	}
 
-	book, exist, _ := s.bookCache.GetBook(ctx, bookChapter.BookID)
-	if !exist {
-		book, err = s.bookRepo.GetByID(ctx, bookChapter.BookID)
-		if err != nil {
-			return nil, err
-		}
-		if book == nil {
-			return nil, ErrBookNotFound
-		}
-		_ = s.bookCache.UpdateBook(ctx, book)
+	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapterInfo.BookID)
+	if err != nil {
+		return nil, err
+	}
+	if bookDetail == nil {
+		return nil, ErrBookNotFound
 	}
 
 	return &dto.BookChapterInfoResponse{
-		ChapterID: bookChapter.ID,
-		Title:     bookChapter.Title,
-		Order:     bookChapter.Order,
-		VIPLevel:  bookChapter.VIPLevel,
-		Price:     bookChapter.Price,
-		Book:      toBookResponse(s.cfg, book),
+		ChapterID: bookChapterInfo.ID,
+		Title:     bookChapterInfo.Title,
+		Order:     bookChapterInfo.Order,
+		VIPLevel:  bookChapterInfo.VIPLevel,
+		Price:     bookChapterInfo.Price,
+		Book:      toBookResponse(s.cfg, bookDetail),
 	}, nil
 }
 
@@ -688,30 +707,22 @@ func (s *bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.
 
 	results := make([]*dto.BookChapterSearchResult, 0, len(esResults))
 	for _, esResult := range esResults {
-		var book *model.Book
-		var exist bool
-		var err error
-
 		// 查询关联的书籍信息以组合返回
-		book, exist, _ = s.bookCache.GetBook(ctx, esResult.BookChapter.BookID)
-		if !exist {
-			book, err = s.bookRepo.GetByID(ctx, esResult.BookChapter.BookID)
-			if err != nil {
-				logger.Error("SearchBookChaptersV2 GetByID err: ", zap.Error(err))
-				continue
-			}
-			if book != nil {
-				_ = s.bookCache.UpdateBook(ctx, book)
-			}
+		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, filter.BookID)
+		if err != nil {
+			logger.Error("book_detail query failed", zap.Error(err))
+			continue
+		}
+		if bookDetail == nil {
+			logger.Warn("book_detail is nil", zap.Error(err))
+			continue
 		}
 
-		if book != nil {
-			chapterResp := toBookChapterResponse(s.cfg, &esResult.BookChapter, book)
-			results = append(results, &dto.BookChapterSearchResult{
-				BookChapter: *chapterResp,
-				Highlight:   esResult.Highlight,
-			})
-		}
+		chapterResp := toBookChapterResponse(s.cfg, &esResult.BookChapter, bookDetail)
+		results = append(results, &dto.BookChapterSearchResult{
+			BookChapter: *chapterResp,
+			Highlight:   esResult.Highlight,
+		})
 	}
 
 	return &dto.SearchBookChaptersV2Response{

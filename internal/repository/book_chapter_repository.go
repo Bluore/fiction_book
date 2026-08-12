@@ -16,11 +16,14 @@ type BookChapterRepository interface {
 	AddByBookID(ctx context.Context, bookChapter *model.BookChapter) (*model.BookChapter, error)
 	CountByBookID(ctx context.Context, bookID string) (int, error)
 	Delete(ctx context.Context, id string) error
+	// Deprecated: use BookChapterInfoUpdate and BookChapterContentUpdate
 	Update(ctx context.Context, id string, bookChapter *model.BookChapter) error
 
 	BookChapterInfoGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterInfo, error)
+	BookChapterInfoUpdate(ctx context.Context, db *gorm.DB, id string, bookChapterInfo *model.BookChapterInfo) error
 
 	BookChapterContentGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterContent, error)
+	BookChapterContentUpdate(ctx context.Context, db *gorm.DB, id string, bookChapterContent *model.BookChapterContent) error
 }
 
 type bookChapterRepository struct {
@@ -129,4 +132,22 @@ func (r bookChapterRepository) BookChapterContentGetByID(ctx context.Context, db
 		return nil, err
 	}
 	return &bookChapterContent, nil
+}
+
+func (r bookChapterRepository) BookChapterInfoUpdate(ctx context.Context, db *gorm.DB, id string, bookChapterInfo *model.BookChapterInfo) error {
+	updates := map[string]interface{}{
+		"book_id":   bookChapterInfo.BookID,
+		"title":     bookChapterInfo.Title,
+		"order":     bookChapterInfo.Order,
+		"vip_level": bookChapterInfo.VIPLevel,
+		"price":     bookChapterInfo.Price,
+	}
+	return db.WithContext(ctx).Model(&model.BookChapterInfo{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r bookChapterRepository) BookChapterContentUpdate(ctx context.Context, db *gorm.DB, id string, bookChapterContent *model.BookChapterContent) error {
+	updates := map[string]interface{}{
+		"content": bookChapterContent.Content,
+	}
+	return db.WithContext(ctx).Model(&model.BookChapterContent{}).Where("id = ?", id).Updates(updates).Error
 }

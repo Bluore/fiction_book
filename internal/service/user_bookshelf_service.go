@@ -74,7 +74,7 @@ func (s userBookshelfService) GetUserBookshelfList(ctx context.Context, userID s
 				return nil, err
 			}
 
-			_ = s.bookCache.UpdateBook(ctx, bookCache)
+			_ = s.bookCache.UpdateBook(ctx, bookCache.ID, bookCache)
 		}
 
 		bookRes = append(bookRes, toBookResponse(s.cfg, bookCache))
@@ -232,7 +232,7 @@ func bookThermalCacheSyncToDatabaseTask(ctx context.Context, db *gorm.DB, bookTh
 	if err != nil {
 		return err
 	}
-	err = bookCache.UpdateBook(ctx, bookDetail)
+	err = bookCache.UpdateBook(ctx, bookDetail.ID, bookDetail)
 	if err != nil {
 		logger.Error("UpdateBookCache", zap.Error(err))
 	}

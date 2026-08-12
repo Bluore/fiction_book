@@ -31,9 +31,6 @@ func queryBookDetailWithCache(
 	if bookCacheHit {
 		return book, nil
 	}
-	if book == nil {
-		return nil, ErrBookNotFound
-	}
 
 	// 防止内存击穿：持锁查询数据库，未持锁轮询结果
 	lockToken, lockOk, lockErr := bookCache.LockBook(ctx, bookID)
@@ -42,8 +39,8 @@ func queryBookDetailWithCache(
 	}
 	if !lockOk {
 		// 轮询结果
-		for i := 0; i < 8; i++ {
-			time.Sleep(100 * time.Millisecond)
+		for i := 0; i < lockTryTimes; i++ {
+			time.Sleep(lockWaitTime)
 			book, bookCacheHit, _ = bookCache.GetBook(ctx, bookID)
 			if bookCacheHit {
 				return book, nil
@@ -70,7 +67,11 @@ func queryBookDetailWithCache(
 			logger.Error("unlock book cache fail", zap.Error(err))
 		}
 
-		return nil, ErrBookNotFound
+		return nil, nil
+	}
+
+	if err := bookCache.UpdateBook(ctx, bookID, book); err != nil {
+		logger.Warn("update book cache fail", zap.Error(err))
 	}
 	if err := bookCache.UnlockBook(ctx, bookID, lockToken); err != nil {
 		logger.Error("unlock book cache fail", zap.Error(err))
