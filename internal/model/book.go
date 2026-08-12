@@ -37,7 +37,7 @@ type Book struct {
 }
 
 // TableName 指定表名
-func (Book) TableName() string {
+func (*Book) TableName() string {
 	return TableNameBook
 }
 

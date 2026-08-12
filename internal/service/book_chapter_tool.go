@@ -22,64 +22,164 @@ func queryBookChapterDetailWithCache(
 	bookChapterRepo repository.BookChapterRepository,
 	bookChapterID string,
 ) (*model.BookChapter, error) {
+	// 获取章节信息
+	bookChapterInfo, err := queryBookChapterInfoWithCache(ctx, db, bookChapterCache, bookChapterRepo, bookChapterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 获取章节内容
+	bookChapterContent, err := queryBookChapterContentWithCache(ctx, db, bookChapterCache, bookChapterRepo, bookChapterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 组合成完整的 BookChapter
+	bookChapter := &model.BookChapter{
+		ID:       bookChapterInfo.ID,
+		BookID:   bookChapterInfo.BookID,
+		Title:    bookChapterInfo.Title,
+		Content:  bookChapterContent.Content,
+		Order:    bookChapterInfo.Order,
+		VIPLevel: bookChapterInfo.VIPLevel,
+		Price:    bookChapterInfo.Price,
+	}
+
+	return bookChapter, nil
+}
+
+func queryBookChapterInfoWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	bookChapterCache cache.BookChapterCache,
+	bookChapterRepo repository.BookChapterRepository,
+	bookChapterID string,
+) (*model.BookChapterInfo, error) {
 	// 缓存查询
-	var bookChapter *model.BookChapter
+	var bookChapterInfo *model.BookChapterInfo
 	var err error
 	var bookChapterCacheHit bool
-	bookChapter, bookChapterCacheHit, err = bookChapterCache.GetBookChapter(ctx, bookChapterID)
+	bookChapterInfo, bookChapterCacheHit, err = bookChapterCache.GetBookChapterInfo(ctx, bookChapterID)
 	if err != nil {
-		logger.Warn("get book chapter cache fail", zap.Error(err))
+		logger.Warn("get book_chapter_info cache fail", zap.Error(err))
 	}
 	if bookChapterCacheHit {
-		return bookChapter, nil
+		return bookChapterInfo, nil
 	}
-	if bookChapter == nil {
+	if bookChapterInfo == nil {
 		return nil, ErrBookChapterNotFound
 	}
 
 	// FOCUS 防止内存击穿：持锁查询数据库，未持锁轮询结果
-	lockToken, lockOk, lockErr := bookChapterCache.LockBookChapter(ctx, bookChapterID)
+	lockToken, lockOk, lockErr := bookChapterCache.LockBookChapterInfo(ctx, bookChapterID)
 	if lockErr != nil {
 		// 降级查询
-		logger.Warn("lock book chapter cache fail", zap.Error(lockErr))
+		logger.Warn("lock book_chapter_info cache fail", zap.Error(lockErr))
 	}
 	if !lockOk {
 		// 轮询结果
 		for i := 0; i < 8; i++ {
 			time.Sleep(100 * time.Millisecond)
-			bookChapter, bookChapterCacheHit, _ = bookChapterCache.GetBookChapter(ctx, bookChapterID)
+			bookChapterInfo, bookChapterCacheHit, _ = bookChapterCache.GetBookChapterInfo(ctx, bookChapterID)
 			if bookChapterCacheHit {
-				return bookChapter, nil
+				return bookChapterInfo, nil
 			}
 		}
 
-		return nil, fmt.Errorf("book chapter cache query too many fail")
+		return nil, fmt.Errorf("book_chapter_info cache query too many fail")
 	}
 
-	bookChapter, err = bookChapterRepo.GetByID(ctx, bookChapterID)
+	bookChapterInfo, err = bookChapterRepo.BookChapterInfoGetByID(ctx, db, bookChapterID)
 	if err != nil {
-		if err := bookChapterCache.UnlockBookChapter(ctx, bookChapterID, lockToken); err != nil {
-			logger.Error("unlock book chapter cache fail", zap.Error(err))
+		if err := bookChapterCache.UnlockBookChapterInfo(ctx, bookChapterID, lockToken); err != nil {
+			logger.Error("unlock book_chapter_info cache fail", zap.Error(err))
 		}
 		return nil, err
 	}
-	if bookChapter == nil {
+	if bookChapterInfo == nil {
 		// FOCUS 防止内存穿透：存储不存在的值
-		updateChapterErr := bookChapterCache.UpdateBookChapter(ctx, bookChapterID, nil)
+		updateChapterErr := bookChapterCache.UpdateBookChapterInfo(ctx, bookChapterID, nil)
 		if updateChapterErr != nil {
-			logger.Warn("update book chapter cache fail", zap.Error(updateChapterErr))
+			logger.Warn("update book_chapter_info cache fail", zap.Error(updateChapterErr))
 		}
 
-		if err := bookChapterCache.UnlockBookChapter(ctx, bookChapterID, lockToken); err != nil {
-			logger.Error("unlock book chapter cache fail", zap.Error(err))
+		if err := bookChapterCache.UnlockBookChapterInfo(ctx, bookChapterID, lockToken); err != nil {
+			logger.Error("unlock book_chapter_info cache fail", zap.Error(err))
 		}
 
 		return nil, ErrBookChapterNotFound
 	}
-	if err := bookChapterCache.UnlockBookChapter(ctx, bookChapterID, lockToken); err != nil {
-		logger.Error("unlock book chapter cache fail", zap.Error(err))
+	if err := bookChapterCache.UnlockBookChapterInfo(ctx, bookChapterID, lockToken); err != nil {
+		logger.Error("unlock book_chapter_info cache fail", zap.Error(err))
 	}
-	return bookChapter, nil
+	return bookChapterInfo, nil
+}
+
+func queryBookChapterContentWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	bookChapterCache cache.BookChapterCache,
+	bookChapterRepo repository.BookChapterRepository,
+	bookChapterID string,
+) (*model.BookChapterContent, error) {
+	// 缓存查询
+	var bookChapterContent *model.BookChapterContent
+	var err error
+	var bookChapterCacheHit bool
+	bookChapterContent, bookChapterCacheHit, err = bookChapterCache.GetBookChapterContent(ctx, bookChapterID)
+	if err != nil {
+		logger.Warn("get book_chapter_content cache fail", zap.Error(err))
+	}
+	if bookChapterCacheHit {
+		return bookChapterContent, nil
+	}
+	if bookChapterContent == nil {
+		return nil, ErrBookChapterNotFound
+	}
+
+	// FOCUS 防止内存击穿：持锁查询数据库，未持锁轮询结果
+	lockToken, lockOk, lockErr := bookChapterCache.LockBookChapterContent(ctx, bookChapterID)
+	if lockErr != nil {
+		// 降级查询
+		logger.Warn("lock book_chapter_content cache fail", zap.Error(lockErr))
+	}
+	if !lockOk {
+		// 轮询结果
+		for i := 0; i < 8; i++ {
+			time.Sleep(100 * time.Millisecond)
+			bookChapterContent, bookChapterCacheHit, _ = bookChapterCache.GetBookChapterContent(ctx, bookChapterID)
+			if bookChapterCacheHit {
+				return bookChapterContent, nil
+			}
+		}
+
+		return nil, fmt.Errorf("book_chapter_content cache query too many fail")
+	}
+
+	bookChapterContent, err = bookChapterRepo.BookChapterContentGetByID(ctx, db, bookChapterID)
+	if err != nil {
+		if err := bookChapterCache.UnlockBookChapterContent(ctx, bookChapterID, lockToken); err != nil {
+			logger.Error("unlock book_chapter_content cache fail", zap.Error(err))
+		}
+		return nil, err
+	}
+	if bookChapterContent == nil {
+		// FOCUS 防止内存穿透：存储不存在的值
+		updateChapterErr := bookChapterCache.UpdateBookChapterContent(ctx, bookChapterID, nil)
+		if updateChapterErr != nil {
+			logger.Warn("update book_chapter_content cache fail", zap.Error(updateChapterErr))
+		}
+
+		if err := bookChapterCache.UnlockBookChapterContent(ctx, bookChapterID, lockToken); err != nil {
+			logger.Error("unlock book_chapter_content cache fail", zap.Error(err))
+		}
+
+		return nil, ErrBookChapterNotFound
+	}
+	if err := bookChapterCache.UnlockBookChapterContent(ctx, bookChapterID, lockToken); err != nil {
+		logger.Error("unlock book_chapter_content cache fail", zap.Error(err))
+	}
+	return bookChapterContent, nil
 }
 
 func toBookChapterInfoResponse(cfg *config.Config, info *model.BookChapterInfo, book *model.Book) *dto.BookChapterInfoResponse {

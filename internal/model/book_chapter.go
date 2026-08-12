@@ -41,7 +41,16 @@ type BookChapterInfo struct {
 	Price    int64  `json:"price"`
 }
 
-func (BookChapterInfo) TableName() string {
+func (*BookChapterInfo) TableName() string {
+	return TableNameBookChapter
+}
+
+type BookChapterContent struct {
+	ID      string `json:"id"`
+	Content string `json:"content"`
+}
+
+func (*BookChapterContent) TableName() string {
 	return TableNameBookChapter
 }
 

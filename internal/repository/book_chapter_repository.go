@@ -17,6 +17,10 @@ type BookChapterRepository interface {
 	CountByBookID(ctx context.Context, bookID string) (int, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, id string, bookChapter *model.BookChapter) error
+
+	BookChapterInfoGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterInfo, error)
+
+	BookChapterContentGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterContent, error)
 }
 
 type bookChapterRepository struct {
@@ -27,9 +31,9 @@ func NewBookChapterRepository(db *gorm.DB) BookChapterRepository {
 	return &bookChapterRepository{db: db}
 }
 
-func (b bookChapterRepository) GetByID(ctx context.Context, id string) (*model.BookChapter, error) {
+func (r bookChapterRepository) GetByID(ctx context.Context, id string) (*model.BookChapter, error) {
 	var bookChapter model.BookChapter
-	err := b.db.WithContext(ctx).Where("id = ?", id).First(&bookChapter).Error
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&bookChapter).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -39,9 +43,9 @@ func (b bookChapterRepository) GetByID(ctx context.Context, id string) (*model.B
 	return &bookChapter, nil
 }
 
-func (b bookChapterRepository) GetByBookIDAndOrder(ctx context.Context, id string, order int) (*model.BookChapter, error) {
+func (r bookChapterRepository) GetByBookIDAndOrder(ctx context.Context, id string, order int) (*model.BookChapter, error) {
 	var bookChapter model.BookChapter
-	err := b.db.WithContext(ctx).Where("book_id = ? AND order = ?", id, order).First(&bookChapter).Error
+	err := r.db.WithContext(ctx).Where("book_id = ? AND order = ?", id, order).First(&bookChapter).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -51,9 +55,9 @@ func (b bookChapterRepository) GetByBookIDAndOrder(ctx context.Context, id strin
 	return &bookChapter, nil
 }
 
-func (b bookChapterRepository) GetIDListByBookID(ctx context.Context, id string) (*[]model.BookChapterInfo, error) {
+func (r bookChapterRepository) GetIDListByBookID(ctx context.Context, id string) (*[]model.BookChapterInfo, error) {
 	var bookChapterInfo *[]model.BookChapterInfo
-	err := b.db.WithContext(ctx).Where("book_id = ?", id).Order("`order` ASC").Find(&bookChapterInfo).Error
+	err := r.db.WithContext(ctx).Where("book_id = ?", id).Order("`order` ASC").Find(&bookChapterInfo).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
@@ -63,9 +67,9 @@ func (b bookChapterRepository) GetIDListByBookID(ctx context.Context, id string)
 	return bookChapterInfo, nil
 }
 
-func (b bookChapterRepository) AddByBookID(ctx context.Context, chapter *model.BookChapter) (*model.BookChapter, error) {
+func (r bookChapterRepository) AddByBookID(ctx context.Context, chapter *model.BookChapter) (*model.BookChapter, error) {
 	var bookChapterInfo model.BookChapterInfo
-	err := b.db.WithContext(ctx).Model(&model.BookChapter{}).Where("book_id = ?", chapter.BookID).Order("`order` DESC").First(&bookChapterInfo).Error
+	err := r.db.WithContext(ctx).Model(&model.BookChapter{}).Where("book_id = ?", chapter.BookID).Order("`order` DESC").First(&bookChapterInfo).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			bookChapterInfo.Order = 0
@@ -82,23 +86,47 @@ func (b bookChapterRepository) AddByBookID(ctx context.Context, chapter *model.B
 		VIPLevel: chapter.VIPLevel,
 		Price:    chapter.Price,
 	}
-	err = b.db.WithContext(ctx).Create(&bookChapter).Error
+	err = r.db.WithContext(ctx).Create(&bookChapter).Error
 	if err != nil {
 		return nil, err
 	}
 	return &bookChapter, nil
 }
 
-func (b bookChapterRepository) CountByBookID(ctx context.Context, bookID string) (int, error) {
+func (r bookChapterRepository) CountByBookID(ctx context.Context, bookID string) (int, error) {
 	var count int64
-	err := b.db.WithContext(ctx).Where("book_id", bookID).Count(&count).Error
+	err := r.db.WithContext(ctx).Where("book_id", bookID).Count(&count).Error
 	return int(count), err
 }
 
-func (b bookChapterRepository) Delete(ctx context.Context, id string) error {
-	return b.db.WithContext(ctx).Unscoped().Where("id = ?", id).Delete(&model.BookChapter{}).Error
+func (r bookChapterRepository) Delete(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Unscoped().Where("id = ?", id).Delete(&model.BookChapter{}).Error
 }
 
-func (b bookChapterRepository) Update(ctx context.Context, id string, bookChapter *model.BookChapter) error {
-	return b.db.WithContext(ctx).Where("id = ?", id).Save(bookChapter).Error
+func (r bookChapterRepository) Update(ctx context.Context, id string, bookChapter *model.BookChapter) error {
+	return r.db.WithContext(ctx).Where("id = ?", id).Save(bookChapter).Error
+}
+
+func (r bookChapterRepository) BookChapterInfoGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterInfo, error) {
+	var bookChapterInfo model.BookChapterInfo
+	err := db.WithContext(ctx).Where("id = ?", id).First(&bookChapterInfo).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &bookChapterInfo, nil
+}
+
+func (r bookChapterRepository) BookChapterContentGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterContent, error) {
+	var bookChapterContent model.BookChapterContent
+	err := db.WithContext(ctx).Where("id = ?", id).First(&bookChapterContent).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &bookChapterContent, nil
 }
