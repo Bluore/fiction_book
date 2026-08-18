@@ -12,6 +12,7 @@ import (
 
 const batchMaxSize = 1000
 
+// Deprecated: FeedRepository 旧版 feed 仓储接口，将被新的 feed 架构替代
 type FeedRepository interface {
 	// CreateBatchIgnoreConflict 在指定事务中批量创建 feed，主键冲突时忽略（写扩散）
 	CreateBatchIgnoreConflict(ctx context.Context, db *gorm.DB, feeds []*model.FeedInbox) (successNum int64, err error)

@@ -12,8 +12,6 @@ import (
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
-	"fiction-book/pkg/utils"
-	"fmt"
 	"strings"
 	"time"
 
@@ -49,15 +47,15 @@ type bookChapterService struct {
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository
 	userAssetRepo            repository.UserAssetRepository
 	userBookshelfRepo        repository.UserBookshelfRepository
-	feedRepo                 repository.FeedRepository
+	feedRepo                 repository.FeedRepository // Deprecated: 旧版 feed 仓储，将被移除
 	outboxRepo               repository.OutboxRepository
 	bookCache                cache.BookCache
 	bookThermalCache         cache.BookThermalCache
 	bookChapterCache         cache.BookChapterCache
 	userStatCache            cache.UserStatCache
 	limitCache               cache.LimitCache
-	feedCache                cache.FeedCache
-	feedClient               kafka_client.FeedClient
+	feedCache                cache.FeedCache         // Deprecated: 旧版 feed 缓存，将被移除
+	feedClient               kafka_client.FeedClient // Deprecated: 旧版 feed Kafka 客户端，将被移除
 	db                       *gorm.DB
 	cfg                      *config.Config
 	pool                     *agilePool.Pool
@@ -175,76 +173,6 @@ func (s *bookChapterService) AddByBookID(ctx context.Context, userID string, req
 
 }
 
-func addNewChapterFeedTask(
-	ctx context.Context,
-	s *bookChapterService,
-	book *model.Book,
-	chapter *model.BookChapter,
-	db *gorm.DB,
-) error {
-	userIDs, err := s.userBookshelfRepo.ListUserIDsByBookID(ctx, s.db, book.ID)
-	if err != nil {
-		return err
-	}
-	if len(userIDs) == 0 {
-		return nil
-	}
-
-	feeds := buildNewChapterFeeds(book, chapter, userIDs)
-	if len(feeds) > 50 {
-		return s.feedClient.PublishFeeds(ctx, s.cfg, feeds, userIDs)
-	}
-
-	if _, err := s.feedRepo.CreateBatchIgnoreConflict(ctx, db, feeds); err != nil {
-		return err
-	}
-	return warmFeedCache(ctx, s.feedCache, feeds)
-}
-
-func buildNewChapterFeeds(
-	book *model.Book,
-	chapter *model.BookChapter,
-	userIDs []string,
-) []*model.FeedInbox {
-	now := time.Now()
-	chapterID := chapter.ID
-	chapterTitle := chapter.Title
-	feeds := make([]*model.FeedInbox, 0, len(userIDs))
-
-	for _, userID := range userIDs {
-		feeds = append(feeds, &model.FeedInbox{
-			ID:           uuid.New().String(),
-			UserID:       userID,
-			EventType:    model.FeedEventNewChapter,
-			BookID:       book.ID,
-			ChapterID:    &chapterID,
-			BookName:     book.Name,
-			BookCover:    book.CoverImage,
-			ChapterTitle: &chapterTitle,
-			Content:      fmt.Sprintf("《%s》更新了章节：%s", book.Name, chapter.Title),
-			IsRead:       false,
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		})
-	}
-
-	return feeds
-}
-
-func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*model.FeedInbox) (err error) {
-	userFeeds := make(map[string][]*model.FeedInbox)
-	for _, feed := range feeds {
-		userFeeds[feed.UserID] = append(userFeeds[feed.UserID], feed)
-	}
-	for userID, feed := range userFeeds {
-		if _, feedWarmErr := feedCache.WarmFeeds(ctx, userID, feed); feedWarmErr != nil {
-			logger.Warn("warm feed fail", zap.Error(feedWarmErr))
-			err = feedWarmErr
-		}
-	}
-	return
-}
-
 func (s *bookChapterService) GuestGetChapter(ctx context.Context, chapterID string) (*dto.BookChapterResponse, error) {
 	var err error
 	bookChapter, err := queryBookChapterDetailWithCache(ctx, s.db, s.bookChapterCache, s.bookChapterRepo, chapterID)
@@ -311,85 +239,6 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 	}))
 
 	return toBookChapterResponse(s.cfg, bookChapterDetail, bookDetail), nil
-}
-
-func bookThermalCacheAddByReadTask(ctx context.Context, s *bookChapterService, userID string, book *model.Book, bookChapter *model.BookChapter) error {
-	var err error
-	// 用户添加对应书籍数量
-	_, _ = s.userStatCache.AddReadBook(ctx, userID, book.ID)
-
-	// 检查锁：阅读频次需要大于1min
-	exist, _ := s.limitCache.CheckUserBrowse1Min(ctx, userID)
-	if exist {
-		return nil
-	}
-
-	// 用户添加对应阅读量
-	pageWords := int64(utils.CountPassageWord(bookChapter.Content))
-	// todo perf:性能优化
-	addReadWordsErr := s.userStatCache.IncreaseReadWordsNum(ctx, userID, pageWords)
-	if addReadWordsErr != nil {
-		logger.Fatal("increase read words fail: %v", zap.String("bookChapterId", bookChapter.ID))
-	}
-
-	// 检查锁：每阅读5min记录到书籍
-	exist, _ = s.limitCache.CheckUserBrowseBook5Min(ctx, userID, book.ID)
-	if exist {
-		return nil
-	}
-	// 添加锁：热力值限流
-	_ = s.limitCache.AddUserBrowseBook5Min(ctx, userID, book.ID)
-	_ = s.limitCache.AddUserBrowse1Min(ctx, userID)
-
-	// 数据库添加数据
-	// todo perf:性能优化
-	_, err = s.bookRepo.IncreaseOfBrowseAmount(ctx, s.db, book.ID)
-	if err != nil {
-		return err
-	}
-
-	// 更新数据
-	s.pool.SubmitCtx(constant.DoneServerCtx, agilePool.TaskFunc(func() error {
-		return bookThermalCacheAddValueTask(constant.DoneServerCtx, s.db, s.bookThermalCache, s.bookCache, s.bookRepo, s.pool, book.ID, 1)
-	}))
-
-	return nil
-}
-
-func VIPStrToLevel(vipStr string) int {
-	switch vipStr {
-	case "":
-		return -1
-	case "vip_0":
-		return 0
-	case "vip_1":
-		return 1
-	case "vip_2":
-		return 2
-	case "vip_3":
-		return 3
-	case "off":
-		return 999
-	default:
-		return 0
-	}
-}
-
-func VIPLevelToStr(vipLevel int) string {
-	switch vipLevel {
-	case -1:
-		return ""
-	case 0:
-		return "vip_0"
-	case 1:
-		return "vip_1"
-	case 2:
-		return "vip_2"
-	case 3:
-		return "vip_3"
-	default:
-		return "off"
-	}
 }
 
 func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, req *dto.UpdateBookChapterRequest) (*dto.BookChapterResponse, error) {
@@ -708,7 +557,7 @@ func (s *bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.
 	results := make([]*dto.BookChapterSearchResult, 0, len(esResults))
 	for _, esResult := range esResults {
 		// 查询关联的书籍信息以组合返回
-		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, filter.BookID)
+		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, esResult.BookChapter.BookID)
 		if err != nil {
 			logger.Error("book_detail query failed", zap.Error(err))
 			continue

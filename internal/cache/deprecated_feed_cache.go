@@ -11,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Deprecated: 旧版 feed 缓存相关常量
 const (
 	keyFeedItem   = "GSF:feed:cache:inbox:%s:items:%s"
 	keyFeedCursor = "GSF:feed:cache:inbox:%s:cursor"
@@ -19,12 +20,14 @@ const (
 	defaultFeedMaxLen   = int64(500)
 )
 
+// Deprecated: FeedListCursor 旧版 feed 分页游标
 type FeedListCursor struct {
 	LastFeedID    string    `json:"last_feed_id"`
 	LastCreatedAt time.Time `json:"last_created_at"`
 	Limit         int64     `json:"limit"`
 }
 
+// Deprecated: FeedCache 旧版 feed 缓存接口，将被新的 feed 架构替代
 type FeedCache interface {
 	// DelFeeds 批量删除缓存
 	DelFeeds(ctx context.Context, userID string, feedIDs []string) (successNum int64, err error)

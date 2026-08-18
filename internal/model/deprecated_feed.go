@@ -1,17 +1,17 @@
 package model
 
-import (
-	"time"
-)
+import "time"
 
+// Deprecated: 旧版 feed 事件类型，已迁移到新架构
 type FeedEventType string
 
+// Deprecated: 旧版 feed 事件类型常量
 const (
 	FeedEventBookUpdate FeedEventType = "book_update"
 	FeedEventNewChapter FeedEventType = "new_chapter"
 )
 
-// FeedInbox 用户动态流
+// Deprecated: FeedInbox 旧版用户动态流，已废弃
 type FeedInbox struct {
 	ID           string        `json:"id" gorm:"primaryKey;type:varchar(36)"`
 	UserID       string        `json:"user_id" gorm:"type:varchar(36);not null;index:idx_feed_user_created;index:idx_feed_user_read_created"`
@@ -31,7 +31,7 @@ func (FeedInbox) TableName() string {
 	return "feed_inbox"
 }
 
-// FeedCursor Redis 中保存的用户 feed 游标
+// Deprecated: FeedCursor 旧版 Redis 中保存的用户 feed 游标
 type FeedCursor struct {
 	UserID     string    `json:"user_id"`
 	LastReadAt time.Time `json:"last_read_at"`
@@ -48,7 +48,7 @@ func (fc *FeedCursor) HasValue() bool {
 	return true
 }
 
-// FeedFilterWithTimePage FeedInbox 查询过滤器
+// Deprecated: FeedFilterWithTimePage 旧版 FeedInbox 查询过滤器
 type FeedFilterWithTimePage struct {
 	UserID     *string         `json:"user_id"`
 	EventTypes []FeedEventType `json:"event_types"`

@@ -222,7 +222,7 @@ func ProvideOrderService(
 	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderCache, db, cfg, alipayStrategy, pool)
 }
 
-// ProvideFeedService 提供 Feed 服务
+// Deprecated: ProvideFeedService 旧版提供 Feed 服务的依赖注入
 func ProvideFeedService(
 	feedRepo repository.FeedRepository,
 	feedCache cache.FeedCache,

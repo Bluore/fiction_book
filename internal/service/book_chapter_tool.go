@@ -405,3 +405,84 @@ func toBookChapterResponse(cfg *config.Config, info *model.BookChapter, book *mo
 		Book:      toBookResponse(cfg, book),
 	}
 }
+
+// Deprecated: buildNewChapterFeeds 旧版构建新章节 feed，将被移除
+func buildNewChapterFeeds(
+	book *model.Book,
+	chapter *model.BookChapter,
+	userIDs []string,
+) []*model.FeedInbox {
+	now := time.Now()
+	chapterID := chapter.ID
+	chapterTitle := chapter.Title
+	feeds := make([]*model.FeedInbox, 0, len(userIDs))
+
+	for _, userID := range userIDs {
+		feeds = append(feeds, &model.FeedInbox{
+			ID:           uuid.New().String(),
+			UserID:       userID,
+			EventType:    model.FeedEventNewChapter,
+			BookID:       book.ID,
+			ChapterID:    &chapterID,
+			BookName:     book.Name,
+			BookCover:    book.CoverImage,
+			ChapterTitle: &chapterTitle,
+			Content:      fmt.Sprintf("《%s》更新了章节：%s", book.Name, chapter.Title),
+			IsRead:       false,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
+	}
+
+	return feeds
+}
+
+// Deprecated: warmFeedCache 旧版预热 feed 缓存，将被移除
+func warmFeedCache(ctx context.Context, feedCache cache.FeedCache, feeds []*model.FeedInbox) (err error) {
+	userFeeds := make(map[string][]*model.FeedInbox)
+	for _, feed := range feeds {
+		userFeeds[feed.UserID] = append(userFeeds[feed.UserID], feed)
+	}
+	for userID, feed := range userFeeds {
+		if _, feedWarmErr := feedCache.WarmFeeds(ctx, userID, feed); feedWarmErr != nil {
+			logger.Warn("warm feed fail", zap.Error(feedWarmErr))
+			err = feedWarmErr
+		}
+	}
+	return
+}
+func VIPStrToLevel(vipStr string) int {
+	switch vipStr {
+	case "":
+		return -1
+	case "vip_0":
+		return 0
+	case "vip_1":
+		return 1
+	case "vip_2":
+		return 2
+	case "vip_3":
+		return 3
+	case "off":
+		return 999
+	default:
+		return 0
+	}
+}
+
+func VIPLevelToStr(vipLevel int) string {
+	switch vipLevel {
+	case -1:
+		return ""
+	case 0:
+		return "vip_0"
+	case 1:
+		return "vip_1"
+	case 2:
+		return "vip_2"
+	case 3:
+		return "vip_3"
+	default:
+		return "off"
+	}
+}

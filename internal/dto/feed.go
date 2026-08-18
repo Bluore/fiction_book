@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Deprecated: FeedItemResponse 旧版 feed 项响应结构，将被新的 feed 架构替代
 type FeedItemResponse struct {
 	FeedID       string              `json:"feed_id"`
 	EventType    model.FeedEventType `json:"event_type"`
@@ -17,6 +18,7 @@ type FeedItemResponse struct {
 	CreatedAt    time.Time           `json:"created_at"`
 }
 
+// Deprecated: GetFeedListResponse 旧版 feed 列表响应结构，将被新的 feed 架构替代
 type GetFeedListResponse struct {
 	Feeds     []*FeedItemResponse `json:"feeds"`
 	Restarted bool                `json:"restarted"`

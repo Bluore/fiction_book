@@ -28,6 +28,7 @@ type feedClient struct {
 	writer *kafka.Writer
 }
 
+// Deprecated: FeedPushMessage 旧版 feed 推送消息结构
 type FeedPushMessage struct {
 	ID        string             `json:"id"`
 	Type      string             `json:"type"`

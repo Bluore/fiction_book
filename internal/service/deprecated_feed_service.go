@@ -13,15 +13,16 @@ import (
 	"gorm.io/gorm"
 )
 
+// Deprecated: 旧版 feed 相关常量
 const (
 	feedListPageSize  = 10
 	feedReadBatchSize = 10
 )
 
-// FeedService 提供用户 Feed 流读取能力。
+// Deprecated: FeedService 旧版用户 Feed 流读取服务，将被新的 feed 架构替代
 type FeedService interface {
-	// GetFeedList 按服务端游标读取 Feed；本次返回的 Feed 会被标记为已读。
-	GetFeedList(ctx context.Context, userID string) (*dto.GetFeedListResponse, error)
+	// Deprecated: GetFeedList 按服务端游标读取 Feed；本次返回的 Feed 会被标记为已读
+	Deprecate_GetFeedList(ctx context.Context, userID string) (*dto.GetFeedListResponse, error)
 }
 
 type feedService struct {
@@ -30,7 +31,7 @@ type feedService struct {
 	db        *gorm.DB
 }
 
-// feedPageCursor 是对外 cursor 的内部载荷。
+// Deprecated: feedPageCursor 旧版对外 cursor 的内部载荷
 // LastFeedID 和 LastCreatedAt 必须一起使用，才能和 DB 的 created_at DESC, id ASC 排序保持一致。
 type feedPageCursor struct {
 	LastFeedID    string    `json:"last_feed_id"`
@@ -49,7 +50,7 @@ func NewFeedService(
 	}
 }
 
-func (s *feedService) GetFeedList(
+func (s *feedService) Deprecate_GetFeedList(
 	ctx context.Context,
 	userID string,
 ) (*dto.GetFeedListResponse, error) {

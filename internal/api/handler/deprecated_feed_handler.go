@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetFeedList 获取当前用户 Feed 流
+// Deprecated: GetFeedList 旧版获取当前用户 Feed 流接口，将被新的 feed 架构替代
 // @Summary 获取当前用户 Feed 流
 // @Description 服务端自动维护游标获取 Feed，获取后自动标记为已读；每次固定返回 10 条
 // @Tags Feed
@@ -27,7 +27,7 @@ func (h *Handler) GetFeedList(c *gin.Context) {
 		return
 	}
 
-	feeds, err := h.feedService.GetFeedList(c.Request.Context(), userID)
+	feeds, err := h.feedService.Deprecate_GetFeedList(c.Request.Context(), userID)
 	if err != nil {
 		if err == service.ErrParam {
 			response.PushError(c, err)
