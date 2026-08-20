@@ -141,6 +141,13 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			history.GET("/:user_id", middleware.Validation(&dto.ListUserHistoryRequest{}), h.ListUserHistory)
 		}
 
+		// 点赞管理
+		likes := v1.Group("/likes")
+		{
+			likes.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserLikeRequest{}), h.GetUserLike)
+			likes.PUT("", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserLikeRequest{}), h.UpdateUserLike)
+		}
+
 		// Feed 管理
 		feed := v1.Group("/feed")
 		{

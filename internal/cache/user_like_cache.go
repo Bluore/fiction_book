@@ -85,7 +85,7 @@ func (c userLikeCache) UpdateUserLike(ctx context.Context, userID string, likerI
 	return c.redis.Set(ctx, KeyUserLike(userID, likerID), contentEncode, TimeUserLike()).Err()
 }
 
-func (c userLikeCache) LockUserLike(ctx context.Context, likerID string, userID string) (string, bool, error) {
+func (c userLikeCache) LockUserLike(ctx context.Context, userID string, likerID string) (string, bool, error) {
 	token := uuid.NewString()
 	result, err := c.redis.SetArgs(
 		ctx,
@@ -128,7 +128,7 @@ return 0
 }
 
 func (c userLikeCache) DeleteUserLike(ctx context.Context, userID string, likerID string) (bool, error) {
-	res, err := c.redis.Del(ctx, KeyUserLikeLock(userID, likerID)).Result()
+	res, err := c.redis.Del(ctx, KeyUserLike(userID, likerID)).Result()
 	if err != nil {
 		return false, err
 	}

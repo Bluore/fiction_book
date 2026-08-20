@@ -29,6 +29,7 @@ type Handler struct {
 	userPurchasedChapterService service.UserPurchasedChapterService
 	userBookshelfService        service.UserBookshelfService
 	userHistoryService          service.UserHistoryService
+	userLikeService             service.UserLikeService
 	orderService                service.OrderService
 	buyVIPService               service.BuyVIP
 	feedService                 service.FeedService
@@ -45,6 +46,7 @@ func NewHandler(
 	userPurchasedChapterService service.UserPurchasedChapterService,
 	userBookshelfService service.UserBookshelfService,
 	userHistoryService service.UserHistoryService,
+	userLikeService service.UserLikeService,
 	orderService service.OrderService,
 	buyVIPService service.BuyVIP,
 	feedService service.FeedService,
@@ -59,6 +61,7 @@ func NewHandler(
 		userPurchasedChapterService: userPurchasedChapterService,
 		userBookshelfService:        userBookshelfService,
 		userHistoryService:          userHistoryService,
+		userLikeService:             userLikeService,
 		orderService:                orderService,
 		buyVIPService:               buyVIPService,
 		feedService:                 feedService,

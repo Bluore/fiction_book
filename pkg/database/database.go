@@ -77,6 +77,9 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		if err := db.AutoMigrate(&model.UserHistory{}); err != nil {
 			return nil, err
 		}
+		if err := db.AutoMigrate(&model.UserLike{}); err != nil {
+			return nil, err
+		}
 		if err := db.AutoMigrate(&model.Order{}); err != nil {
 			return nil, err
 		}

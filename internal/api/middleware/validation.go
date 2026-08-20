@@ -69,6 +69,10 @@ func Validation(req interface{}) gin.HandlerFunc {
 
 var validatorInstance = validator.New()
 
+func init() {
+	validatorInstance.SetTagName("binding")
+}
+
 // validate 手动验证结构体
 func validate(obj interface{}) error {
 	return validatorInstance.Struct(obj)
