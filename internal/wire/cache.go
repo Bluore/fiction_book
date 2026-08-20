@@ -71,7 +71,7 @@ func ProvideFeedCache(redis *redis.Client) cache.FeedCache {
 	return cache.NewFeedCache(redis)
 }
 
-// ProvideUserLikeCache 创建用户点赞缓存
+// ProvideUserLikeCache 创建用户关注缓存
 func ProvideUserLikeCache(redis *redis.Client) cache.UserLikeCache {
 	return cache.NewUserLikeCache(redis)
 }

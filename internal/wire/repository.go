@@ -72,7 +72,7 @@ func ProvideUserHistoryRepository(db *gorm.DB) repository.UserHistoryRepository 
 	return repository.NewUserHistoryRepository(db)
 }
 
-// ProvideUserLikeRepository 提供用户点赞仓储
+// ProvideUserLikeRepository 提供用户关注仓储
 func ProvideUserLikeRepository(db *gorm.DB) repository.UserLikeRepository {
 	return repository.NewUserLikeRepository(db)
 }

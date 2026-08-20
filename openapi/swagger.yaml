@@ -1,9 +1,9 @@
 basePath: /
 definitions:
-  fiction-book_internal_dto.BookChapterResponse:
+  dto.BookChapterResponse:
     properties:
       Book:
-        $ref: '#/definitions/fiction-book_internal_dto.BookResponse'
+        $ref: '#/definitions/dto.BookResponse'
       chapter_id:
         type: string
       content:
@@ -17,20 +17,20 @@ definitions:
       vip_level:
         type: string
     type: object
-  fiction-book_internal_dto.BookChapterSearchResult:
+  dto.BookChapterSearchResult:
     properties:
       book_chapter:
-        $ref: '#/definitions/fiction-book_internal_dto.BookChapterResponse'
+        $ref: '#/definitions/dto.BookChapterResponse'
       highlight:
         additionalProperties:
           type: string
         type: object
     type: object
-  fiction-book_internal_dto.BookListResponse:
+  dto.BookListResponse:
     properties:
       books:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.BookResponse'
+          $ref: '#/definitions/dto.BookResponse'
         type: array
       count:
         type: integer
@@ -39,7 +39,7 @@ definitions:
       size:
         type: integer
     type: object
-  fiction-book_internal_dto.BookResponse:
+  dto.BookResponse:
     properties:
       bookshelf_amount:
         type: integer
@@ -66,16 +66,16 @@ definitions:
       vip_level:
         type: string
     type: object
-  fiction-book_internal_dto.BookSearchResult:
+  dto.BookSearchResult:
     properties:
       book:
-        $ref: '#/definitions/fiction-book_internal_dto.BookResponse'
+        $ref: '#/definitions/dto.BookResponse'
       highlight:
         additionalProperties:
           type: string
         type: object
     type: object
-  fiction-book_internal_dto.BuyBookChapterRequest:
+  dto.BuyBookChapterRequest:
     properties:
       book_id:
         type: string
@@ -88,14 +88,14 @@ definitions:
     - chapter_id
     - price
     type: object
-  fiction-book_internal_dto.BuyBookRequest:
+  dto.BuyBookRequest:
     properties:
       bookID:
         type: string
       price:
         type: integer
     type: object
-  fiction-book_internal_dto.BuyVIPRequest:
+  dto.BuyVIPRequest:
     properties:
       duration:
         enum:
@@ -114,7 +114,7 @@ definitions:
     - price
     - vip_level
     type: object
-  fiction-book_internal_dto.BuyVIPResponse:
+  dto.BuyVIPResponse:
     properties:
       duration:
         type: string
@@ -131,7 +131,7 @@ definitions:
       vip_mark:
         type: string
     type: object
-  fiction-book_internal_dto.CreatBookChapterRequest:
+  dto.CreatBookChapterRequest:
     properties:
       book_id:
         type: string
@@ -150,7 +150,7 @@ definitions:
     - title
     - vip_level
     type: object
-  fiction-book_internal_dto.CreateBookRequest:
+  dto.CreateBookRequest:
     properties:
       cover_image:
         type: string
@@ -169,7 +169,7 @@ definitions:
     - description
     - name
     type: object
-  fiction-book_internal_dto.CreateOrderRequest:
+  dto.CreateOrderRequest:
     properties:
       price:
         type: number
@@ -179,14 +179,14 @@ definitions:
     - price
     - reward_gold
     type: object
-  fiction-book_internal_dto.CreateUserBookshelfRequest:
+  dto.CreateUserBookshelfRequest:
     properties:
       book_id:
         type: string
     required:
     - book_id
     type: object
-  fiction-book_internal_dto.CreateUserRequest:
+  dto.CreateUserRequest:
     properties:
       age:
         maximum: 130
@@ -206,26 +206,26 @@ definitions:
     - password
     - username
     type: object
-  fiction-book_internal_dto.DeleteUserBookshelfRequest:
+  dto.DeleteUserBookshelfRequest:
     properties:
       book_id:
         type: string
     required:
     - book_id
     type: object
-  fiction-book_internal_dto.EmailVerifyRequest:
+  dto.EmailVerifyRequest:
     properties:
       email:
         type: string
     required:
     - email
     type: object
-  fiction-book_internal_dto.EmailVerifyResponse:
+  dto.EmailVerifyResponse:
     properties:
       email:
         type: string
     type: object
-  fiction-book_internal_dto.FeedItemResponse:
+  dto.FeedItemResponse:
     properties:
       book_cover:
         type: string
@@ -242,11 +242,11 @@ definitions:
       created_at:
         type: string
       event_type:
-        $ref: '#/definitions/fiction-book_internal_model.FeedEventType'
+        $ref: '#/definitions/model.FeedEventType'
       feed_id:
         type: string
     type: object
-  fiction-book_internal_dto.ForgetPasswordRequest:
+  dto.ForgetPasswordRequest:
     properties:
       email:
         type: string
@@ -260,7 +260,7 @@ definitions:
     - email_verify
     - password
     type: object
-  fiction-book_internal_dto.GetBookTagResponse:
+  dto.GetBookTagResponse:
     properties:
       book_id:
         type: string
@@ -269,33 +269,36 @@ definitions:
           type: string
         type: array
     type: object
-  fiction-book_internal_dto.GetFeedListResponse:
+  dto.GetFeedListResponse:
     properties:
       feeds:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.FeedItemResponse'
+          $ref: '#/definitions/dto.FeedItemResponse'
         type: array
-      has_more:
-        type: boolean
-      next_cursor:
-        type: string
       restarted:
         type: boolean
     type: object
-  fiction-book_internal_dto.GetOrderListResponse:
+  dto.GetOrderListResponse:
     properties:
       count:
         type: integer
       orders:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.OrderResponse'
+          $ref: '#/definitions/dto.OrderResponse'
         type: array
       page:
         type: integer
       size:
         type: integer
     type: object
-  fiction-book_internal_dto.GetUserPurchasedBookResponse:
+  dto.GetUserLikeResponse:
+    properties:
+      is_like:
+        type: boolean
+      target_id:
+        type: string
+    type: object
+  dto.GetUserPurchasedBookResponse:
     properties:
       active_at:
         type: string
@@ -308,7 +311,7 @@ definitions:
       user_id:
         type: string
     type: object
-  fiction-book_internal_dto.GetUserPurchasedChapterResponse:
+  dto.GetUserPurchasedChapterResponse:
     properties:
       active_at:
         type: string
@@ -323,11 +326,11 @@ definitions:
       user_id:
         type: string
     type: object
-  fiction-book_internal_dto.ListUserHistoryResponse:
+  dto.ListUserHistoryResponse:
     properties:
       books:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.UserHistoryResponse'
+          $ref: '#/definitions/dto.UserHistoryResponse'
         type: array
       count:
         type: integer
@@ -336,7 +339,7 @@ definitions:
       size:
         type: integer
     type: object
-  fiction-book_internal_dto.LoginRequest:
+  dto.LoginRequest:
     properties:
       password:
         type: string
@@ -346,7 +349,7 @@ definitions:
     - password
     - username
     type: object
-  fiction-book_internal_dto.LoginResponse:
+  dto.LoginResponse:
     properties:
       token:
         type: string
@@ -355,7 +358,7 @@ definitions:
       username:
         type: string
     type: object
-  fiction-book_internal_dto.OrderResponse:
+  dto.OrderResponse:
     properties:
       created_at:
         type: string
@@ -374,28 +377,28 @@ definitions:
       user_id:
         type: string
     type: object
-  fiction-book_internal_dto.SearchBookChaptersV2Response:
+  dto.SearchBookChaptersV2Response:
     properties:
       chapters:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.BookChapterSearchResult'
+          $ref: '#/definitions/dto.BookChapterSearchResult'
         type: array
     type: object
-  fiction-book_internal_dto.SearchBooksV2Response:
+  dto.SearchBooksV2Response:
     properties:
       books:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.BookSearchResult'
+          $ref: '#/definitions/dto.BookSearchResult'
         type: array
     type: object
-  fiction-book_internal_dto.ShopListOfVIPResponse:
+  dto.ShopListOfVIPResponse:
     properties:
       shop:
         items:
-          $ref: '#/definitions/fiction-book_internal_dto.ShopVIPItem'
+          $ref: '#/definitions/dto.ShopVIPItem'
         type: array
     type: object
-  fiction-book_internal_dto.ShopVIPItem:
+  dto.ShopVIPItem:
     properties:
       active_at:
         type: string
@@ -408,7 +411,7 @@ definitions:
       vip_level:
         type: string
     type: object
-  fiction-book_internal_dto.UpdateBookChapterRequest:
+  dto.UpdateBookChapterRequest:
     properties:
       content:
         type: string
@@ -423,7 +426,7 @@ definitions:
     required:
     - id
     type: object
-  fiction-book_internal_dto.UpdateBookRequest:
+  dto.UpdateBookRequest:
     properties:
       bookID:
         type: string
@@ -436,7 +439,7 @@ definitions:
     required:
     - bookID
     type: object
-  fiction-book_internal_dto.UpdateBookTagRequest:
+  dto.UpdateBookTagRequest:
     properties:
       bookID:
         type: string
@@ -450,7 +453,7 @@ definitions:
     - bookID
     - tags
     type: object
-  fiction-book_internal_dto.UpdateBookTagResponse:
+  dto.UpdateBookTagResponse:
     properties:
       book_id:
         type: string
@@ -459,7 +462,7 @@ definitions:
           type: string
         type: array
     type: object
-  fiction-book_internal_dto.UpdateUserEmailRequest:
+  dto.UpdateUserEmailRequest:
     properties:
       email:
         type: string
@@ -473,7 +476,27 @@ definitions:
     - password
     - verify
     type: object
-  fiction-book_internal_dto.UpdateUserPasswordRequest:
+  dto.UpdateUserLikeRequest:
+    properties:
+      operator:
+        enum:
+        - create
+        - delete
+        type: string
+      target_id:
+        type: string
+    required:
+    - operator
+    - target_id
+    type: object
+  dto.UpdateUserLikeResponse:
+    properties:
+      is_like:
+        type: boolean
+      target_id:
+        type: string
+    type: object
+  dto.UpdateUserPasswordRequest:
     properties:
       password:
         minLength: 6
@@ -484,7 +507,7 @@ definitions:
     - password
     - verify
     type: object
-  fiction-book_internal_dto.UpdateUserRequest:
+  dto.UpdateUserRequest:
     properties:
       age:
         maximum: 130
@@ -496,7 +519,7 @@ definitions:
       username:
         type: string
     type: object
-  fiction-book_internal_dto.UpgradeVIPRequest:
+  dto.UpgradeVIPRequest:
     properties:
       original_vip_level:
         enum:
@@ -513,7 +536,7 @@ definitions:
     - price
     - target_vip_level
     type: object
-  fiction-book_internal_dto.UpgradeVIPResponse:
+  dto.UpgradeVIPResponse:
     properties:
       gold:
         type: integer
@@ -532,14 +555,14 @@ definitions:
       vip_mark:
         type: string
     type: object
-  fiction-book_internal_dto.UploadBookCoverResponse:
+  dto.UploadBookCoverResponse:
     properties:
       book_id:
         type: string
       url:
         type: string
     type: object
-  fiction-book_internal_dto.UserAssetResponse:
+  dto.UserAssetResponse:
     properties:
       gold:
         type: integer
@@ -552,7 +575,7 @@ definitions:
       vip_mark:
         type: string
     type: object
-  fiction-book_internal_dto.UserHistoryResponse:
+  dto.UserHistoryResponse:
     properties:
       book_id:
         type: string
@@ -563,7 +586,7 @@ definitions:
       user_id:
         type: string
     type: object
-  fiction-book_internal_dto.UserResponse:
+  dto.UserResponse:
     properties:
       age:
         type: integer
@@ -584,7 +607,7 @@ definitions:
       username:
         type: string
     type: object
-  fiction-book_internal_dto.UserStatResponse:
+  dto.UserStatResponse:
     properties:
       age:
         type: integer
@@ -618,7 +641,7 @@ definitions:
       vip_mark:
         type: string
     type: object
-  fiction-book_internal_model.FeedEventType:
+  model.FeedEventType:
     enum:
     - book_update
     - new_chapter
@@ -626,7 +649,7 @@ definitions:
     x-enum-varnames:
     - FeedEventBookUpdate
     - FeedEventNewChapter
-  fiction-book_pkg_response.Response:
+  response.Response:
     properties:
       code:
         type: integer
@@ -659,23 +682,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserAssetResponse'
+                  $ref: '#/definitions/dto.UserAssetResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4011":
           description: 用户不存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户资产（认证）
@@ -692,7 +715,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.EmailVerifyRequest'
+          $ref: '#/definitions/dto.EmailVerifyRequest'
       produces:
       - application/json
       responses:
@@ -700,19 +723,19 @@ paths:
           description: 发送成功
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.EmailVerifyResponse'
+                  $ref: '#/definitions/dto.EmailVerifyResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部出错
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取邮箱验证码
       tags:
       - 认证
@@ -727,7 +750,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.ForgetPasswordRequest'
+          $ref: '#/definitions/dto.ForgetPasswordRequest'
       produces:
       - application/json
       responses:
@@ -735,31 +758,31 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4003":
           description: 验证码验证失败
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4004":
           description: 验证码未发送
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 忘记密码
       tags:
       - 认证
@@ -774,7 +797,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.LoginRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
@@ -782,23 +805,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.LoginResponse'
+                  $ref: '#/definitions/dto.LoginResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4006":
           description: 用户名或密码错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 用户登录
       tags:
       - 认证
@@ -820,27 +843,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookResponse'
+                  $ref: '#/definitions/dto.BookResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取书籍
       tags:
       - 书籍管理
@@ -861,19 +884,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取书籍章节列表
       tags:
       - 章节管理
@@ -899,39 +922,39 @@ paths:
         "200":
           description: 封面URL
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UploadBookCoverResponse'
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 用户未登录
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4005":
           description: 文件大小超出
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4011":
           description: 文件类型出错
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4012":
           description: 图片不合规
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 你没有该书籍的所有权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 上传书籍封面（验证）
@@ -953,34 +976,34 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpdateBookRequest'
+          $ref: '#/definitions/dto.UpdateBookRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.BookResponse'
+            $ref: '#/definitions/dto.BookResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 用户登录失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4008":
           description: 书籍名称已存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 你没有该书籍的所有权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 更新书籍信息请求
@@ -997,7 +1020,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.CreateBookRequest'
+          $ref: '#/definitions/dto.CreateBookRequest'
       produces:
       - application/json
       responses:
@@ -1005,27 +1028,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookResponse'
+                  $ref: '#/definitions/dto.BookResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4008":
           description: 书籍已存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 创建书籍
@@ -1053,19 +1076,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UploadBookCoverResponse'
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 用户登录失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户最近读书的历史记录
@@ -1112,19 +1135,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookListResponse'
+                  $ref: '#/definitions/dto.BookListResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取书籍列表
       tags:
       - 书籍管理
@@ -1150,19 +1173,19 @@ paths:
         "200":
           description: 封面URL
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UploadBookCoverResponse'
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 用户登录失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户创作的书籍
@@ -1190,15 +1213,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UploadBookCoverResponse'
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取每日热度榜单
       tags:
       - 书籍管理
@@ -1224,15 +1247,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UploadBookCoverResponse'
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取每月热度榜单
       tags:
       - 书籍管理
@@ -1258,15 +1281,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UploadBookCoverResponse'
+            $ref: '#/definitions/dto.UploadBookCoverResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取每周热度榜单
       tags:
       - 书籍管理
@@ -1298,23 +1321,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookListResponse'
+                  $ref: '#/definitions/dto.BookListResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户书架
@@ -1331,26 +1354,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.CreateUserBookshelfRequest'
+          $ref: '#/definitions/dto.CreateUserBookshelfRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 添加到书架
@@ -1367,30 +1390,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.DeleteUserBookshelfRequest'
+          $ref: '#/definitions/dto.DeleteUserBookshelfRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 从书架中删除
@@ -1419,23 +1442,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookListResponse'
+                  $ref: '#/definitions/dto.BookListResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取自己书架
@@ -1457,7 +1480,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.BuyBookRequest'
+          $ref: '#/definitions/dto.BuyBookRequest'
       produces:
       - application/json
       responses:
@@ -1465,47 +1488,47 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4009":
           description: 书籍已购买
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4016":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4017":
           description: 价格校验出错
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4018":
           description: 余额不足
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 购买书籍
@@ -1522,7 +1545,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.BuyBookChapterRequest'
+          $ref: '#/definitions/dto.BuyBookChapterRequest'
       produces:
       - application/json
       responses:
@@ -1530,7 +1553,7 @@ paths:
           description: 购买成功
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   type: string
@@ -1538,35 +1561,35 @@ paths:
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4009":
           description: 书籍已购买
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4017":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4018":
           description: 余额不足
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 购买章节
@@ -1589,35 +1612,35 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "403":
           description: 禁止访问
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 你没有权限操作
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 删除章节 (认证)
@@ -1639,35 +1662,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookChapterResponse'
+                  $ref: '#/definitions/dto.BookChapterResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4015":
           description: 该章节需要付费
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取章节内容（认证）
@@ -1688,7 +1711,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpdateBookChapterRequest'
+          $ref: '#/definitions/dto.UpdateBookChapterRequest'
       produces:
       - application/json
       responses:
@@ -1696,35 +1719,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookChapterResponse'
+                  $ref: '#/definitions/dto.BookChapterResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 你没有编辑权限
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 修改编辑小说章节 (认证)
@@ -1747,31 +1770,31 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookChapterResponse'
+                  $ref: '#/definitions/dto.BookChapterResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4014":
           description: 请先完成登录
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取章节内容（游客）
       tags:
       - 章节管理
@@ -1793,27 +1816,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookChapterResponse'
+                  $ref: '#/definitions/dto.BookChapterResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4010":
           description: 章节未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取章节信息
       tags:
       - 章节管理
@@ -1828,7 +1851,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.CreatBookChapterRequest'
+          $ref: '#/definitions/dto.CreatBookChapterRequest'
       produces:
       - application/json
       responses:
@@ -1836,31 +1859,31 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BookChapterResponse'
+                  $ref: '#/definitions/dto.BookChapterResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 缺失对应权限
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 创建书籍章节
@@ -1870,16 +1893,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: 游标分页获取 Feed，获取后自动标记为已读；cursor 到底后自动从头开始
-      parameters:
-      - description: 游标
-        in: query
-        name: cursor
-        type: string
-      - description: 每次获取数量，默认20，最大50
-        in: query
-        name: limit
-        type: integer
+      description: 服务端自动维护游标获取 Feed，获取后自动标记为已读；每次固定返回 10 条
       produces:
       - application/json
       responses:
@@ -1887,23 +1901,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.GetFeedListResponse'
+                  $ref: '#/definitions/dto.GetFeedListResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取当前用户 Feed 流
@@ -1937,26 +1951,106 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.ListUserHistoryResponse'
+                  $ref: '#/definitions/dto.ListUserHistoryResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户不存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取用户浏览历史（弃用）
       tags:
       - 历史管理
+  /api/v1/likes:
+    get:
+      consumes:
+      - application/json
+      description: 查询当前登录用户是否已关注目标用户
+      parameters:
+      - description: 目标用户ID
+        in: query
+        name: target_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.GetUserLikeResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 查询用户关注状态
+      tags:
+      - 关注管理
+    put:
+      consumes:
+      - application/json
+      description: 当前登录用户对目标用户执行关注或取消关注操作
+      parameters:
+      - description: 关注操作
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserLikeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UpdateUserLikeResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录已失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - Bearer: []
+      summary: 关注或取消关注用户
+      tags:
+      - 关注管理
   /api/v1/orders:
     get:
       consumes:
@@ -1980,23 +2074,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.GetOrderListResponse'
+                  $ref: '#/definitions/dto.GetOrderListResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户订单列表
@@ -2020,31 +2114,31 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.OrderResponse'
+                  $ref: '#/definitions/dto.OrderResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 缺失对应权限
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4021":
           description: 缺失对应权限
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户订单
@@ -2061,7 +2155,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.CreateOrderRequest'
+          $ref: '#/definitions/dto.CreateOrderRequest'
       produces:
       - application/json
       responses:
@@ -2069,27 +2163,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.OrderResponse'
+                  $ref: '#/definitions/dto.OrderResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4017":
           description: 价格计算校对失败
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 创建用户充值订单
@@ -2107,25 +2201,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/fiction-book_internal_dto.GetUserPurchasedBookResponse'
+                    $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
                   type: array
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户已购买的书籍列表
@@ -2149,27 +2243,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.GetUserPurchasedBookResponse'
+                  $ref: '#/definitions/dto.GetUserPurchasedBookResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4016":
           description: 没有购买这本书籍的记录
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 判断用户是否已购买本书籍
@@ -2187,25 +2281,25 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/fiction-book_internal_dto.GetUserPurchasedChapterResponse'
+                    $ref: '#/definitions/dto.GetUserPurchasedChapterResponse'
                   type: array
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取用户已购买的章节列表
@@ -2229,27 +2323,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.GetUserPurchasedChapterResponse'
+                  $ref: '#/definitions/dto.GetUserPurchasedChapterResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 未授权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4016":
           description: 没有购买本章节的记录
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 判断用户是否已购买本章节
@@ -2278,7 +2372,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   additionalProperties: true
@@ -2287,11 +2381,11 @@ paths:
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取用户列表
       tags:
       - 用户管理
@@ -2305,7 +2399,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.CreateUserRequest'
+          $ref: '#/definitions/dto.CreateUserRequest'
       produces:
       - application/json
       responses:
@@ -2313,35 +2407,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4003":
           description: 验证码验证失败
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4004":
           description: 验证码未发送
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4007":
           description: 用户已存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4013":
           description: 邮箱已存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 创建用户
       tags:
       - 用户管理
@@ -2363,23 +2457,23 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取用户信息
       tags:
       - 用户管理
@@ -2401,39 +2495,39 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4005":
           description: 文件大小超出
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4011":
           description: 文件类型出错
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4012":
           description: 图片不合规
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 上传头像
@@ -2450,23 +2544,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 删除用户
@@ -2483,7 +2577,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpdateUserEmailRequest'
+          $ref: '#/definitions/dto.UpdateUserEmailRequest'
       produces:
       - application/json
       responses:
@@ -2491,39 +2585,39 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4003":
           description: 验证码验证失败
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4004":
           description: 验证码未发送
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4013":
           description: 邮箱已存在
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 更新用户邮箱
@@ -2541,27 +2635,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserStatResponse'
+                  $ref: '#/definitions/dto.UserStatResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 用户未登录
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取当前用户详情信息
@@ -2578,7 +2672,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpdateUserRequest'
+          $ref: '#/definitions/dto.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -2586,31 +2680,31 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4017":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 更新用户信息
@@ -2627,7 +2721,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpdateUserPasswordRequest'
+          $ref: '#/definitions/dto.UpdateUserPasswordRequest'
       produces:
       - application/json
       responses:
@@ -2635,35 +2729,35 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4003":
           description: 验证码验证失败
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4004":
           description: 验证码未发送
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 更新用户密码
@@ -2687,27 +2781,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.GetBookTagResponse'
+                  $ref: '#/definitions/dto.GetBookTagResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4017":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 获取书籍标签
       tags:
       - 书籍管理
@@ -2726,38 +2820,38 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpdateBookTagRequest'
+          $ref: '#/definitions/dto.UpdateBookTagRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/fiction-book_internal_dto.UpdateBookTagResponse'
+            $ref: '#/definitions/dto.UpdateBookTagResponse'
         "400":
           description: 请求参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 用户登录失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4001":
           description: 书籍未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4017":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4020":
           description: 你没有该书籍的所有权
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 更新书籍标签
@@ -2847,19 +2941,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.SearchBooksV2Response'
+                  $ref: '#/definitions/dto.SearchBooksV2Response'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 搜索书籍
       tags:
       - 书籍管理
@@ -2916,19 +3010,19 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.SearchBookChaptersV2Response'
+                  $ref: '#/definitions/dto.SearchBookChaptersV2Response'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       summary: 搜索章节
       tags:
       - 章节管理
@@ -2943,7 +3037,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.BuyVIPRequest'
+          $ref: '#/definitions/dto.BuyVIPRequest'
       produces:
       - application/json
       responses:
@@ -2951,27 +3045,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.BuyVIPResponse'
+                  $ref: '#/definitions/dto.BuyVIPResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4018":
           description: 余额不足
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 购买VIP（认证）
@@ -2989,27 +3083,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.ShopListOfVIPResponse'
+                  $ref: '#/definitions/dto.ShopListOfVIPResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4002":
           description: 用户未找到
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 获取VIP商品列表（认证）
@@ -3026,7 +3120,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/fiction-book_internal_dto.UpgradeVIPRequest'
+          $ref: '#/definitions/dto.UpgradeVIPRequest'
       produces:
       - application/json
       responses:
@@ -3034,27 +3128,27 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/fiction-book_internal_dto.UpgradeVIPResponse'
+                  $ref: '#/definitions/dto.UpgradeVIPResponse'
               type: object
         "400":
           description: 参数错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "401":
           description: 登录已失效
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "500":
           description: 服务器内部错误
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
         "4018":
           description: 余额不足
           schema:
-            $ref: '#/definitions/fiction-book_pkg_response.Response'
+            $ref: '#/definitions/response.Response'
       security:
       - Bearer: []
       summary: 升级VIP（认证）
@@ -3072,7 +3166,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/fiction-book_pkg_response.Response'
+            - $ref: '#/definitions/response.Response'
             - properties:
                 data:
                   additionalProperties:

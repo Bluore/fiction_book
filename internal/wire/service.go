@@ -209,7 +209,7 @@ func ProvideUserHistoryService(
 	return service.NewUserHistoryService(userRepo, userHistoryRepo, bookRepo, db, cfg)
 }
 
-// ProvideUserLikeService 提供用户点赞服务
+// ProvideUserLikeService 提供用户关注服务
 func ProvideUserLikeService(
 	userRepo repository.UserRepository,
 	userLikeRepo repository.UserLikeRepository,
