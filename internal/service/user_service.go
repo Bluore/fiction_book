@@ -23,6 +23,7 @@ import (
 	"fiction-book/pkg/jwt"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -61,6 +62,7 @@ type UserService interface {
 type userService struct {
 	userRepo       repository.UserRepository
 	userAssetRepo  repository.UserAssetRepository
+	userCache      cache.UserCache
 	userStatCache  cache.UserStatCache
 	userAssetCache cache.UserAssetCache
 	authCache      cache.AuthCache
@@ -72,6 +74,7 @@ type userService struct {
 func NewUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userCache cache.UserCache,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
 	authCache cache.AuthCache,
@@ -81,6 +84,7 @@ func NewUserService(
 	return &userService{
 		userRepo:       userRepo,
 		userAssetRepo:  userAssetRepo,
+		userCache:      userCache,
 		userStatCache:  userStatCache,
 		userAssetCache: userAssetCache,
 		authCache:      authCache,
@@ -90,7 +94,7 @@ func NewUserService(
 }
 
 func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.UpdateUserEmailRequest) (*dto.UserResponse, error) {
-	// 获取用户信息
+	// 获取用户信息（密码哈希不进入缓存，校验密码需读取数据库）
 	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
@@ -117,7 +121,7 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 	}
 
 	user.Email = req.Email
-	err = s.userRepo.Update(ctx, s.db, user)
+	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +129,7 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 }
 
 func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.UpdateUserPasswordRequest) (*dto.UserResponse, error) {
-	// 获取用户信息
+	// 获取用户信息（密码哈希不进入缓存，更新需要完整用户记录）
 	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
@@ -146,7 +150,7 @@ func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.Up
 	}
 	user.Password = hashPwd
 
-	err = s.userRepo.Update(ctx, s.db, user)
+	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
 	if err != nil {
 		return nil, err
 	}
@@ -216,6 +220,11 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 		return nil, err
 	}
 
+	// 事务提交成功后回写缓存，避免事务回滚时写入脏缓存
+	if err := s.userCache.UpdateUser(ctx, user.ID, user); err != nil {
+		logger.Warn("update user cache fail", zap.Error(err))
+	}
+
 	return s.toUserResponse(user), nil
 }
 
@@ -241,7 +250,7 @@ func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer s
 }
 
 func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, s.db, id)
+	user, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, id)
 	if err != nil {
 		return nil, err
 	}
@@ -252,6 +261,7 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 }
 
 func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUserRequest) (*dto.UserResponse, error) {
+	// 密码哈希不进入缓存，更新需要完整用户记录，直接从数据库读取
 	user, err := s.userRepo.GetByID(ctx, s.db, id)
 	if err != nil {
 		return nil, err
@@ -271,7 +281,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 		user.Description = *req.Description
 	}
 
-	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
+	if err := updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user); err != nil {
 		return nil, err
 	}
 
@@ -279,7 +289,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 }
 
 func (s *userService) Delete(ctx context.Context, id string) error {
-	user, err := s.userRepo.GetByID(ctx, s.db, id)
+	user, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, id)
 	if err != nil {
 		return err
 	}
@@ -287,7 +297,7 @@ func (s *userService) Delete(ctx context.Context, id string) error {
 		return ErrUserNotFound
 	}
 
-	return s.userRepo.Delete(ctx, s.db, id)
+	return deleteUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, id)
 }
 
 func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
@@ -408,7 +418,7 @@ func (s *userService) SendEmailVerification(ctx context.Context, receiver string
 }
 
 func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error) {
-	// 获取信息
+	// 获取信息（密码哈希不进入缓存，更新需要完整用户记录，直接从数据库读取）
 	user, err := s.userRepo.GetByID(ctx, s.db, userID)
 	if err != nil {
 		return nil, err
@@ -442,7 +452,7 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 
 	// 更新数据库
 	user.ProfileImage = uploadOut.FilePath
-	err = s.userRepo.Update(ctx, s.db, user)
+	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
 	if err != nil {
 		return nil, err
 	}
@@ -532,7 +542,7 @@ func getFileID(path string, prefix string) string {
 }
 
 func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.UserStatResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, s.db, userID)
+	user, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, userID)
 	if err != nil {
 		return nil, err
 	}

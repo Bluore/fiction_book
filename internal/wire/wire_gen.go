@@ -29,10 +29,11 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	userCache := ProvideUserCache(client)
 	userStatCache := ProvideUserStatCache(client)
 	userAssetCache := ProvideUserAssetCache(client)
 	authCache := ProvideAuthCache(client)
-	userService := ProvideUserService(userRepository, userAssetRepository, userStatCache, userAssetCache, authCache, db, config)
+	userService := ProvideUserService(userRepository, userAssetRepository, userCache, userStatCache, userAssetCache, authCache, db, config)
 	bookRepository := ProvideBookRepository(db)
 	bookTagRepository := ProvideBookTagRepository(db)
 	elasticsearchClient, err := ProvideESClient(config)

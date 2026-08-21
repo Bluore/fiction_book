@@ -34,6 +34,7 @@ var ServiceSet = wire.NewSet(
 func ProvideUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userCache cache.UserCache,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
 	authCache cache.AuthCache,
@@ -43,6 +44,7 @@ func ProvideUserService(
 	return service.NewUserService(
 		userRepo,
 		userAssetRepo,
+		userCache,
 		userStatCache,
 		userAssetCache,
 		authCache,
