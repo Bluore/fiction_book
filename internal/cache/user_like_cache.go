@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	keyUserLike     = "GSF:user:cache:like:%s:%s"
-	keyUserLikeLock = "GSF:user:lock:like:%s:%s"
+	keyUserLike               = "GSF:user:cache:like:%s:%s"
+	keyUserLikeLock           = "GSF:user:lock:like:%s:%s"
+	keyUserLikeUserIDList     = "GSF:user:cache:like_user_id_list:%s"
+	keyUserLikeUserIDListLock = "GSF:user:lock:like_user_id_list:%s"
 
 	timeUserLike = time.Hour
 )
@@ -28,17 +30,32 @@ func KeyUserLikeLock(userID string, likerID string) string {
 	return fmt.Sprintf(keyUserLikeLock, userID, likerID)
 }
 
+func KeyUserLikeUserIDList(likerID string) string {
+	return fmt.Sprintf(keyUserLikeUserIDList, likerID)
+}
+
+func KeyUserLikeUserIDListLock(likerID string) string {
+	return fmt.Sprintf(keyUserLikeUserIDListLock, likerID)
+}
+
 func TimeUserLike() time.Duration {
 	return timeUserLike + TimeShakeDuration(timeUserLike)
 }
 
 type UserLikeCache interface {
 	GetUserLike(ctx context.Context, userID string, likerID string) (*model.UserLike, bool, error)
+	GetUserLikeUserIDList(ctx context.Context, likerID string) ([]string, bool, error)
+
 	UpdateUserLike(ctx context.Context, userID string, likerID string, userLike *model.UserLike) error
+	UpdateUserLikeUserIDList(ctx context.Context, likerID string, userID []string) error
+
 	DeleteUserLike(ctx context.Context, userID string, likerID string) (bool, error)
+	DeleteUserLikeUserIDList(ctx context.Context, likerID string) error
 
 	LockUserLike(ctx context.Context, userID string, likerID string) (string, bool, error)
+	LockUserLikeUserIDList(ctx context.Context, likerID string) (string, bool, error)
 	UnlockUserLike(ctx context.Context, userID string, likerID string, token string) error
+	UnlockUserLikeUserIDList(ctx context.Context, likerID string, token string) error
 }
 
 type userLikeCache struct {
@@ -136,4 +153,81 @@ func (c userLikeCache) DeleteUserLike(ctx context.Context, userID string, likerI
 		return false, nil
 	}
 	return true, nil
+}
+
+func (c userLikeCache) GetUserLikeUserIDList(ctx context.Context, likerID string) ([]string, bool, error) {
+	key := KeyUserLikeUserIDList(likerID)
+	exist, err := c.redis.Exists(ctx, key).Result()
+	if err != nil {
+		return make([]string, 0), false, err
+	}
+	if exist == 0 {
+		return make([]string, 0), false, nil
+	}
+
+	userIDs, err := c.redis.LRange(ctx, key, 0, -1).Result()
+	if err != nil {
+		return make([]string, 0), false, err
+	}
+	return userIDs, true, nil
+}
+
+func (c userLikeCache) UpdateUserLikeUserIDList(ctx context.Context, likerID string, userID []string) error {
+	key := KeyUserLikeUserIDList(likerID)
+	// 先删除再整体写入，保证列表与传入内容一致
+	_, err := c.redis.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.Del(ctx, key)
+		if len(userID) > 0 {
+			pipe.RPush(ctx, key, userID)
+		}
+		pipe.Expire(ctx, key, TimeUserLike())
+		return nil
+	})
+	return err
+}
+
+func (c userLikeCache) DeleteUserLikeUserIDList(ctx context.Context, likerID string) error {
+	return c.redis.Del(ctx, KeyUserLikeUserIDList(likerID)).Err()
+}
+
+func (c userLikeCache) LockUserLikeUserIDList(ctx context.Context, likerID string) (string, bool, error) {
+	token := uuid.NewString()
+	result, err := c.redis.SetArgs(
+		ctx,
+		KeyUserLikeUserIDListLock(likerID),
+		token,
+		redis.SetArgs{
+			Mode: "NX",
+			TTL:  5 * time.Second,
+		},
+	).Result()
+	if err != nil {
+		return "", false, err
+	}
+	if result != "OK" {
+		return "", false, nil
+	}
+	return token, true, nil
+}
+
+func (c userLikeCache) UnlockUserLikeUserIDList(ctx context.Context, likerID string, token string) error {
+	unlockScript := redis.NewScript(`
+if redis.call('get', KEYS[1]) == ARGV[1] then
+	return redis.call('del', KEYS[1])
+end
+return 0
+`)
+	result, err := unlockScript.Run(
+		ctx,
+		c.redis,
+		[]string{KeyUserLikeUserIDListLock(likerID)},
+		token,
+	).Int64()
+	if err != nil {
+		return err
+	}
+	if result != 1 {
+		return fmt.Errorf("unlock user_like_user_id_list lock fail: error token: %s", token)
+	}
+	return nil
 }

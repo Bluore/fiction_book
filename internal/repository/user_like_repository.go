@@ -13,10 +13,14 @@ var ErrUserLikeAlreadyExists = errors.New("user like already exists")
 
 type UserLikeRepository interface {
 	GetByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) (*model.UserLike, error)
+	// GetUserLikeListByLikerID 获取用户关注的用户列表
+	GetUserLikeListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error)
 	CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error)
 	Create(ctx context.Context, db *gorm.DB, userLike *model.UserLike) error
 	Update(ctx context.Context, db *gorm.DB, userLike *model.UserLike) error
 	DeleteByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) error
+	// DeleteAllUserByLikerID 删除某用户关注的全部记录
+	DeleteAllUserByLikerID(ctx context.Context, db *gorm.DB, likerID string) error
 }
 
 type userLikeRepository struct {
@@ -66,5 +70,21 @@ func (r userLikeRepository) Update(ctx context.Context, db *gorm.DB, userLike *m
 func (r userLikeRepository) DeleteByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) error {
 	return db.WithContext(ctx).
 		Where("user_id = ? AND liker_id = ?", userID, likerID).
+		Delete(&model.UserLike{}).Error
+}
+
+func (r userLikeRepository) GetUserLikeListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error) {
+	userIDs := make([]string, 0)
+	err := db.WithContext(ctx).
+		Model(&model.UserLike{}).
+		Where("liker_id = ?", likerID).
+		Order("user_id ASC").
+		Pluck("user_id", &userIDs).Error
+	return userIDs, err
+}
+
+func (r userLikeRepository) DeleteAllUserByLikerID(ctx context.Context, db *gorm.DB, likerID string) error {
+	return db.WithContext(ctx).
+		Where("liker_id = ?", likerID).
 		Delete(&model.UserLike{}).Error
 }

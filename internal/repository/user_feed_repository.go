@@ -17,6 +17,9 @@ type UserFeedRepository interface {
 	// GetFeedListByUserIDWithStartCursorAndEndCursor 起始游标和结束游标查询
 	// 返回起始游标 (startTime, startFeedID)（不含）到结束游标 endTime（含）之间的 Feed 列表，按 created_at DESC 排序
 	GetFeedListByUserIDWithStartCursorAndEndCursor(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startFeedID string, endTime time.Time) (feedDetailList []*model.UserFeed, err error)
+	// GetFeedIDListByUserIDWithStartCursorAndEndCursor 起始游标和结束游标查询
+	// 返回起始游标 (startTime, startFeedID)（不含）到结束游标 endTime（含）之间的 FeedID 列表，按 created_at DESC 排序
+	GetFeedIDListByUserIDWithStartCursorAndEndCursor(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startFeedID string, endTime time.Time) (feedIDList []string, err error)
 	// UpdateFeedByFeedID 根据FeedID更新单个Feed
 	UpdateFeedByFeedID(ctx context.Context, db *gorm.DB, feedID string, feedDetail *model.UserFeed) (err error)
 	// DeleteFeedByFeedID 根据FeedID删除Feed（软删除）
@@ -113,4 +116,23 @@ func applyUserFeedCursor(query *gorm.DB, startTime time.Time, startFeedID string
 		startTime,
 		startFeedID,
 	)
+}
+
+func (r *userFeedRepository) GetFeedIDListByUserIDWithStartCursorAndEndCursor(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startFeedID string, endTime time.Time) ([]string, error) {
+	query := db.WithContext(ctx).
+		Model(&model.UserFeed{}).
+		Where("user_id = ?", userID)
+
+	// 起始游标是窗口的最新边界（不含），结束游标 endTime 是最旧边界（含）
+	query = applyUserFeedCursor(query, startTime, startFeedID)
+	if !endTime.IsZero() {
+		query = query.Where("created_at >= ?", endTime)
+	}
+	query = query.Order("created_at DESC").Order("feed_id DESC")
+
+	feedIDList := make([]string, 0)
+	if err := query.Pluck("feed_id", &feedIDList).Error; err != nil {
+		return nil, err
+	}
+	return feedIDList, nil
 }

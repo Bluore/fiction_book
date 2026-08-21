@@ -139,16 +139,46 @@ func strPtr(s string) *string { return &s }
 func intPtr(i int) *int       { return &i }
 func i64Ptr(i int64) *int64   { return &i }
 
+// mockChapterCacheHit 让章节信息与章节内容都命中缓存
+func (suite *BookChapterServiceTestSuite) mockChapterCacheHit(ctx context.Context, chapterID string, info *model.BookChapterInfo, content *model.BookChapterContent) {
+	suite.chapterCache.On("GetBookChapterInfo", ctx, chapterID).Return(info, true, nil)
+	suite.chapterCache.On("GetBookChapterContent", ctx, chapterID).Return(content, true, nil)
+}
+
+// mockChapterCacheMissNotFound 让章节信息缓存未命中且数据库也不存在
+func (suite *BookChapterServiceTestSuite) mockChapterCacheMissNotFound(ctx context.Context, chapterID string) {
+	suite.chapterCache.On("GetBookChapterInfo", ctx, chapterID).Return(nil, false, nil)
+	suite.chapterCache.On("LockBookChapterInfo", ctx, chapterID).Return("token", true, nil)
+	suite.chapterRepo.On("BookChapterInfoGetByID", ctx, suite.db, chapterID).Return(nil, nil)
+	suite.chapterCache.On("UpdateBookChapterInfo", ctx, chapterID, (*model.BookChapterInfo)(nil)).Return(nil)
+	suite.chapterCache.On("UnlockBookChapterInfo", ctx, chapterID, "token").Return(nil)
+}
+
+// mockBookCacheHit 让书籍命中缓存
+func (suite *BookChapterServiceTestSuite) mockBookCacheHit(ctx context.Context, bookID string, book *model.Book) {
+	suite.bookCache.On("GetBook", ctx, bookID).Return(book, true, nil)
+}
+
+// mockBookCacheMissNotFound 让书籍缓存未命中且数据库也不存在
+func (suite *BookChapterServiceTestSuite) mockBookCacheMissNotFound(ctx context.Context, bookID string) {
+	suite.bookCache.On("GetBook", ctx, bookID).Return(nil, false, nil)
+	suite.bookCache.On("LockBook", ctx, bookID).Return("token", true, nil)
+	suite.bookRepo.On("GetByID", ctx, bookID).Return(nil, nil)
+	suite.bookCache.On("UpdateBook", ctx, bookID, (*model.Book)(nil)).Return(nil)
+	suite.bookCache.On("UnlockBook", ctx, bookID, "token").Return(nil)
+}
+
 // ---------- GuestGetChapter ----------
 
 // TestGuestGetChapterFree 测试游客可以读取无会员要求的章节
 func (suite *BookChapterServiceTestSuite) TestGuestGetChapterFree() {
 	ctx := context.Background()
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1", Title: "第一章", Content: "内容", VIPLevel: ""}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "第一章"}
+	chapterContent := &model.BookChapterContent{ID: "c1", Content: "内容"}
 	book := &model.Book{ID: "b1", Name: "book-1"}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(chapter, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(book, nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", book)
 
 	res, err := suite.svc.GuestGetChapter(ctx, "c1")
 	assert.NoError(suite.T(), err)
@@ -160,11 +190,12 @@ func (suite *BookChapterServiceTestSuite) TestGuestGetChapterFree() {
 // TestGuestGetChapterVIPRequired 测试游客读取会员章节返回未登录错误
 func (suite *BookChapterServiceTestSuite) TestGuestGetChapterVIPRequired() {
 	ctx := context.Background()
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1", VIPLevel: "vip_1"}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", VIPLevel: "vip_1"}
+	chapterContent := &model.BookChapterContent{ID: "c1"}
 	book := &model.Book{ID: "b1"}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(chapter, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(book, nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", book)
 
 	res, err := suite.svc.GuestGetChapter(ctx, "c1")
 	assert.ErrorIs(suite.T(), err, ErrUserNotLogin)
@@ -174,7 +205,7 @@ func (suite *BookChapterServiceTestSuite) TestGuestGetChapterVIPRequired() {
 // TestGuestGetChapterNotFound 测试章节不存在
 func (suite *BookChapterServiceTestSuite) TestGuestGetChapterNotFound() {
 	ctx := context.Background()
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(nil, nil)
+	suite.mockChapterCacheMissNotFound(ctx, "c1")
 
 	res, err := suite.svc.GuestGetChapter(ctx, "c1")
 	assert.ErrorIs(suite.T(), err, ErrBookChapterNotFound)
@@ -184,8 +215,11 @@ func (suite *BookChapterServiceTestSuite) TestGuestGetChapterNotFound() {
 // TestGuestGetChapterBookNotFound 测试章节存在但归属书籍不存在
 func (suite *BookChapterServiceTestSuite) TestGuestGetChapterBookNotFound() {
 	ctx := context.Background()
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(&model.BookChapter{ID: "c1", BookID: "b1"}, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(nil, nil)
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1"}
+	chapterContent := &model.BookChapterContent{ID: "c1"}
+
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheMissNotFound(ctx, "b1")
 
 	res, err := suite.svc.GuestGetChapter(ctx, "c1")
 	assert.ErrorIs(suite.T(), err, ErrBookNotFound)
@@ -198,13 +232,12 @@ func (suite *BookChapterServiceTestSuite) TestGuestGetChapterBookNotFound() {
 func (suite *BookChapterServiceTestSuite) TestGetChapterByVIPLevel() {
 	ctx := context.Background()
 	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", VIPLevel: "vip_1"}
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1", Content: "内容", VIPLevel: "vip_1"}
+	chapterContent := &model.BookChapterContent{ID: "c1", Content: "内容"}
 	book := &model.Book{ID: "b1"}
 
 	suite.userRepo.On("GetByID", ctx, suite.db, "u1").Return(&model.User{ID: "u1"}, nil)
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapterInfo, true, nil)
-	suite.chapterCache.On("GetBookChapterContent", ctx, "c1").Return(chapter, true, nil)
-	suite.bookCache.On("GetBook", ctx, "b1").Return(book, true, nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", book)
 	suite.purchasedRepo.On("GetByChapterIDAndUserID", ctx, "c1", "u1").Return(nil, nil)
 	suite.assetRepo.On("GetByID", ctx, suite.db, "u1").
 		Return(&model.UserAsset{ID: "u1", VIPLevel: "vip_2"}, nil)
@@ -223,11 +256,12 @@ func (suite *BookChapterServiceTestSuite) TestGetChapterByVIPLevel() {
 func (suite *BookChapterServiceTestSuite) TestGetChapterVIPInsufficient() {
 	ctx := context.Background()
 	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", VIPLevel: "vip_3"}
+	chapterContent := &model.BookChapterContent{ID: "c1"}
 	book := &model.Book{ID: "b1"}
 
 	suite.userRepo.On("GetByID", ctx, suite.db, "u1").Return(&model.User{ID: "u1"}, nil)
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapterInfo, true, nil)
-	suite.bookCache.On("GetBook", ctx, "b1").Return(book, true, nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", book)
 	suite.purchasedRepo.On("GetByChapterIDAndUserID", ctx, "c1", "u1").Return(nil, nil)
 	suite.assetRepo.On("GetByID", ctx, suite.db, "u1").
 		Return(&model.UserAsset{ID: "u1", VIPLevel: "vip_1"}, nil)
@@ -244,13 +278,12 @@ func (suite *BookChapterServiceTestSuite) TestGetChapterVIPInsufficient() {
 func (suite *BookChapterServiceTestSuite) TestGetChapterPurchasedSkipVIPCheck() {
 	ctx := context.Background()
 	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", VIPLevel: "vip_3"}
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1", VIPLevel: "vip_3"}
+	chapterContent := &model.BookChapterContent{ID: "c1"}
 	book := &model.Book{ID: "b1"}
 
 	suite.userRepo.On("GetByID", ctx, suite.db, "u1").Return(&model.User{ID: "u1"}, nil)
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapterInfo, true, nil)
-	suite.chapterCache.On("GetBookChapterContent", ctx, "c1").Return(chapter, true, nil)
-	suite.bookCache.On("GetBook", ctx, "b1").Return(book, true, nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", book)
 	suite.purchasedRepo.On("GetByChapterIDAndUserID", ctx, "c1", "u1").
 		Return(&model.UserPurchasedChapter{ID: "p1"}, nil)
 
@@ -278,8 +311,7 @@ func (suite *BookChapterServiceTestSuite) TestGetChapterUserNotFound() {
 func (suite *BookChapterServiceTestSuite) TestGetChapterChapterNotFound() {
 	ctx := context.Background()
 	suite.userRepo.On("GetByID", ctx, suite.db, "u1").Return(&model.User{ID: "u1"}, nil)
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(nil, false, nil)
-	suite.chapterRepo.On("BookChapterInfoGetByID", ctx, suite.db, "c1").Return(nil, nil)
+	suite.mockChapterCacheMissNotFound(ctx, "c1")
 
 	res, err := suite.svc.GetChapter(ctx, "u1", "c1")
 	assert.ErrorIs(suite.T(), err, ErrBookChapterNotFound)
@@ -351,7 +383,7 @@ func (suite *BookChapterServiceTestSuite) TestReadTaskFullFlow() {
 	suite.thermalCache.On("GetBookThermalValue", mock.Anything, "b1").Return(uint64(51), true, nil)
 	suite.bookRepo.On("UpdateBookThermal", mock.Anything, mock.Anything, "b1", uint64(51)).Return(nil)
 	suite.bookRepo.On("GetByID", mock.Anything, "b1").Return(book, nil)
-	suite.bookCache.On("UpdateBook", mock.Anything, book).Return(nil)
+	suite.bookCache.On("UpdateBook", mock.Anything, "b1", book).Return(nil)
 
 	err := bookThermalCacheAddByReadTask(ctx, suite.chapterSvc(), "u1", book, chapter)
 	suite.pool.Wait()
@@ -462,53 +494,58 @@ func (suite *BookChapterServiceTestSuite) TestAddByBookID() {
 // TestUpdateChapterPartialFields 测试只更新传入的字段，未传字段保持原值
 func (suite *BookChapterServiceTestSuite) TestUpdateChapterPartialFields() {
 	ctx := context.Background()
-	old := &model.BookChapter{ID: "c1", BookID: "b1", Title: "旧标题", Content: "旧内容", VIPLevel: "vip_0", Price: 10}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "旧标题", VIPLevel: "vip_0", Price: 10}
+	chapterContent := &model.BookChapterContent{ID: "c1", Content: "旧内容"}
 	book := &model.Book{ID: "b1", OwnerID: "u1"}
 	req := &dto.UpdateBookChapterRequest{ID: "c1", Title: strPtr("新标题")}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(old, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(book, nil)
-	suite.chapterRepo.On("Update", ctx, "c1", mock.AnythingOfType("*model.BookChapter")).Return(nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", book)
+	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
+	suite.chapterRepo.On("BookChapterInfoUpdate", ctx, mock.Anything, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(nil)
-	suite.chapterCache.On("UpdateBookChapterInfo", ctx, mock.AnythingOfType("*model.BookChapter")).Return(nil)
+	suite.chapterCache.On("UpdateBookChapterInfo", ctx, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
+	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", req)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "新标题", res.Title)
 	assert.Equal(suite.T(), "旧内容", res.Content)
 	assert.Equal(suite.T(), int64(10), res.Price)
-	suite.chapterCache.AssertCalled(suite.T(), "UpdateBookChapterInfo", ctx, mock.AnythingOfType("*model.BookChapter"))
+	suite.chapterCache.AssertCalled(suite.T(), "UpdateBookChapterInfo", ctx, "c1", mock.AnythingOfType("*model.BookChapterInfo"))
 }
 
 // TestUpdateChapterEmptyStringIgnored 测试传入空字符串时不覆盖原有标题与内容
 func (suite *BookChapterServiceTestSuite) TestUpdateChapterEmptyStringIgnored() {
 	ctx := context.Background()
-	old := &model.BookChapter{ID: "c1", BookID: "b1", Title: "旧标题", Content: "旧内容", VIPLevel: "vip_0"}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "旧标题", VIPLevel: "vip_0"}
+	chapterContent := &model.BookChapterContent{ID: "c1", Content: "旧内容"}
 	req := &dto.UpdateBookChapterRequest{ID: "c1", Title: strPtr(""), Content: strPtr("")}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(old, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(&model.Book{ID: "b1", OwnerID: "u1"}, nil)
-	suite.chapterRepo.On("Update", ctx, "c1", mock.AnythingOfType("*model.BookChapter")).Return(nil)
-	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(nil)
-	suite.chapterCache.On("UpdateBookChapterInfo", ctx, mock.AnythingOfType("*model.BookChapter")).Return(nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1", OwnerID: "u1"})
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", req)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "旧标题", res.Title)
 	assert.Equal(suite.T(), "旧内容", res.Content)
+	suite.chapterCache.AssertNotCalled(suite.T(), "UpdateBookChapterInfo", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // TestUpdateChapterVIPAndPrice 测试会员等级与价格被规范化后更新
 func (suite *BookChapterServiceTestSuite) TestUpdateChapterVIPAndPrice() {
 	ctx := context.Background()
-	old := &model.BookChapter{ID: "c1", BookID: "b1", Title: "标题", VIPLevel: "vip_0", Price: 10}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "标题", VIPLevel: "vip_0", Price: 10}
+	chapterContent := &model.BookChapterContent{ID: "c1"}
 	req := &dto.UpdateBookChapterRequest{ID: "c1", VIPLevel: strPtr("weird"), Price: i64Ptr(99)}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(old, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(&model.Book{ID: "b1", OwnerID: "u1"}, nil)
-	suite.chapterRepo.On("Update", ctx, "c1", mock.AnythingOfType("*model.BookChapter")).Return(nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1", OwnerID: "u1"})
+	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
+	suite.chapterRepo.On("BookChapterInfoUpdate", ctx, mock.Anything, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(nil)
-	suite.chapterCache.On("UpdateBookChapterInfo", ctx, mock.AnythingOfType("*model.BookChapter")).Return(nil)
+	suite.chapterCache.On("UpdateBookChapterInfo", ctx, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
+	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", req)
 	assert.NoError(suite.T(), err)
@@ -522,19 +559,21 @@ func (suite *BookChapterServiceTestSuite) TestUpdateChapterPermissionDenied() {
 	ctx := context.Background()
 	req := &dto.UpdateBookChapterRequest{ID: "c1", Title: strPtr("新标题")}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(&model.BookChapter{ID: "c1", BookID: "b1"}, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(&model.Book{ID: "b1", OwnerID: "other"}, nil)
+	suite.mockChapterCacheHit(ctx, "c1",
+		&model.BookChapterInfo{ID: "c1", BookID: "b1"},
+		&model.BookChapterContent{ID: "c1"})
+	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1", OwnerID: "other"})
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", req)
 	assert.ErrorIs(suite.T(), err, ErrPermission)
 	assert.Nil(suite.T(), res)
-	suite.chapterRepo.AssertNotCalled(suite.T(), "Update", mock.Anything, mock.Anything, mock.Anything)
+	suite.chapterRepo.AssertNotCalled(suite.T(), "BookChapterInfoUpdate", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
 
 // TestUpdateChapterNotFound 测试章节不存在
 func (suite *BookChapterServiceTestSuite) TestUpdateChapterNotFound() {
 	ctx := context.Background()
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(nil, nil)
+	suite.mockChapterCacheMissNotFound(ctx, "c1")
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", &dto.UpdateBookChapterRequest{ID: "c1"})
 	assert.ErrorIs(suite.T(), err, ErrBookChapterNotFound)
@@ -545,17 +584,20 @@ func (suite *BookChapterServiceTestSuite) TestUpdateChapterNotFound() {
 func (suite *BookChapterServiceTestSuite) TestUpdateChapterOutboxErrorRollback() {
 	ctx := context.Background()
 	wantErr := errors.New("outbox fail")
-	old := &model.BookChapter{ID: "c1", BookID: "b1", Title: "标题"}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "标题"}
+	chapterContent := &model.BookChapterContent{ID: "c1"}
 
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(old, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(&model.Book{ID: "b1", OwnerID: "u1"}, nil)
-	suite.chapterRepo.On("Update", ctx, "c1", mock.AnythingOfType("*model.BookChapter")).Return(nil)
+	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
+	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1", OwnerID: "u1"})
+	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
+	suite.chapterRepo.On("BookChapterInfoUpdate", ctx, mock.Anything, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(wantErr)
+	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", &dto.UpdateBookChapterRequest{ID: "c1", Title: strPtr("新")})
 	assert.ErrorIs(suite.T(), err, wantErr)
 	assert.Nil(suite.T(), res)
-	suite.chapterCache.AssertNotCalled(suite.T(), "UpdateBookChapterInfo", mock.Anything, mock.Anything)
+	suite.chapterCache.AssertNotCalled(suite.T(), "UpdateBookChapterInfo", mock.Anything, mock.Anything, mock.Anything)
 }
 
 // ---------- DeleteChapter ----------
@@ -758,11 +800,11 @@ func (suite *BookChapterServiceTestSuite) TestBuyBookChapterSuccess() {
 // TestGetChapterInfoAllCacheHit 测试章节与书籍均命中缓存时不查询数据库
 func (suite *BookChapterServiceTestSuite) TestGetChapterInfoAllCacheHit() {
 	ctx := context.Background()
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1", Title: "第一章", Order: 1, VIPLevel: "vip_0"}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "第一章", Order: 1, VIPLevel: "vip_0"}
 	book := &model.Book{ID: "b1", Name: "book-1"}
 
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapter, true, nil)
-	suite.bookCache.On("GetBook", ctx, "b1").Return(book, true, nil)
+	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapterInfo, true, nil)
+	suite.mockBookCacheHit(ctx, "b1", book)
 
 	res, err := suite.svc.GetChapterInfo(ctx, "c1")
 	assert.NoError(suite.T(), err)
@@ -775,29 +817,33 @@ func (suite *BookChapterServiceTestSuite) TestGetChapterInfoAllCacheHit() {
 // TestGetChapterInfoCacheMiss 测试缓存全部未命中时回源并回写缓存
 func (suite *BookChapterServiceTestSuite) TestGetChapterInfoCacheMiss() {
 	ctx := context.Background()
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1", Title: "第一章"}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1", Title: "第一章"}
 	book := &model.Book{ID: "b1", Name: "book-1"}
 
 	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(nil, false, nil)
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(chapter, nil)
-	suite.chapterCache.On("UpdateBookChapterInfo", ctx, chapter).Return(nil)
+	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
+	suite.chapterRepo.On("BookChapterInfoGetByID", ctx, suite.db, "c1").Return(chapterInfo, nil)
+	suite.chapterCache.On("UpdateBookChapterInfo", ctx, "c1", chapterInfo).Return(nil)
+	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
+
 	suite.bookCache.On("GetBook", ctx, "b1").Return(nil, false, nil)
+	suite.bookCache.On("LockBook", ctx, "b1").Return("token", true, nil)
 	suite.bookRepo.On("GetByID", ctx, "b1").Return(book, nil)
-	suite.bookCache.On("UpdateBook", ctx, book).Return(nil)
+	suite.bookCache.On("UpdateBook", ctx, "b1", book).Return(nil)
+	suite.bookCache.On("UnlockBook", ctx, "b1", "token").Return(nil)
 
 	res, err := suite.svc.GetChapterInfo(ctx, "c1")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "c1", res.ChapterID)
-	suite.chapterCache.AssertCalled(suite.T(), "UpdateBookChapterInfo", ctx, chapter)
-	suite.bookCache.AssertCalled(suite.T(), "UpdateBook", ctx, book)
+	suite.chapterCache.AssertCalled(suite.T(), "UpdateBookChapterInfo", ctx, "c1", chapterInfo)
+	suite.bookCache.AssertCalled(suite.T(), "UpdateBook", ctx, "b1", book)
 }
 
 // TestGetChapterInfoChapterNotFound 测试缓存与数据库均无章节
 func (suite *BookChapterServiceTestSuite) TestGetChapterInfoChapterNotFound() {
 	ctx := context.Background()
 
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(nil, false, nil)
-	suite.chapterRepo.On("GetByID", ctx, "c1").Return(nil, nil)
+	suite.mockChapterCacheMissNotFound(ctx, "c1")
 
 	res, err := suite.svc.GetChapterInfo(ctx, "c1")
 	assert.ErrorIs(suite.T(), err, ErrBookChapterNotFound)
@@ -807,11 +853,10 @@ func (suite *BookChapterServiceTestSuite) TestGetChapterInfoChapterNotFound() {
 // TestGetChapterInfoBookNotFound 测试章节存在但书籍已不存在
 func (suite *BookChapterServiceTestSuite) TestGetChapterInfoBookNotFound() {
 	ctx := context.Background()
-	chapter := &model.BookChapter{ID: "c1", BookID: "b1"}
+	chapterInfo := &model.BookChapterInfo{ID: "c1", BookID: "b1"}
 
-	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapter, true, nil)
-	suite.bookCache.On("GetBook", ctx, "b1").Return(nil, false, nil)
-	suite.bookRepo.On("GetByID", ctx, "b1").Return(nil, nil)
+	suite.chapterCache.On("GetBookChapterInfo", ctx, "c1").Return(chapterInfo, true, nil)
+	suite.mockBookCacheMissNotFound(ctx, "b1")
 
 	res, err := suite.svc.GetChapterInfo(ctx, "c1")
 	assert.ErrorIs(suite.T(), err, ErrBookNotFound)
@@ -870,9 +915,8 @@ func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2SkipMissingBoo
 
 	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
 		Return(esResults, nil)
-	suite.bookCache.On("GetBook", ctx, "b-missing").Return(nil, false, nil)
-	suite.bookRepo.On("GetByID", ctx, "b-missing").Return(nil, nil)
-	suite.bookCache.On("GetBook", ctx, "b1").Return(&model.Book{ID: "b1"}, true, nil)
+	suite.mockBookCacheMissNotFound(ctx, "b-missing")
+	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1"})
 
 	res, err := suite.svc.SearchBookChaptersV2(ctx, &dto.SearchBookChaptersV2Request{Limit: 10})
 	assert.NoError(suite.T(), err)

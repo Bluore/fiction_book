@@ -243,3 +243,116 @@ func deleteUserLikeDetailWithCache(
 	}
 	return nil
 }
+
+func queryUserLikeIDListWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	userLikeCache cache.UserLikeCache,
+	userLikeRepo repository.UserLikeRepository,
+	likerID string,
+) ([]string, error) {
+	userIDList, cacheHit, err := userLikeCache.GetUserLikeUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("get user_like_user_id_list cache fail", zap.Error(err))
+	}
+	if cacheHit {
+		return userIDList, nil
+	}
+
+	token, locked, err := userLikeCache.LockUserLikeUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("lock user_like_user_id_list cache fail", zap.Error(err))
+		return userLikeRepo.GetUserLikeListByLikerID(ctx, db, likerID)
+	}
+	if !locked {
+		for i := 0; i < lockTryTimes; i++ {
+			time.Sleep(lockWaitTime)
+			userIDList, cacheHit, _ = userLikeCache.GetUserLikeUserIDList(ctx, likerID)
+			if cacheHit {
+				return userIDList, nil
+			}
+		}
+		return make([]string, 0), fmt.Errorf("user_like_user_id_list cache query too many fail")
+	}
+	defer func() {
+		if err := userLikeCache.UnlockUserLikeUserIDList(ctx, likerID, token); err != nil {
+			logger.Error("unlock user_like_user_id_list cache fail", zap.Error(err))
+		}
+	}()
+
+	userIDList, err = userLikeRepo.GetUserLikeListByLikerID(ctx, db, likerID)
+	if err != nil {
+		return make([]string, 0), err
+	}
+	if err := userLikeCache.UpdateUserLikeUserIDList(ctx, likerID, userIDList); err != nil {
+		logger.Warn("update user_like_user_id_list cache fail", zap.Error(err))
+	}
+	return userIDList, nil
+}
+
+func deleteUserLikeIDListWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	userLikeCache cache.UserLikeCache,
+	userLikeRepo repository.UserLikeRepository,
+	likerID string,
+) error {
+	var token string
+	var locked bool
+	var err error
+
+	// 查询当前关注的用户列表，用于清理详情缓存，空列表直接返回，保持幂等
+	userIDList, err := userLikeRepo.GetUserLikeListByLikerID(ctx, db, likerID)
+	if err != nil {
+		return err
+	}
+	if len(userIDList) == 0 {
+		return nil
+	}
+
+	// 删除列表缓存，避免读到旧数据
+	err = userLikeCache.DeleteUserLikeUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("delete user_like_user_id_list cache fail", zap.Error(err))
+	}
+
+	// 抢锁
+	for i := 0; i < lockTryTimes; i++ {
+		token, locked, err = userLikeCache.LockUserLikeUserIDList(ctx, likerID)
+		if err != nil {
+			logger.Warn("lock user_like_user_id_list cache fail", zap.Error(err))
+		}
+		if locked {
+			break
+		}
+		time.Sleep(lockWaitTime)
+	}
+	if !locked {
+		return fmt.Errorf("user_like_user_id_list cache lock too many fail")
+	}
+	defer func() {
+		if err := userLikeCache.UnlockUserLikeUserIDList(ctx, likerID, token); err != nil {
+			logger.Error("unlock user_like_user_id_list cache fail", zap.Error(err))
+		}
+	}()
+
+	// 删除记录
+	err = userLikeRepo.DeleteAllUserByLikerID(ctx, db, likerID)
+	if err != nil {
+		return err
+	}
+
+	// 清理该 liker 对应的详情缓存，避免读到已删除的关注状态
+	for _, userID := range userIDList {
+		if _, err := userLikeCache.DeleteUserLike(ctx, userID, likerID); err != nil {
+			logger.Warn("delete user_like cache fail", zap.Error(err))
+		}
+	}
+
+	// 删除列表缓存，保证与数据库一致
+	err = userLikeCache.DeleteUserLikeUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("delete user_like_user_id_list cache fail", zap.Error(err))
+	}
+	return nil
+}

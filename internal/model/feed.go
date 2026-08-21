@@ -9,6 +9,8 @@ import (
 const (
 	UserFeedTableName  = "user_feed"
 	UserInboxTableName = "user_inbox"
+
+	DefaultFeedCursor = "front"
 )
 
 // UserFeed Table
