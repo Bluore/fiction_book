@@ -2,7 +2,7 @@
 
 ## 概览
 
-本项目为小说阅读平台后端，数据库共包含 **11 张表**，涵盖用户、书籍、章节、书籍标签、订单、书架、阅读历史、购买记录、资产及事务性发件箱。
+本项目为小说阅读平台后端，数据库共包含 **13 张表**，涵盖用户、书籍、章节、书籍标签、订单、书架、阅读历史、购买记录、资产、事务性发件箱及 Feed 推送（`user_feed`、`user_inbox`）。
 
 ---
 
@@ -107,6 +107,19 @@ erDiagram
         datetime     created_at
     }
 
+    user_feed {
+        varchar(36) feed_id PK
+        varchar(36) user_id FK
+        varchar(36) book_id
+        text        content
+    }
+
+    user_inbox {
+        varchar(36) id      PK
+        varchar(36) user_id FK
+        varchar(36) feed_id FK
+    }
+
     user       ||--o| user_asset           : "1:1 资产账户"
     user       ||--o{ book                 : "创作书籍"
     user       ||--o{ user_bookshelf       : "书架"
@@ -120,6 +133,8 @@ erDiagram
     book       ||--o{ user_history        : "被阅读"
     book       ||--o{ user_purchased_book : "被购买"
     book_chapter ||--o{ user_purchased_chapter : "被购买"
+    user        ||--o{ user_feed          : "接收 Feed"
+    user        ||--o{ user_inbox         : "收件箱"
 ```
 
 ---
@@ -306,6 +321,37 @@ erDiagram
 
 ---
 
+### `user_feed` — 用户 Feed 表
+
+存储推送/写入到用户的 Feed 内容，与 `user_inbox`（Feed ID 列表）配合实现用户 Feed 流。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| feed_id | varchar(36) | PK | Feed ID |
+| user_id | varchar(36) | FK → user.id, INDEX | 接收 feed 的用户 |
+| book_id | varchar(36) | NOT NULL | 相关书籍 ID |
+| content | text | | Feed 内容描述 |
+| created_at | datetime(3) | NOT NULL | 创建时间（Feed 排序依据） |
+| updated_at | datetime(3) | | |
+| deleted_at | datetime(3) | INDEX | 软删除 |
+
+---
+
+### `user_inbox` — 用户 Feed 收件箱表
+
+存储用户收件箱中的 Feed ID 列表，按 `created_at DESC` 游标分页读取，再通过 `feed_id` 关联 `user_feed` 获取内容。
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | varchar(36) | PK | 收件箱记录 ID |
+| user_id | varchar(36) | FK → user.id, INDEX | 接收 feed 的用户 |
+| feed_id | varchar(36) | NOT NULL | Feed ID（关联 user_feed.feed_id） |
+| created_at | datetime(3) | NOT NULL, INDEX | 创建时间（游标分页依据） |
+| updated_at | datetime(3) | | |
+| deleted_at | datetime(3) | INDEX | 软删除 |
+
+---
+
 ## 表关系汇总
 
 | 关系 | 类型 | 说明 |
@@ -323,3 +369,5 @@ erDiagram
 | user → user_purchased_chapter | 1:N | 用户可购买多个章节 |
 | book_chapter → user_purchased_chapter | 1:N | 一个章节可被多人购买 |
 | user → order | 1:N | 用户可有多笔订单 |
+| user → user_feed | 1:N | 用户接收多条 Feed |
+| user → user_inbox | 1:N | 用户收件箱中有多条 Feed 记录 |
