@@ -180,10 +180,16 @@ func (s *bookChapterService) GuestGetChapter(ctx context.Context, chapterID stri
 	if err != nil {
 		return nil, err
 	}
+	if bookChapter == nil {
+		return nil, ErrBookChapterNotFound
+	}
 
 	book, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapter.BookID)
 	if err != nil {
 		return nil, err
+	}
+	if book == nil {
+		return nil, ErrBookNotFound
 	}
 
 	if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel("") {
