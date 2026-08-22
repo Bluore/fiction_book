@@ -181,8 +181,8 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		// Feed 管理
 		feed := v2.Group("/feed")
 		{
-			feed.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GetUserFeedV2)
-			feed.GET("/guest", middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GuestGetUserFeedV2)
+			feed.POST("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GetUserFeedV2)
+			feed.POST("/guest", middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GuestGetUserFeedV2)
 		}
 
 		// VIP购买管理

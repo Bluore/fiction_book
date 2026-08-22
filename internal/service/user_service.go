@@ -550,13 +550,10 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 		return nil, ErrUserNotFound
 	}
 
-	userAsset, userAssetGoldHit, _ := s.userAssetCache.GetUserAsset(ctx, userID)
-	if !userAssetGoldHit {
-		// 如果缓存没有命中 降级到MySql
-		userAsset, err = s.userAssetRepo.GetByID(ctx, s.db, userID)
-		if err != nil {
-			return nil, err
-		}
+	userAsset, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, userID)
+	if err != nil {
+		logger.Error("query user asset detail fail", zap.Error(err))
+		return nil, err
 	}
 
 	// 数据只存储在redis中

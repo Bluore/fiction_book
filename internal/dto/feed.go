@@ -2,8 +2,8 @@ package dto
 
 type GetUserFeedRequestV2 struct {
 	LastCursorID   string `json:"last_cursor_id"`
-	TargetCursorID string `json:"target_cursor_id"`
-	Offset         int    `json:"offset"`
+	TargetCursorID string `json:"target_cursor_id" binding:"required"`
+	Offset         int    `json:"offset" binding:"min=0"`
 }
 
 type GetUserFeedResponseV2 struct {

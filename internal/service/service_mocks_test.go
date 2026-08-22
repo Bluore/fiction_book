@@ -193,6 +193,12 @@ func (m *MockUserBookshelfRepository) CreateByUserIDAndBookID(ctx context.Contex
 	return m.Called(ctx, db, userID, bookID).Error(0)
 }
 
+func (m *MockUserBookshelfRepository) GetByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) (*model.UserBookshelf, error) {
+	args := m.Called(ctx, db, userID, bookID)
+	item, _ := args.Get(0).(*model.UserBookshelf)
+	return item, args.Error(1)
+}
+
 func (m *MockUserBookshelfRepository) DeleteByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error {
 	return m.Called(ctx, db, userID, bookID).Error(0)
 }
@@ -206,6 +212,10 @@ func (m *MockUserBookshelfRepository) CheckByUserIDAndBookID(ctx context.Context
 func (m *MockUserBookshelfRepository) CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error) {
 	args := m.Called(ctx, db, userID)
 	return args.Int(0), args.Error(1)
+}
+
+func (m *MockUserBookshelfRepository) DeleteAllUserByBookID(ctx context.Context, db *gorm.DB, bookID string) error {
+	return m.Called(ctx, db, bookID).Error(0)
 }
 
 // ---------- BookCache ----------

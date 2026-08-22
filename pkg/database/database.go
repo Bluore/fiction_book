@@ -86,13 +86,24 @@ func InitDB(cfg *config.Config) (*gorm.DB, error) {
 		if err := db.AutoMigrate(&model.Outbox{}); err != nil {
 			return nil, err
 		}
-		//if err := db.AutoMigrate(&model.FeedInbox{}); err != nil {
-		//	return nil, err
-		//}
-		//if err := db.AutoMigrate(&model.FeedCursor{}); err != nil {
-		//	return nil, err
-		//}
 		if err := db.AutoMigrate(&model.ConsumeRecord{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserInbox{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserFeed{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.UserInfo{}); err != nil {
+			return nil, err
+		}
+
+		// ! 已废弃
+		if err := db.AutoMigrate(&model.FeedInbox{}); err != nil {
+			return nil, err
+		}
+		if err := db.AutoMigrate(&model.FeedCursor{}); err != nil {
 			return nil, err
 		}
 	}

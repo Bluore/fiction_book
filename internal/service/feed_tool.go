@@ -115,7 +115,6 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 	lastFeedID string,
 	targetCursorID string,
 ) (*model.UserFeedCursor, []string, error) {
-	var feedDetailList []*model.UserFeed
 	var targetUserIDList []string
 	var err error
 
@@ -131,16 +130,17 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 
 	// FOCUS 每次增加搜索范围，直到获取到100个Feed或者没有新的Feed
 	baseTime := lastFeedTime
-	findDeepDuration := time.Hour
+	findDeepDuration := time.Hour * 24 * 30
 	lastFindTime := baseTime
 	lastFindID := ""
 
 	var nextLastTime time.Time = time.Now()
 	var nextLastFeedID string = ""
 
+	var feedDetailList = make([]*model.UserFeed, 0, 100)
 GetFeedIDList:
-	for len(feedDetailList) >= 100 {
-		if lastFeedTime.Before(MINTime) {
+	for len(feedDetailList) < 100 {
+		if lastFindTime.Before(MINTime) {
 			// FOCUS 超出时间范围进入下一步，防止死循环
 			if len(feedDetailList) != 0 {
 				break GetFeedIDList
@@ -204,9 +204,11 @@ GetFeedIDList:
 		}
 
 		findDeepDuration *= 2
-		lastFindTime.Add(-findDeepDuration)
+		lastFindTime = lastFindTime.Add(-findDeepDuration)
 	}
-	feedDetailList = feedDetailList[:100]
+	if len(feedDetailList) > 100 {
+		feedDetailList = feedDetailList[:100]
+	}
 
 	// FOCUS 排序ID结果
 	sort.Slice(feedDetailList, func(i, j int) bool {
@@ -220,7 +222,7 @@ GetFeedIDList:
 		return itemA.FeedID > itemB.FeedID
 	})
 
-	var feedIDList []string = make([]string, len(feedDetailList))
+	var feedIDList []string = make([]string, 0, len(feedDetailList))
 	for _, feedDetail := range feedDetailList {
 		feedIDList = append(feedIDList, feedDetail.FeedID)
 	}

@@ -26,26 +26,30 @@ type FeedServiceV2 interface {
 }
 
 type feedServiceV2 struct {
-	bookRepo          repository.BookRepository
-	bookTagRepo       repository.BookTagRepository
-	bookESRepo        repository.BookESRepository
-	userRepo          repository.UserRepository
-	userAssetRepo     repository.UserAssetRepository
-	userLikeRepo      repository.UserLikeRepository
-	purchasedBookRepo repository.UserPurchasedBookRepository
-	userCache         cache.UserCache
-	userAssetCache    cache.UserAssetCache
-	userFeedRepo      repository.UserFeedRepository
-	userInboxRepo     repository.UserInboxRepository
-	outboxRepo        repository.OutboxRepository
-	bookCache         cache.BookCache
-	userStatCache     cache.UserStatCache
-	bookThermalCache  cache.BookThermalCache
-	bookTagCache      cache.BookTagCache
-	feedCache         cache.UserFeedCache
-	userLikeCache     cache.UserLikeCache
-	db                *gorm.DB
-	cfg               *config.Config
+	bookRepo           repository.BookRepository
+	bookTagRepo        repository.BookTagRepository
+	bookESRepo         repository.BookESRepository
+	userRepo           repository.UserRepository
+	userAssetRepo      repository.UserAssetRepository
+	userLikeRepo       repository.UserLikeRepository
+	purchasedBookRepo  repository.UserPurchasedBookRepository
+	userFeedRepo       repository.UserFeedRepository
+	userInboxRepo      repository.UserInboxRepository
+	outboxRepo         repository.OutboxRepository
+	userInfoRepo       repository.UserInfoRepository
+	userBookshelfRepo  repository.UserBookshelfRepository
+	userCache          cache.UserCache
+	userAssetCache     cache.UserAssetCache
+	bookCache          cache.BookCache
+	userStatCache      cache.UserStatCache
+	bookThermalCache   cache.BookThermalCache
+	bookTagCache       cache.BookTagCache
+	feedCache          cache.UserFeedCache
+	userLikeCache      cache.UserLikeCache
+	userInfoCache      cache.UserInfoCache
+	userBookshelfCache cache.UserBookshelfCache
+	db                 *gorm.DB
+	cfg                *config.Config
 }
 
 // NewFeedServiceV2 创建 Feed 服务 V2 实例
@@ -62,36 +66,44 @@ func NewFeedServiceV2(
 	userFeedRepo repository.UserFeedRepository,
 	userInboxRepo repository.UserInboxRepository,
 	outboxRepo repository.OutboxRepository,
+	userInfoRepo repository.UserInfoRepository,
+	userBookshelfRepo repository.UserBookshelfRepository,
 	bookCache cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
 	bookTagCache cache.BookTagCache,
 	feedCache cache.UserFeedCache,
 	userLikeCache cache.UserLikeCache,
+	userInfoCache cache.UserInfoCache,
+	userBookshelfCache cache.UserBookshelfCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) FeedServiceV2 {
 	return &feedServiceV2{
-		bookRepo:          bookRepo,
-		bookTagRepo:       bookTagRepo,
-		bookESRepo:        bookESRepo,
-		userRepo:          userRepo,
-		userAssetRepo:     userAssetRepo,
-		userLikeRepo:      userLikeRepo,
-		purchasedBookRepo: purchasedBookRepo,
-		userCache:         userCache,
-		userAssetCache:    userAssetCache,
-		userFeedRepo:      userFeedRepo,
-		userInboxRepo:     userInboxRepo,
-		outboxRepo:        outboxRepo,
-		bookCache:         bookCache,
-		userStatCache:     userStatCache,
-		bookThermalCache:  bookThermalCache,
-		bookTagCache:      bookTagCache,
-		feedCache:         feedCache,
-		userLikeCache:     userLikeCache,
-		db:                db,
-		cfg:               cfg,
+		bookRepo:           bookRepo,
+		bookTagRepo:        bookTagRepo,
+		bookESRepo:         bookESRepo,
+		userRepo:           userRepo,
+		userAssetRepo:      userAssetRepo,
+		userLikeRepo:       userLikeRepo,
+		purchasedBookRepo:  purchasedBookRepo,
+		userCache:          userCache,
+		userAssetCache:     userAssetCache,
+		userFeedRepo:       userFeedRepo,
+		userInboxRepo:      userInboxRepo,
+		outboxRepo:         outboxRepo,
+		userInfoRepo:       userInfoRepo,
+		userBookshelfRepo:  userBookshelfRepo,
+		bookCache:          bookCache,
+		userStatCache:      userStatCache,
+		bookThermalCache:   bookThermalCache,
+		bookTagCache:       bookTagCache,
+		feedCache:          feedCache,
+		userLikeCache:      userLikeCache,
+		userInfoCache:      userInfoCache,
+		userBookshelfCache: userBookshelfCache,
+		db:                 db,
+		cfg:                cfg,
 	}
 }
 
@@ -108,7 +120,7 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 		}, nil
 	}
 
-	var feedListResponse = make([]*dto.FeedResponse, len(feedIDList))
+	var feedListResponse = make([]*dto.FeedResponse, 0, len(feedIDList))
 	// 组装 Feed 信息
 	for _, feedID := range feedIDList {
 		feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
@@ -131,20 +143,48 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 
 		userDetail, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, feedDetail.UserID)
 		if err != nil {
-			logger.Warn("query user feed detail fail", zap.Error(err))
+			logger.Warn("query user detail fail", zap.Error(err))
 			continue
 		}
 		if userDetail == nil {
 			continue
 		}
 
-		userAssetDetail, err := s.userAssetRepo.GetByID(ctx, s.db, feedDetail.UserID)
+		userAssetDetail, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, feedDetail.UserID)
 		if err != nil {
-			logger.Warn("query user feed detail fail", zap.Error(err))
+			logger.Warn("query user asset detail fail", zap.Error(err))
 			continue
 		}
 		if userAssetDetail == nil {
 			continue
+		}
+
+		userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user info detail fail", zap.Error(err))
+			continue
+		}
+		if userInfoDetail == nil {
+			continue
+		}
+
+		userLikeDetail, err := queryUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userID, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user like detail fail", zap.Error(err))
+		}
+		var isUserLiker = true
+		if userLikeDetail == nil {
+			isUserLiker = false
+		}
+
+		userBookshelfDetail, err := queryUserBookshelfDetailWithCache(ctx, s.db, s.userBookshelfCache, s.userBookshelfRepo, userID, feedDetail.BookID)
+		if err != nil {
+			logger.Warn("query user bookshelf detail fail", zap.Error(err))
+			continue
+		}
+		var isInBookshelf = true
+		if userBookshelfDetail == nil {
+			isInBookshelf = false
 		}
 
 		feedDto := &dto.FeedResponse{
@@ -164,10 +204,10 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 			BookCreatedAt:       dto.UnixTime(bookDetail.CreatedAt),
 			BookUpdatedAt:       dto.UnixTime(bookDetail.UpdatedAt),
 			UserProfileUrl:      userDetail.ProfileImage,
-			UserFans:            0,
-			UserVIPLevel:        "",
-			IsInBookShelf:       false,
-			IsUserLiker:         false,
+			UserFans:            userInfoDetail.FansNum,
+			UserVIPLevel:        userAssetDetail.VIPLevel,
+			IsInBookShelf:       isInBookshelf,
+			IsUserLiker:         isUserLiker,
 		}
 
 		feedListResponse = append(feedListResponse, feedDto)

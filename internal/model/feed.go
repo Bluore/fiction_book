@@ -18,17 +18,13 @@ type UserFeed struct {
 	FeedID string `json:"feed_id" gorm:"primaryKey;type:varchar(36);index:idx_userID_createAt_feedID_deleteAt,priority:3"`
 	UserID string `json:"user_id" gorm:"type:varchar(36);index:idx_userID_createAt_feedID_deleteAt,priority:1"`
 
-	feedContent
+	BookID  string `json:"book_id" gorm:"type:varchar(36)"`
+	Content string `json:"content" gorm:"type:text"`
+	Rank    int64  `json:"rank" gorm:"type:bigint"`
 
 	CreatedAt time.Time      `json:"created_at" gorm:"index:idx_userID_createAt_feedID_deleteAt,priority:2"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index;index:idx_userID_createAt_feedID_deleteAt,priority:4"`
-}
-
-type feedContent struct {
-	BookID  string `json:"book_id" gorm:"type:varchar(36)"`
-	Content string `json:"content" gorm:"type:text"`
-	Rank    int64  `json:"rank" gorm:"type:bigint"`
 }
 
 func (*UserFeed) TableName() string {

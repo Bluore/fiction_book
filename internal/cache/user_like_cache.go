@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	keyUserLike               = "GSF:user:cache:like:%s:%s"
-	keyUserLikeLock           = "GSF:user:lock:like:%s:%s"
-	keyUserLikeUserIDList     = "GSF:user:cache:like_user_id_list:%s"
-	keyUserLikeUserIDListLock = "GSF:user:lock:like_user_id_list:%s"
+	keyUserLike               = "GSF:user:cache:like:user_id:%s:liker_id:%s"
+	keyUserLikeLock           = "GSF:user:lock:like:user_id:%s:liker_id:%s"
+	keyUserLikeUserIDList     = "GSF:user:cache:like_list:liker:%s"
+	keyUserLikeUserIDListLock = "GSF:user:lock:like_list:liker:%s"
 
 	timeUserLike = time.Hour
 )

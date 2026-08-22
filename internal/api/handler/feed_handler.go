@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fiction-book/internal/model"
+
 	"github.com/gin-gonic/gin"
 
 	"fiction-book/internal/api/middleware"
@@ -23,13 +25,19 @@ import (
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 401 {object} response.Response "登录已失效"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v2/feed [get]
+// @Router /api/v2/feed [post]
 func (h *Handler) GetUserFeedV2(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetUserFeedRequestV2](c)
 	userID := transmit.GetStr(c, "userID")
 	if userID == "" {
 		response.PushError(c, ErrGetParam)
 		return
+	}
+	if req.TargetCursorID == "" {
+		req.TargetCursorID = model.DefaultFeedCursor
+	}
+	if req.Offset <= 0 {
+		req.Offset = 0
 	}
 
 	feeds, err := h.feedServiceV2.GetUserFeed(c.Request.Context(), userID, req)
@@ -53,7 +61,7 @@ func (h *Handler) GetUserFeedV2(c *gin.Context) {
 // @Success 200 {object} response.Response{data=dto.GetUserFeedResponseV2}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
-// @Router /api/v2/feed/guest [get]
+// @Router /api/v2/feed/guest [post]
 func (h *Handler) GuestGetUserFeedV2(c *gin.Context) {
 	req := middleware.MustGetRequest[dto.GetUserFeedRequestV2](c)
 
