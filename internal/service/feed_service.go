@@ -188,6 +188,7 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 		}
 
 		feedDto := &dto.FeedResponse{
+			FeedID:              feedID,
 			BookID:              feedDetail.BookID,
 			UserID:              feedDetail.UserID,
 			Content:             feedDetail.Content,

@@ -41,25 +41,49 @@ func (s *feedServiceV2) queryFeedIDListWithCache(
 		}
 
 		// FOCUS 如果表空了向下寻找
-		targetCursor, cacheHit, err := s.feedCache.GetUserFeedCursor(ctx, userID, targetCursorID)
+		curCursor, cacheHit, err := s.feedCache.GetUserFeedCursor(ctx, userID, targetCursorID)
 		if err != nil {
 			logger.Warn("get user feed cursor failed", zap.Error(err))
 			return nil, make([]string, 0), err
 		}
 		if cacheHit {
-			if nextCursor, feedIDList, err := s.refreshFeedIDListInCache(ctx, userID, targetCursor.LastTime, targetCursor.NextCursorID, targetCursor.CursorID); err != nil {
-				logger.Warn("get user feed id list failed", zap.Error(err))
+			nextFeedIDList, cacheHit, err := s.feedCache.GetUserFeedFeedIDs(ctx, userID, curCursor.NextCursorID, 0, 10)
+			if err != nil {
+				logger.Warn("get user feed id failed", zap.Error(err))
 				return nil, make([]string, 0), err
-			} else if nextCursor != nil {
+			} else if cacheHit {
+				if len(nextFeedIDList) == 0 {
+					return &nextQueryCursor{
+						nextCursorID: model.DefaultFeedCursor,
+						nextOffset:   0,
+					}, make([]string, 0), nil
+				}
+
 				return &nextQueryCursor{
-					nextCursorID: nextCursor.CursorID,
-					nextOffset:   len(feedIDList),
-				}, feedIDList, nil
-			} else {
-				// FOCUS 如果没有内容了就直接返回空
-				return nil, make([]string, 0), nil
+					nextCursorID: curCursor.NextCursorID,
+					nextOffset:   10,
+				}, nextFeedIDList, nil
 			}
+
+			// FOCUS 向下新建一个Cursor
+			_, nextFeedIDList, err = s.refreshFeedIDListInCache(ctx, userID, curCursor.LastTime, curCursor.LastID, curCursor.NextCursorID)
+			if err != nil {
+				logger.Warn("get user feed id failed", zap.Error(err))
+				return nil, make([]string, 0), err
+			}
+			if len(nextFeedIDList) == 0 {
+				return &nextQueryCursor{
+					nextCursorID: model.DefaultFeedCursor,
+					nextOffset:   0,
+				}, make([]string, 0), nil
+			}
+
+			return &nextQueryCursor{
+				nextCursorID: curCursor.NextCursorID,
+				nextOffset:   10,
+			}, nextFeedIDList, nil
 		}
+
 		// FOCUS 缓存未命中直接下一步
 	}
 
@@ -134,9 +158,6 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 	lastFindTime := baseTime
 	lastFindID := ""
 
-	var nextLastTime time.Time = time.Now()
-	var nextLastFeedID string = ""
-
 	var feedDetailList = make([]*model.UserFeed, 0, 100)
 GetFeedIDList:
 	for len(feedDetailList) < 100 {
@@ -170,14 +191,6 @@ GetFeedIDList:
 
 			for _, feedDetail := range queryFeedDetailList {
 				feedDetailList = append(feedDetailList, feedDetail)
-			}
-
-			backFeedTime := queryFeedDetailList[len(queryFeedDetailList)-1].CreatedAt
-			backFeedID := queryFeedDetailList[len(queryFeedDetailList)-1].FeedID
-
-			if backFeedTime.Before(nextLastTime) || (backFeedTime.Equal(nextLastTime) && backFeedID < nextLastFeedID) {
-				nextLastTime = backFeedTime
-				nextLastFeedID = backFeedID
 			}
 		}
 
@@ -222,8 +235,20 @@ GetFeedIDList:
 		return itemA.FeedID > itemB.FeedID
 	})
 
+	var nextLastTime time.Time = time.Now()
+	var nextLastFeedID string = ""
 	var feedIDList []string = make([]string, 0, len(feedDetailList))
+
 	for _, feedDetail := range feedDetailList {
+
+		backFeedTime := feedDetail.CreatedAt
+		backFeedID := feedDetail.FeedID
+
+		if backFeedTime.Before(nextLastTime) || (backFeedTime.Equal(nextLastTime) && backFeedID < nextLastFeedID) {
+			nextLastTime = backFeedTime
+			nextLastFeedID = backFeedID
+		}
+
 		feedIDList = append(feedIDList, feedDetail.FeedID)
 	}
 
@@ -247,7 +272,11 @@ GetFeedIDList:
 		return nil, make([]string, 0), err
 	}
 
-	return targetCursor, feedIDList, nil
+	feedIDListAfterCut := feedIDList
+	if len(feedIDListAfterCut) > 10 {
+		feedIDListAfterCut = feedIDListAfterCut[:10]
+	}
+	return targetCursor, feedIDListAfterCut, nil
 }
 
 func queryUserFeedDetailWithCache(

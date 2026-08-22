@@ -13,6 +13,7 @@ type GetUserFeedResponseV2 struct {
 }
 
 type FeedResponse struct {
+	FeedID        string   `json:"feed_id"`
 	BookID        string   `json:"book_id"`
 	UserID        string   `json:"user_id"`
 	Content       string   `json:"content"`
