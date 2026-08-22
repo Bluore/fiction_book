@@ -518,6 +518,10 @@ func (m *MockUserAssetRepository) CreateUserAsset(ctx context.Context, db *gorm.
 	return m.Called(ctx, db, id).Error(0)
 }
 
+func (m *MockUserAssetRepository) DeleteByID(ctx context.Context, db *gorm.DB, id string) error {
+	return m.Called(ctx, db, id).Error(0)
+}
+
 // ---------- OutboxRepository ----------
 
 type MockOutboxRepository struct {

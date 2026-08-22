@@ -550,7 +550,7 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 		return nil, ErrUserNotFound
 	}
 
-	userAsset, userAssetGoldHit, _ := s.userAssetCache.Get(ctx, userID)
+	userAsset, userAssetGoldHit, _ := s.userAssetCache.GetUserAsset(ctx, userID)
 	if !userAssetGoldHit {
 		// 如果缓存没有命中 降级到MySql
 		userAsset, err = s.userAssetRepo.GetByID(ctx, s.db, userID)
