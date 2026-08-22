@@ -2,12 +2,18 @@ package service
 
 import (
 	"context"
-	"fiction-book/internal/model"
-	"fiction-book/pkg/logger"
+	"fmt"
+	"sort"
 	"time"
+
+	"fiction-book/internal/cache"
+	"fiction-book/internal/model"
+	"fiction-book/internal/repository"
+	"fiction-book/pkg/logger"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type nextQueryCursor struct {
@@ -109,7 +115,7 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 	lastFeedID string,
 	targetCursorID string,
 ) (*model.UserFeedCursor, []string, error) {
-	var feedIDList []string
+	var feedDetailList []*model.UserFeed
 	var targetUserIDList []string
 	var err error
 
@@ -126,18 +132,17 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 	// FOCUS 每次增加搜索范围，直到获取到100个Feed或者没有新的Feed
 	baseTime := lastFeedTime
 	findDeepDuration := time.Hour
-	lastFindTime := baseTime.Add(-findDeepDuration)
+	lastFindTime := baseTime
+	lastFindID := ""
 
-	var nextLastTime time.Time
-	var nextLastFeedID string
+	var nextLastTime time.Time = time.Now()
+	var nextLastFeedID string = ""
 
 GetFeedIDList:
-	for len(feedIDList) >= 100 {
-		var queryFeedIDListResult = make([]string, 100)
-
+	for len(feedDetailList) >= 100 {
 		if lastFeedTime.Before(MINTime) {
 			// FOCUS 超出时间范围进入下一步，防止死循环
-			if len(queryFeedIDListResult) != 0 {
+			if len(feedDetailList) != 0 {
 				break GetFeedIDList
 			}
 			return nil, make([]string, 0), nil
@@ -146,10 +151,17 @@ GetFeedIDList:
 		// FOCUS 获取读推送的Feed
 		for _, targetUserID := range targetUserIDList {
 
-			queryFeedDetailList, err := s.feedRepo.GetFeedListByUserIDWithStartCursorAndEndCursor(ctx, s.db, targetUserID, lastFeedTime, lastFeedID, lastFindTime)
+			queryFeedDetailList, err := s.userFeedRepo.GetFeedListByUserIDWithStartCursorAndEndCursor(
+				ctx,
+				s.db,
+				targetUserID,
+				lastFindTime,
+				lastFindID,
+				lastFindTime.Add(-findDeepDuration),
+			)
 			if err != nil {
 				logger.Warn("get feed by id failed", zap.Error(err))
-				continue
+				return nil, make([]string, 0), err
 			}
 
 			if len(queryFeedDetailList) == 0 {
@@ -157,19 +169,61 @@ GetFeedIDList:
 			}
 
 			for _, feedDetail := range queryFeedDetailList {
-				queryFeedIDListResult = append(queryFeedIDListResult, feedDetail.FeedID)
+				feedDetailList = append(feedDetailList, feedDetail)
 			}
 
-			nextLastTime = queryFeedDetailList[len(queryFeedDetailList)-1].CreatedAt
-			nextLastFeedID = queryFeedDetailList[len(queryFeedDetailList)-1].FeedID
+			backFeedTime := queryFeedDetailList[len(queryFeedDetailList)-1].CreatedAt
+			backFeedID := queryFeedDetailList[len(queryFeedDetailList)-1].FeedID
+
+			if backFeedTime.Before(nextLastTime) || (backFeedTime.Equal(nextLastTime) && backFeedID < nextLastFeedID) {
+				nextLastTime = backFeedTime
+				nextLastFeedID = backFeedID
+			}
 		}
 
-		// todo 获取写推送的Feed
+		// FOCUS 获取写推送的Feed
+		if queryFeedIDList, err := s.userInboxRepo.GetUserInboxIDListByUserIDWithStartCursorAndEndCursor(
+			ctx,
+			s.db,
+			userID,
+			lastFeedTime,
+			lastFeedID,
+			lastFindTime,
+		); err != nil {
+			logger.Warn("get user inbox by id failed", zap.Error(err))
+			return nil, make([]string, 0), err
+		} else if len(queryFeedIDList) > 0 {
+			for _, feedID := range queryFeedIDList {
+				feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
+				if err != nil {
+					logger.Warn("get user feed detail failed", zap.Error(err))
+					continue
+				}
+				feedDetailList = append(feedDetailList, feedDetail)
+			}
+		}
 
 		findDeepDuration *= 2
 		lastFindTime.Add(-findDeepDuration)
 	}
-	feedIDList = feedIDList[:100]
+	feedDetailList = feedDetailList[:100]
+
+	// FOCUS 排序ID结果
+	sort.Slice(feedDetailList, func(i, j int) bool {
+		itemA, itemB := feedDetailList[i], feedDetailList[j]
+		if itemA.Rank != itemB.Rank {
+			return itemA.Rank > itemB.Rank
+		}
+		if !itemA.CreatedAt.Equal(itemB.CreatedAt) {
+			return itemA.CreatedAt.After(itemB.CreatedAt)
+		}
+		return itemA.FeedID > itemB.FeedID
+	})
+
+	var feedIDList []string = make([]string, len(feedDetailList))
+	for _, feedDetail := range feedDetailList {
+		feedIDList = append(feedIDList, feedDetail.FeedID)
+	}
 
 	// FOCUS 更新数据
 	err = s.feedCache.UpdateUserFeedFeedIDs(ctx, userID, targetCursorID, feedIDList)
@@ -192,4 +246,50 @@ GetFeedIDList:
 	}
 
 	return targetCursor, feedIDList, nil
+}
+
+func queryUserFeedDetailWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	feedCache cache.UserFeedCache,
+	userFeedRepo repository.UserFeedRepository,
+	feedID string,
+) (*model.UserFeed, error) {
+	feedDetail, cacheHit, err := feedCache.GetFeedDetail(ctx, feedID)
+	if err != nil {
+		logger.Warn("get user_feed cache fail", zap.Error(err))
+	}
+	if cacheHit {
+		return feedDetail, nil
+	}
+
+	token, locked, err := feedCache.LockFeedDetail(ctx, feedID)
+	if err != nil {
+		logger.Warn("lock user_feed cache fail", zap.Error(err))
+		return userFeedRepo.GetFeedByFeedID(ctx, db, feedID)
+	}
+	if !locked {
+		for i := 0; i < lockTryTimes; i++ {
+			time.Sleep(lockWaitTime)
+			feedDetail, cacheHit, _ = feedCache.GetFeedDetail(ctx, feedID)
+			if cacheHit {
+				return feedDetail, nil
+			}
+		}
+		return nil, fmt.Errorf("user_feed cache query too many fail")
+	}
+	defer func() {
+		if err := feedCache.UnlockFeedDetail(ctx, feedID, token); err != nil {
+			logger.Error("unlock user_feed cache fail", zap.Error(err))
+		}
+	}()
+
+	feedDetail, err = userFeedRepo.GetFeedByFeedID(ctx, db, feedID)
+	if err != nil {
+		return nil, err
+	}
+	if err := feedCache.UpdateFeedDetail(ctx, feedID, feedDetail); err != nil {
+		logger.Warn("update user_feed cache fail", zap.Error(err))
+	}
+	return feedDetail, nil
 }

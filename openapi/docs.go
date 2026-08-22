@@ -3816,6 +3816,151 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v2/feed": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取当前登录用户的 Feed 流，通过游标分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "获取用户 Feed 流",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "上一页游标ID",
+                        "name": "last_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标游标ID",
+                        "name": "target_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "游标内偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserFeedResponseV2"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/feed/guest": {
+            "get": {
+                "description": "未登录用户获取 Feed 流，通过游标分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "获取用户 Feed 流（游客）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "上一页游标ID",
+                        "name": "last_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标游标ID",
+                        "name": "target_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "游标内偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserFeedResponseV2"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/purchases/vip": {
             "post": {
                 "security": [
@@ -4439,6 +4584,71 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.FeedResponse": {
+            "type": "object",
+            "properties": {
+                "book_bookshelf_amount": {
+                    "type": "integer"
+                },
+                "book_browse_amount": {
+                    "type": "integer"
+                },
+                "book_cover_url": {
+                    "type": "string"
+                },
+                "book_created_at": {
+                    "type": "string"
+                },
+                "book_description": {
+                    "type": "string"
+                },
+                "book_id": {
+                    "type": "string"
+                },
+                "book_name": {
+                    "type": "string"
+                },
+                "book_price": {
+                    "type": "integer"
+                },
+                "book_push_at": {
+                    "type": "string"
+                },
+                "book_updated_at": {
+                    "type": "string"
+                },
+                "book_vip_level": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "feed_created_at": {
+                    "type": "string"
+                },
+                "feed_updated_at": {
+                    "type": "string"
+                },
+                "is_in_book_shelf": {
+                    "type": "boolean"
+                },
+                "is_user_liker": {
+                    "type": "boolean"
+                },
+                "user_fans": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_profile_url": {
+                    "type": "string"
+                },
+                "user_vip_level": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ForgetPasswordRequest": {
             "type": "object",
             "required": [
@@ -4503,6 +4713,23 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.GetUserFeedResponseV2": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.FeedResponse"
+                    }
+                },
+                "next_cursor_id": {
+                    "type": "string"
+                },
+                "next_offset": {
                     "type": "integer"
                 }
             }

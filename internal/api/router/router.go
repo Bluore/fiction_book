@@ -178,6 +178,13 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			chapters.GET("/search", middleware.Validation(&dto.SearchBookChaptersV2Request{}), h.SearchBookChaptersV2)
 		}
 
+		// Feed 管理
+		feed := v2.Group("/feed")
+		{
+			feed.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GetUserFeedV2)
+			feed.GET("/guest", middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GuestGetUserFeedV2)
+		}
+
 		// VIP购买管理
 		vipPurchases := v2.Group("/purchases/vip")
 		{

@@ -28,6 +28,7 @@ var ServiceSet = wire.NewSet(
 	ProvideUserLikeService,
 	ProvideOrderService,
 	ProvideFeedService,
+	ProvideFeedServiceV2,
 )
 
 // ProvideUserService 提供用户服务
@@ -242,4 +243,51 @@ func ProvideFeedService(
 	db *gorm.DB,
 ) service.FeedService {
 	return service.NewFeedService(feedRepo, feedCache, db)
+}
+
+// ProvideFeedServiceV2 提供新版 Feed 服务
+func ProvideFeedServiceV2(
+	bookRepo repository.BookRepository,
+	bookTagRepo repository.BookTagRepository,
+	bookESRepo repository.BookESRepository,
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	userLikeRepo repository.UserLikeRepository,
+	purchasedBookRepo repository.UserPurchasedBookRepository,
+	userCache cache.UserCache,
+	userAssetCache cache.UserAssetCache,
+	userFeedRepo repository.UserFeedRepository,
+	userInboxRepo repository.UserInboxRepository,
+	outboxRepo repository.OutboxRepository,
+	bookCache cache.BookCache,
+	userStatCache cache.UserStatCache,
+	bookThermalCache cache.BookThermalCache,
+	bookTagCache cache.BookTagCache,
+	feedCache cache.UserFeedCache,
+	userLikeCache cache.UserLikeCache,
+	db *gorm.DB,
+	cfg *config.Config,
+) service.FeedServiceV2 {
+	return service.NewFeedServiceV2(
+		bookRepo,
+		bookTagRepo,
+		bookESRepo,
+		userRepo,
+		userAssetRepo,
+		userLikeRepo,
+		purchasedBookRepo,
+		userCache,
+		userAssetCache,
+		userFeedRepo,
+		userInboxRepo,
+		outboxRepo,
+		bookCache,
+		userStatCache,
+		bookThermalCache,
+		bookTagCache,
+		feedCache,
+		userLikeCache,
+		db,
+		cfg,
+	)
 }

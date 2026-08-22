@@ -7,8 +7,10 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/logger"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -31,7 +33,10 @@ type feedServiceV2 struct {
 	userAssetRepo     repository.UserAssetRepository
 	userLikeRepo      repository.UserLikeRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
-	feedRepo          repository.UserFeedRepository
+	userCache         cache.UserCache
+	userAssetCache    cache.UserAssetCache
+	userFeedRepo      repository.UserFeedRepository
+	userInboxRepo     repository.UserInboxRepository
 	outboxRepo        repository.OutboxRepository
 	bookCache         cache.BookCache
 	userStatCache     cache.UserStatCache
@@ -43,12 +48,59 @@ type feedServiceV2 struct {
 	cfg               *config.Config
 }
 
+// NewFeedServiceV2 创建 Feed 服务 V2 实例
+func NewFeedServiceV2(
+	bookRepo repository.BookRepository,
+	bookTagRepo repository.BookTagRepository,
+	bookESRepo repository.BookESRepository,
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	userLikeRepo repository.UserLikeRepository,
+	purchasedBookRepo repository.UserPurchasedBookRepository,
+	userCache cache.UserCache,
+	userAssetCache cache.UserAssetCache,
+	userFeedRepo repository.UserFeedRepository,
+	userInboxRepo repository.UserInboxRepository,
+	outboxRepo repository.OutboxRepository,
+	bookCache cache.BookCache,
+	userStatCache cache.UserStatCache,
+	bookThermalCache cache.BookThermalCache,
+	bookTagCache cache.BookTagCache,
+	feedCache cache.UserFeedCache,
+	userLikeCache cache.UserLikeCache,
+	db *gorm.DB,
+	cfg *config.Config,
+) FeedServiceV2 {
+	return &feedServiceV2{
+		bookRepo:          bookRepo,
+		bookTagRepo:       bookTagRepo,
+		bookESRepo:        bookESRepo,
+		userRepo:          userRepo,
+		userAssetRepo:     userAssetRepo,
+		userLikeRepo:      userLikeRepo,
+		purchasedBookRepo: purchasedBookRepo,
+		userCache:         userCache,
+		userAssetCache:    userAssetCache,
+		userFeedRepo:      userFeedRepo,
+		userInboxRepo:     userInboxRepo,
+		outboxRepo:        outboxRepo,
+		bookCache:         bookCache,
+		userStatCache:     userStatCache,
+		bookThermalCache:  bookThermalCache,
+		bookTagCache:      bookTagCache,
+		feedCache:         feedCache,
+		userLikeCache:     userLikeCache,
+		db:                db,
+		cfg:               cfg,
+	}
+}
+
 func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto.GetUserFeedRequestV2) (*dto.GetUserFeedResponseV2, error) {
 	nextCursor, feedIDList, err := s.queryFeedIDListWithCache(ctx, userID, req.LastCursorID, req.TargetCursorID, req.Offset)
 	if err != nil {
 		return nil, err
 	}
-	if nextCursor == nil || len(feedIDList) == 0 {
+	if nextCursor == nil {
 		return &dto.GetUserFeedResponseV2{
 			Feeds:        make([]*dto.FeedResponse, 0),
 			NextCursorID: model.DefaultFeedCursor,
@@ -56,8 +108,77 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 		}, nil
 	}
 
-	//TODO implement me
-	panic("implement me")
+	var feedListResponse = make([]*dto.FeedResponse, len(feedIDList))
+	// 组装 Feed 信息
+	for _, feedID := range feedIDList {
+		feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
+		if err != nil {
+			logger.Warn("query user feed detail fail", zap.Error(err))
+			continue
+		}
+		if feedDetail == nil {
+			continue
+		}
+
+		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, feedDetail.BookID)
+		if err != nil {
+			logger.Warn("query book detail fail", zap.Error(err))
+			continue
+		}
+		if bookDetail == nil {
+			continue
+		}
+
+		userDetail, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user feed detail fail", zap.Error(err))
+			continue
+		}
+		if userDetail == nil {
+			continue
+		}
+
+		userAssetDetail, err := s.userAssetRepo.GetByID(ctx, s.db, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user feed detail fail", zap.Error(err))
+			continue
+		}
+		if userAssetDetail == nil {
+			continue
+		}
+
+		feedDto := &dto.FeedResponse{
+			BookID:              feedDetail.BookID,
+			UserID:              feedDetail.UserID,
+			Content:             feedDetail.Content,
+			FeedCreatedAt:       dto.UnixTime(feedDetail.CreatedAt),
+			FeedUpdatedAt:       dto.UnixTime(feedDetail.UpdatedAt),
+			BookName:            bookDetail.Name,
+			BookDescription:     bookDetail.Description,
+			BookCoverUrl:        bookDetail.CoverImage,
+			BookVIPLevel:        bookDetail.VIPLevel,
+			BookPrice:           bookDetail.Price,
+			BookBrowseAmount:    bookDetail.BrowseAmount,
+			BookBookshelfAmount: bookDetail.BookshelfAmount,
+			BookPushAt:          dto.UnixTime(bookDetail.PushedAt),
+			BookCreatedAt:       dto.UnixTime(bookDetail.CreatedAt),
+			BookUpdatedAt:       dto.UnixTime(bookDetail.UpdatedAt),
+			UserProfileUrl:      userDetail.ProfileImage,
+			UserFans:            0,
+			UserVIPLevel:        "",
+			IsInBookShelf:       false,
+			IsUserLiker:         false,
+		}
+
+		feedListResponse = append(feedListResponse, feedDto)
+	}
+
+	userFeedResponse := &dto.GetUserFeedResponseV2{
+		Feeds:        feedListResponse,
+		NextCursorID: nextCursor.nextCursorID,
+		NextOffset:   nextCursor.nextOffset,
+	}
+	return userFeedResponse, nil
 }
 
 func (s *feedServiceV2) GuestGetUserFeed(ctx context.Context, req *dto.GetUserFeedRequestV2) (*dto.GetUserFeedResponseV2, error) {
