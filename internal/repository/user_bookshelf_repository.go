@@ -13,9 +13,12 @@ type UserBookshelfRepository interface {
 	ListByUserID(ctx context.Context, db *gorm.DB, userID string, page int, size int) ([]*model.UserBookshelf, error)
 	ListUserIDsByBookID(ctx context.Context, db *gorm.DB, bookID string) ([]string, error)
 	CreateByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error
+	GetByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) (*model.UserBookshelf, error)
 	DeleteByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error
 	CheckByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) (bool, *model.UserBookshelf, error)
 	CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error)
+	// DeleteAllUserByBookID 删除某书籍的全部书架记录
+	DeleteAllUserByBookID(ctx context.Context, db *gorm.DB, bookID string) error
 }
 
 type userBookshelfRepository struct {
@@ -68,18 +71,42 @@ func (r userBookshelfRepository) CreateByUserIDAndBookID(ctx context.Context, db
 	return errors.New("bookshelf recoder exist")
 }
 
+func (r userBookshelfRepository) GetByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) (*model.UserBookshelf, error) {
+	var userBookshelf model.UserBookshelf
+	err := db.WithContext(ctx).
+		Where("user_id = ? AND book_id = ?", userID, bookID).
+		First(&userBookshelf).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &userBookshelf, nil
+}
+
 func (r userBookshelfRepository) DeleteByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error {
-	//TODO implement me
-	panic("implement me")
+	return db.WithContext(ctx).
+		Where("user_id = ? AND book_id = ?", userID, bookID).
+		Delete(&model.UserBookshelf{}).Error
 }
 
 func (r userBookshelfRepository) CheckByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) (bool, *model.UserBookshelf, error) {
-	//TODO implement me
-	panic("implement me")
+	userBookshelf, err := r.GetByUserIDAndBookID(ctx, db, userID, bookID)
+	if err != nil {
+		return false, nil, err
+	}
+	return userBookshelf != nil, userBookshelf, nil
 }
 
 func (r userBookshelfRepository) CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error) {
 	var count int64
 	err := db.WithContext(ctx).Model(&model.UserBookshelf{}).Where("user_id = ?", userID).Count(&count).Error
 	return int(count), err
+}
+
+func (r userBookshelfRepository) DeleteAllUserByBookID(ctx context.Context, db *gorm.DB, bookID string) error {
+	return db.WithContext(ctx).
+		Where("book_id = ?", bookID).
+		Delete(&model.UserBookshelf{}).Error
 }
