@@ -28,6 +28,7 @@ var RepositorySet = wire.NewSet(
 	ProvideUserFeedRepository,
 	ProvideUserInboxRepository,
 	ProvideConsumeRecordRepository,
+	ProvideUserInfoRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -117,4 +118,9 @@ func ProvideUserInboxRepository(db *gorm.DB) repository.UserInboxRepository {
 // ProvideConsumeRecordRepository 提供 Kafka 消费记录仓储（用于幂等防重复消费）
 func ProvideConsumeRecordRepository(db *gorm.DB) repository.ConsumeRecordRepository {
 	return repository.NewConsumeRecordRepository(db)
+}
+
+// ProvideUserInfoRepository 提供用户详情仓储
+func ProvideUserInfoRepository(db *gorm.DB) repository.UserInfoRepository {
+	return repository.NewUserInfoRepository(db)
 }
