@@ -16,6 +16,7 @@ var MassageQueueSet = wire.NewSet(
 	ProvideOutboxClient,
 	ProvideOutboxServer,
 	ProvideFeedClient,
+	ProvideFeedClientV1,
 	ProvideFeedServer,
 )
 
@@ -44,12 +45,19 @@ func ProvideFeedClient(cfg *config.Config) kafka_client.FeedClient {
 	return kafka_client.NewFeedClient(cfg)
 }
 
+// ProvideFeedClientV1 提供旧版 Feed 推送生产者（章节推送仍在使用，待迁移）
+func ProvideFeedClientV1(cfg *config.Config) kafka_client.FeedClientV1 {
+	return kafka_client.NewFeedClientV1(cfg)
+}
+
 // ProvideFeedServer 提供 Feed 推送消费者
 func ProvideFeedServer(
-	feedRepository repository.FeedRepository,
-	feedCache cache.FeedCache,
+	userInboxRepository repository.UserInboxRepository,
+	userLikeRepository repository.UserLikeRepository,
+	userLikeCache cache.UserLikeCache,
+	feedCache cache.UserFeedCache,
 	consumeRecordRepository repository.ConsumeRecordRepository,
 	db *gorm.DB,
 ) kafka_server.FeedServer {
-	return kafka_server.NewFeedServer(feedRepository, feedCache, consumeRecordRepository, db)
+	return kafka_server.NewFeedServer(userInboxRepository, userLikeRepository, userLikeCache, feedCache, consumeRecordRepository, db)
 }

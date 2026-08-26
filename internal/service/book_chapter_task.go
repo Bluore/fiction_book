@@ -54,6 +54,8 @@ func bookThermalCacheAddByReadTask(ctx context.Context, s *bookChapterService, u
 
 	return nil
 }
+
+// Deprecated: addNewChapterFeedTask 旧版新章节 Feed 推送任务，将被移除
 func addNewChapterFeedTask(
 	ctx context.Context,
 	s *bookChapterService,

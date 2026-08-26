@@ -20,11 +20,12 @@ const (
 	maxFeedMessageUsers = 50
 )
 
-type FeedClient interface {
+// Deprecated: FeedClientV1 旧版 Feed 推送客户端，已被 V2 取代，代码仅保留
+type FeedClientV1 interface {
 	PublishFeeds(ctx context.Context, cfg *config.Config, feeds []*model.FeedInbox, users []string) error
 }
 
-type feedClient struct {
+type feedClientV1 struct {
 	writer *kafka.Writer
 }
 
@@ -37,14 +38,14 @@ type FeedPushMessage struct {
 	CreatedAt time.Time          `json:"created_at"`
 }
 
-func NewFeedClient(cfg *config.Config) FeedClient {
-	writer, _ := InitFeedWriter(cfg)
-	return &feedClient{
+func NewFeedClientV1(cfg *config.Config) FeedClientV1 {
+	writer, _ := InitFeedWriterV1(cfg)
+	return &feedClientV1{
 		writer: writer,
 	}
 }
 
-func InitFeedWriter(cfg *config.Config) (*kafka.Writer, error) {
+func InitFeedWriterV1(cfg *config.Config) (*kafka.Writer, error) {
 	writer := kafka.Writer{
 		Addr:     kafka.TCP(cfg.Kafka.Addr...),
 		Topic:    cfg.Kafka.Topic.Feed,
@@ -64,7 +65,7 @@ func InitFeedWriter(cfg *config.Config) (*kafka.Writer, error) {
 
 // PublishFeeds 把 Feed 列表和对应用户列表发送到 Kafka。
 // 内部按用户数分片，避免单条消息过大。
-func (c *feedClient) PublishFeeds(
+func (c *feedClientV1) PublishFeeds(
 	ctx context.Context,
 	cfg *config.Config,
 	feeds []*model.FeedInbox,

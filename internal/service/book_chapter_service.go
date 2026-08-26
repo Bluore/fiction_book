@@ -54,8 +54,8 @@ type bookChapterService struct {
 	bookChapterCache         cache.BookChapterCache
 	userStatCache            cache.UserStatCache
 	limitCache               cache.LimitCache
-	feedCache                cache.FeedCache         // Deprecated: 旧版 feed 缓存，将被移除
-	feedClient               kafka_client.FeedClient // Deprecated: 旧版 feed Kafka 客户端，将被移除
+	feedCache                cache.FeedCache           // Deprecated: 旧版 feed 缓存，将被移除
+	feedClient               kafka_client.FeedClientV1 // Deprecated: 旧版 feed Kafka 客户端，将被移除
 	db                       *gorm.DB
 	cfg                      *config.Config
 	pool                     *agilePool.Pool
@@ -77,7 +77,7 @@ func NewBookChapterService(
 	userStatCache cache.UserStatCache,
 	limitCache cache.LimitCache,
 	feedCache cache.FeedCache,
-	feedClient kafka_client.FeedClient,
+	feedClient kafka_client.FeedClientV1,
 	db *gorm.DB,
 	cfg *config.Config,
 	pool *agilePool.Pool,

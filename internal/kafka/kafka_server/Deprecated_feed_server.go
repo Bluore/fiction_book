@@ -19,26 +19,27 @@ import (
 	"gorm.io/gorm"
 )
 
-const feedConsumerGroupID = "feed_syncer"
+const feedConsumerGroupIDV1 = "feed_syncer"
 
-type FeedServer interface {
+// Deprecated: FeedServerV1 旧版 Feed 推送服务端，已被 V2 取代，代码仅保留
+type FeedServerV1 interface {
 	FeedConsumerClient(ctx context.Context, cfg *config.Config)
 }
 
-type feedServer struct {
+type feedServerV1 struct {
 	feedRepo          repository.FeedRepository
 	feedCache         cache.FeedCache
 	consumeRecordRepo repository.ConsumeRecordRepository
 	db                *gorm.DB
 }
 
-func NewFeedServer(
+func NewFeedServerV1(
 	feedRepo repository.FeedRepository,
 	feedCache cache.FeedCache,
 	consumeRecordRepo repository.ConsumeRecordRepository,
 	db *gorm.DB,
-) FeedServer {
-	return &feedServer{
+) FeedServerV1 {
+	return &feedServerV1{
 		feedRepo:          feedRepo,
 		feedCache:         feedCache,
 		consumeRecordRepo: consumeRecordRepo,
@@ -46,11 +47,11 @@ func NewFeedServer(
 	}
 }
 
-func (s *feedServer) FeedConsumerClient(ctx context.Context, cfg *config.Config) {
+func (s *feedServerV1) FeedConsumerClient(ctx context.Context, cfg *config.Config) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:  cfg.Kafka.Addr,
 		Topic:    cfg.Kafka.Topic.Feed,
-		GroupID:  feedConsumerGroupID,
+		GroupID:  feedConsumerGroupIDV1,
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
 	})
@@ -73,7 +74,7 @@ func (s *feedServer) FeedConsumerClient(ctx context.Context, cfg *config.Config)
 	}
 }
 
-func (s *feedServer) consumeMessage(ctx context.Context, reader *kafka.Reader) error {
+func (s *feedServerV1) consumeMessage(ctx context.Context, reader *kafka.Reader) error {
 	message, err := reader.FetchMessage(ctx)
 	if errors.Is(err, io.EOF) {
 		return nil
@@ -88,7 +89,7 @@ func (s *feedServer) consumeMessage(ctx context.Context, reader *kafka.Reader) e
 	return reader.CommitMessages(ctx, message)
 }
 
-func (s *feedServer) handleFeedMessage(ctx context.Context, messageValue []byte) error {
+func (s *feedServerV1) handleFeedMessage(ctx context.Context, messageValue []byte) error {
 	var message kafka_client.FeedPushMessage
 	if err := json.Unmarshal(messageValue, &message); err != nil {
 		return err
@@ -116,7 +117,7 @@ func (s *feedServer) handleFeedMessage(ctx context.Context, messageValue []byte)
 	return nil
 }
 
-func (s *feedServer) consumeFeedsInTx(
+func (s *feedServerV1) consumeFeedsInTx(
 	ctx context.Context,
 	message *kafka_client.FeedPushMessage,
 ) error {
@@ -141,7 +142,7 @@ func (s *feedServer) consumeFeedsInTx(
 	return nil
 }
 
-func (s *feedServer) warmFeeds(ctx context.Context, feeds []*model.FeedInbox) error {
+func (s *feedServerV1) warmFeeds(ctx context.Context, feeds []*model.FeedInbox) error {
 	userFeeds := make(map[string][]*model.FeedInbox)
 	for _, feed := range feeds {
 		if feed == nil || feed.UserID == "" {
