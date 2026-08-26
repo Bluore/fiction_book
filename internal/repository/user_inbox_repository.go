@@ -39,7 +39,7 @@ func (r *userInboxRepository) GetUserInboxIDListByUserIDWithStartCursorAndLimit(
 	if !startTime.IsZero() {
 		// 列表按 created_at DESC, id DESC 排序，游标表示上一页最后一条
 		query = query.Where(
-			"(created_at < ? OR (created_at = ? AND id < ?))",
+			"(created_at < ? OR (created_at = ? AND feed_id < ?))",
 			startTime,
 			startTime,
 			startInboxID,
@@ -109,14 +109,14 @@ func (r *userInboxRepository) GetUserInboxIDListByUserIDWithStartCursorAndEndCur
 	if !startTime.IsZero() {
 		// 列表按 created_at DESC, id DESC 排序，游标表示上一页最后一条
 		query = query.Where(
-			"(created_at > ? AND (created_at, id) < (?, ?) )",
+			"(created_at > ? AND (created_at, feed_id) < (?, ?) )",
 			endTime,
 			startTime,
 			startInboxID,
 		)
 	}
 
-	query = query.Order("created_at DESC").Order("id DESC")
+	query = query.Order("created_at DESC").Order("feed_id DESC")
 
 	var feedIDList []string
 	if err := query.Pluck("feed_id", &feedIDList).Error; err != nil {

@@ -151,14 +151,13 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 
 	// FOCUS 每次增加搜索范围，直到获取到100个Feed或者没有新的Feed
 	baseTime := lastFeedTime
-	findDeepDuration := time.Hour * 24 * 30
-	lastFindTime := baseTime
-	lastFindID := ""
+	selectStepDuration := time.Hour * 24
+	selectStartTime := baseTime
 
 	var feedDetailList = make([]*model.UserFeed, 0, 100)
 GetFeedIDList:
 	for len(feedDetailList) < 100 {
-		if lastFindTime.Before(MINTime) {
+		if selectStartTime.Before(MINTime) {
 			// FOCUS 超出时间范围进入下一步，防止死循环
 			if len(feedDetailList) != 0 {
 				break GetFeedIDList
@@ -173,9 +172,9 @@ GetFeedIDList:
 				ctx,
 				s.db,
 				targetUserID,
-				lastFindTime,
-				lastFindID,
-				lastFindTime.Add(-findDeepDuration),
+				selectStartTime,
+				"",
+				selectStartTime.Add(-selectStepDuration),
 			)
 			if err != nil {
 				logger.Warn("get feed by id failed", zap.Error(err))
@@ -196,9 +195,9 @@ GetFeedIDList:
 			ctx,
 			s.db,
 			userID,
-			lastFeedTime,
-			lastFeedID,
-			lastFindTime,
+			selectStartTime,
+			"",
+			selectStartTime.Add(-selectStepDuration),
 		); err != nil {
 			logger.Warn("get user inbox by id failed", zap.Error(err))
 			return nil, make([]string, 0), err
@@ -209,12 +208,16 @@ GetFeedIDList:
 					logger.Warn("get user feed detail failed", zap.Error(err))
 					continue
 				}
+				if feedDetail == nil {
+					continue
+				}
+
 				feedDetailList = append(feedDetailList, feedDetail)
 			}
 		}
 
-		findDeepDuration *= 2
-		lastFindTime = lastFindTime.Add(-findDeepDuration)
+		selectStartTime = selectStartTime.Add(-selectStepDuration)
+		selectStepDuration *= 2
 	}
 	if len(feedDetailList) > 100 {
 		feedDetailList = feedDetailList[:100]
