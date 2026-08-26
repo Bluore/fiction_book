@@ -17,6 +17,13 @@ type UserInfoRepository interface {
 	Update(ctx context.Context, db *gorm.DB, userInfo *model.UserInfo) error
 	Delete(ctx context.Context, db *gorm.DB, userID string) error
 	List(ctx context.Context, db *gorm.DB, offset, limit int) ([]*model.UserInfo, error)
+
+	// 计数类字段的原子增加操作，delta 传负值表示减少
+	IncrementReadBookNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
+	IncrementReadWordsNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
+	IncrementFansNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
+	IncrementLikeNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
+	IncrementBookShelfNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
 }
 
 type userInfoRepository struct {
@@ -68,4 +75,34 @@ func (r *userInfoRepository) List(ctx context.Context, db *gorm.DB, offset, limi
 	var userInfos []*model.UserInfo
 	err := db.WithContext(ctx).Offset(offset).Limit(limit).Find(&userInfos).Error
 	return userInfos, err
+}
+
+func (r *userInfoRepository) IncrementReadBookNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		UpdateColumn("read_book_num", gorm.Expr("read_book_num + ?", delta)).Error
+}
+
+func (r *userInfoRepository) IncrementReadWordsNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		UpdateColumn("read_words_num", gorm.Expr("read_words_num + ?", delta)).Error
+}
+
+func (r *userInfoRepository) IncrementFansNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		UpdateColumn("fans_num", gorm.Expr("fans_num + ?", delta)).Error
+}
+
+func (r *userInfoRepository) IncrementLikeNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		UpdateColumn("like_num", gorm.Expr("like_num + ?", delta)).Error
+}
+
+func (r *userInfoRepository) IncrementBookShelfNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		UpdateColumn("book_shelf_num", gorm.Expr("book_shelf_num + ?", delta)).Error
 }
