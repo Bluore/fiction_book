@@ -15,6 +15,8 @@ type UserLikeRepository interface {
 	GetByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) (*model.UserLike, error)
 	// GetUserLikeListByLikerID 获取用户关注的用户列表
 	GetUserLikeListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error)
+	// GetUserFollowerIDListByUserID 获取关注该用户的粉丝列表
+	GetUserFollowerIDListByUserID(ctx context.Context, db *gorm.DB, userID string) ([]string, error)
 	CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error)
 	Create(ctx context.Context, db *gorm.DB, userLike *model.UserLike) error
 	Update(ctx context.Context, db *gorm.DB, userLike *model.UserLike) error
@@ -81,6 +83,16 @@ func (r userLikeRepository) GetUserLikeListByLikerID(ctx context.Context, db *go
 		Order("user_id ASC").
 		Pluck("user_id", &userIDs).Error
 	return userIDs, err
+}
+
+func (r userLikeRepository) GetUserFollowerIDListByUserID(ctx context.Context, db *gorm.DB, userID string) ([]string, error) {
+	likerIDs := make([]string, 0)
+	err := db.WithContext(ctx).
+		Model(&model.UserLike{}).
+		Where("user_id = ?", userID).
+		Order("liker_id ASC").
+		Pluck("liker_id", &likerIDs).Error
+	return likerIDs, err
 }
 
 func (r userLikeRepository) DeleteAllUserByLikerID(ctx context.Context, db *gorm.DB, likerID string) error {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
+	"fiction-book/internal/kafka/kafka_client"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
@@ -64,6 +65,7 @@ type bookService struct {
 	bookTagCache      cache.BookTagCache
 	userInfoCache     cache.UserInfoCache
 	userFeedCache     cache.UserFeedCache
+	feedClient        kafka_client.FeedClient
 	db                *gorm.DB
 	cfg               *config.Config
 	pool              *agilePool.Pool
@@ -86,6 +88,7 @@ func NewBookService(
 	bookTagCache cache.BookTagCache,
 	userInfoCache cache.UserInfoCache,
 	userFeedCache cache.UserFeedCache,
+	feedClient kafka_client.FeedClient,
 	db *gorm.DB,
 	cfg *config.Config,
 	pool *agilePool.Pool,
@@ -106,6 +109,7 @@ func NewBookService(
 		bookTagCache:      bookTagCache,
 		userInfoCache:     userInfoCache,
 		userFeedCache:     userFeedCache,
+		feedClient:        feedClient,
 		db:                db,
 		cfg:               cfg,
 		pool:              pool,
@@ -200,9 +204,11 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 
 	if userInfoDetail.IsV == 0 {
 		// 小V用户:feed流写推送
-		s.pool.Submit(agilePool.TaskFunc(func() error {
-			return s.pushFeedTask(userFeedDetail)
-		}))
+		err := s.feedClient.PublishFeed(ctx, *userFeedDetail)
+		if err != nil {
+			logger.Error("error publishing feed", zap.Error(err))
+			return nil, nil
+		}
 	}
 
 	if err != nil {
