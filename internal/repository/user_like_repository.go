@@ -15,6 +15,10 @@ type UserLikeRepository interface {
 	GetByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) (*model.UserLike, error)
 	// GetUserLikeListByLikerID 获取用户关注的用户列表
 	GetUserLikeListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error)
+	// GetUserLikeBigVListByLikerID 获取用户关注的大V用户ID列表（is_v != 0）
+	GetUserLikeBigVListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error)
+	// GetUserLikeSmallVListByLikerID 获取用户关注的小V用户ID列表（is_v = 0）
+	GetUserLikeSmallVListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error)
 	// GetUserFollowerIDListByUserID 获取关注该用户的粉丝列表
 	GetUserFollowerIDListByUserID(ctx context.Context, db *gorm.DB, userID string) ([]string, error)
 	CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error)
@@ -82,6 +86,28 @@ func (r userLikeRepository) GetUserLikeListByLikerID(ctx context.Context, db *go
 		Where("liker_id = ?", likerID).
 		Order("user_id ASC").
 		Pluck("user_id", &userIDs).Error
+	return userIDs, err
+}
+
+func (r userLikeRepository) GetUserLikeBigVListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error) {
+	userIDs := make([]string, 0)
+	err := db.WithContext(ctx).
+		Model(&model.UserLike{}).
+		Joins("JOIN user_info ON user_info.user_id = user_like.user_id").
+		Where("user_like.liker_id = ? AND user_info.is_v != 0", likerID).
+		Order("user_like.user_id ASC").
+		Pluck("user_like.user_id", &userIDs).Error
+	return userIDs, err
+}
+
+func (r userLikeRepository) GetUserLikeSmallVListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error) {
+	userIDs := make([]string, 0)
+	err := db.WithContext(ctx).
+		Model(&model.UserLike{}).
+		Joins("JOIN user_info ON user_info.user_id = user_like.user_id").
+		Where("user_like.liker_id = ? AND user_info.is_v = 0", likerID).
+		Order("user_like.user_id ASC").
+		Pluck("user_like.user_id", &userIDs).Error
 	return userIDs, err
 }
 

@@ -244,48 +244,113 @@ func deleteUserLikeDetailWithCache(
 	return nil
 }
 
+// queryUserLikeIDListWithCache 获取用户关注的大V/小V用户ID列表
 func queryUserLikeIDListWithCache(
 	ctx context.Context,
 	db *gorm.DB,
 	userLikeCache cache.UserLikeCache,
 	userLikeRepo repository.UserLikeRepository,
 	likerID string,
-) ([]string, error) {
-	userIDList, cacheHit, err := userLikeCache.GetUserLikeUserIDList(ctx, likerID)
+) (bigVUserIDList []string, smallVUserIDList []string, err error) {
+	bigVUserIDList, err = queryUserLikeBigVUserIDListWithCache(ctx, db, userLikeCache, userLikeRepo, likerID)
 	if err != nil {
-		logger.Warn("get user_like_user_id_list cache fail", zap.Error(err))
+		return make([]string, 0), make([]string, 0), err
+	}
+	smallVUserIDList, err = queryUserLikeSmallVUserIDListWithCache(ctx, db, userLikeCache, userLikeRepo, likerID)
+	if err != nil {
+		return make([]string, 0), make([]string, 0), err
+	}
+	return bigVUserIDList, smallVUserIDList, nil
+}
+
+func queryUserLikeBigVUserIDListWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	userLikeCache cache.UserLikeCache,
+	userLikeRepo repository.UserLikeRepository,
+	likerID string,
+) ([]string, error) {
+	userIDList, cacheHit, err := userLikeCache.GetUserLikeBigVUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("get user_like_big_v_user_id_list cache fail", zap.Error(err))
 	}
 	if cacheHit {
 		return userIDList, nil
 	}
 
-	token, locked, err := userLikeCache.LockUserLikeUserIDList(ctx, likerID)
+	token, locked, err := userLikeCache.LockUserLikeBigVUserIDList(ctx, likerID)
 	if err != nil {
-		logger.Warn("lock user_like_user_id_list cache fail", zap.Error(err))
-		return userLikeRepo.GetUserLikeListByLikerID(ctx, db, likerID)
+		logger.Warn("lock user_like_big_v_user_id_list cache fail", zap.Error(err))
+		return userLikeRepo.GetUserLikeBigVListByLikerID(ctx, db, likerID)
 	}
 	if !locked {
 		for i := 0; i < lockTryTimes; i++ {
 			time.Sleep(lockWaitTime)
-			userIDList, cacheHit, _ = userLikeCache.GetUserLikeUserIDList(ctx, likerID)
+			userIDList, cacheHit, _ = userLikeCache.GetUserLikeBigVUserIDList(ctx, likerID)
 			if cacheHit {
 				return userIDList, nil
 			}
 		}
-		return make([]string, 0), fmt.Errorf("user_like_user_id_list cache query too many fail")
+		return make([]string, 0), fmt.Errorf("user_like_big_v_user_id_list cache query too many fail")
 	}
 	defer func() {
-		if err := userLikeCache.UnlockUserLikeUserIDList(ctx, likerID, token); err != nil {
-			logger.Error("unlock user_like_user_id_list cache fail", zap.Error(err))
+		if err := userLikeCache.UnlockUserLikeBigVUserIDList(ctx, likerID, token); err != nil {
+			logger.Error("unlock user_like_big_v_user_id_list cache fail", zap.Error(err))
 		}
 	}()
 
-	userIDList, err = userLikeRepo.GetUserLikeListByLikerID(ctx, db, likerID)
+	userIDList, err = userLikeRepo.GetUserLikeBigVListByLikerID(ctx, db, likerID)
 	if err != nil {
 		return make([]string, 0), err
 	}
-	if err := userLikeCache.UpdateUserLikeUserIDList(ctx, likerID, userIDList); err != nil {
-		logger.Warn("update user_like_user_id_list cache fail", zap.Error(err))
+	if err := userLikeCache.UpdateUserLikeBigVUserIDList(ctx, likerID, userIDList); err != nil {
+		logger.Warn("update user_like_big_v_user_id_list cache fail", zap.Error(err))
+	}
+	return userIDList, nil
+}
+
+func queryUserLikeSmallVUserIDListWithCache(
+	ctx context.Context,
+	db *gorm.DB,
+	userLikeCache cache.UserLikeCache,
+	userLikeRepo repository.UserLikeRepository,
+	likerID string,
+) ([]string, error) {
+	userIDList, cacheHit, err := userLikeCache.GetUserLikeSmallVUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("get user_like_small_v_user_id_list cache fail", zap.Error(err))
+	}
+	if cacheHit {
+		return userIDList, nil
+	}
+
+	token, locked, err := userLikeCache.LockUserLikeSmallVUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("lock user_like_small_v_user_id_list cache fail", zap.Error(err))
+		return userLikeRepo.GetUserLikeSmallVListByLikerID(ctx, db, likerID)
+	}
+	if !locked {
+		for i := 0; i < lockTryTimes; i++ {
+			time.Sleep(lockWaitTime)
+			userIDList, cacheHit, _ = userLikeCache.GetUserLikeSmallVUserIDList(ctx, likerID)
+			if cacheHit {
+				return userIDList, nil
+			}
+		}
+		return make([]string, 0), fmt.Errorf("user_like_small_v_user_id_list cache query too many fail")
+	}
+	defer func() {
+		if err := userLikeCache.UnlockUserLikeSmallVUserIDList(ctx, likerID, token); err != nil {
+			logger.Error("unlock user_like_small_v_user_id_list cache fail", zap.Error(err))
+		}
+	}()
+
+	userIDList, err = userLikeRepo.GetUserLikeSmallVListByLikerID(ctx, db, likerID)
+	if err != nil {
+		return make([]string, 0), err
+	}
+	if err := userLikeCache.UpdateUserLikeSmallVUserIDList(ctx, likerID, userIDList); err != nil {
+		logger.Warn("update user_like_small_v_user_id_list cache fail", zap.Error(err))
 	}
 	return userIDList, nil
 }
@@ -297,8 +362,10 @@ func deleteUserLikeIDListWithCache(
 	userLikeRepo repository.UserLikeRepository,
 	likerID string,
 ) error {
-	var token string
-	var locked bool
+	var bigVToken string
+	var smallVToken string
+	var bigVLocked bool
+	var smallVLocked bool
 	var err error
 
 	// 查询当前关注的用户列表，用于清理详情缓存，空列表直接返回，保持幂等
@@ -312,28 +379,51 @@ func deleteUserLikeIDListWithCache(
 
 	// 抢锁
 	for i := 0; i < lockTryTimes; i++ {
-		token, locked, err = userLikeCache.LockUserLikeUserIDList(ctx, likerID)
+		bigVToken, bigVLocked, err = userLikeCache.LockUserLikeBigVUserIDList(ctx, likerID)
 		if err != nil {
-			logger.Warn("lock user_like_user_id_list cache fail", zap.Error(err))
+			logger.Warn("lock user_like_big_v_user_id_list cache fail", zap.Error(err))
 		}
-		if locked {
+		if bigVLocked {
 			break
 		}
 		time.Sleep(lockWaitTime)
 	}
-	if !locked {
-		return fmt.Errorf("user_like_user_id_list cache lock too many fail")
+	if !bigVLocked {
+		return fmt.Errorf("user_like_big_v_user_id_list cache lock too many fail")
 	}
 	defer func() {
-		if err := userLikeCache.UnlockUserLikeUserIDList(ctx, likerID, token); err != nil {
-			logger.Error("unlock user_like_user_id_list cache fail", zap.Error(err))
+		if err := userLikeCache.UnlockUserLikeBigVUserIDList(ctx, likerID, bigVToken); err != nil {
+			logger.Error("unlock user_like_big_v_user_id_list cache fail", zap.Error(err))
+		}
+	}()
+
+	for i := 0; i < lockTryTimes; i++ {
+		smallVToken, smallVLocked, err = userLikeCache.LockUserLikeSmallVUserIDList(ctx, likerID)
+		if err != nil {
+			logger.Warn("lock user_like_small_v_user_id_list cache fail", zap.Error(err))
+		}
+		if smallVLocked {
+			break
+		}
+		time.Sleep(lockWaitTime)
+	}
+	if !smallVLocked {
+		return fmt.Errorf("user_like_small_v_user_id_list cache lock too many fail")
+	}
+	defer func() {
+		if err := userLikeCache.UnlockUserLikeSmallVUserIDList(ctx, likerID, smallVToken); err != nil {
+			logger.Error("unlock user_like_small_v_user_id_list cache fail", zap.Error(err))
 		}
 	}()
 
 	// 删除列表缓存，避免读到旧数据
-	err = userLikeCache.DeleteUserLikeUserIDList(ctx, likerID)
+	err = userLikeCache.DeleteUserLikeBigVUserIDList(ctx, likerID)
 	if err != nil {
-		logger.Warn("delete user_like_user_id_list cache fail", zap.Error(err))
+		logger.Warn("delete user_like_big_v_user_id_list cache fail", zap.Error(err))
+	}
+	err = userLikeCache.DeleteUserLikeSmallVUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("delete user_like_small_v_user_id_list cache fail", zap.Error(err))
 	}
 
 	// 删除记录

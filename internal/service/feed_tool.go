@@ -139,16 +139,13 @@ func (s *feedServiceV2) refreshFeedIDListInCache(
 	lastFeedID string,
 	targetCursorID string,
 ) (*model.UserFeedCursor, []string, error) {
-	var targetUserIDList []string
-	var err error
-
-	// FOCUS 获取用户关注列表
-	targetUserIDList, err = queryUserLikeIDListWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userID)
+	// FOCUS 获取用户关注列表，拆分为大V/小V
+	bigVUserIDList, smallVUserIDList, err := queryUserLikeIDListWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userID)
 	if err != nil {
 		logger.Error("query user like detail failed", zap.Error(err))
 		return nil, make([]string, 0), err
 	}
-	if len(targetUserIDList) == 0 {
+	if len(bigVUserIDList) == 0 && len(smallVUserIDList) == 0 {
 		return nil, make([]string, 0), nil
 	}
 
@@ -169,8 +166,8 @@ GetFeedIDList:
 			return nil, make([]string, 0), nil
 		}
 
-		// FOCUS 获取读推送的Feed
-		for _, targetUserID := range targetUserIDList {
+		// FOCUS 获取读推送的Feed（大V不写推送需拉取，小V已推送至收件箱）
+		for _, targetUserID := range bigVUserIDList {
 
 			queryFeedDetailList, err := s.userFeedRepo.GetFeedListByUserIDWithStartCursorAndEndCursor(
 				ctx,
