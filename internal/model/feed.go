@@ -55,3 +55,14 @@ type UserFeedCursor struct {
 	LastTime time.Time `json:"last_time"`
 	LastID   string    `json:"last_id"`
 }
+
+const (
+	UserFeedMassageOperatorPush = "push"
+)
+
+// UserFeedMassageV2 添加到消息队列的消息原型
+type UserFeedMassageV2 struct {
+	ID       string      `json:"id"`
+	Operator string      `json:"operator"`
+	UserFeed []*UserFeed `json:"user_feed"`
+}
