@@ -43,10 +43,18 @@ func InitializeApp() (*App, error) {
 	bookESRepository := ProvideBookESRepository(elasticsearchClient)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	outboxRepository := ProvideOutboxRepository(db)
+	userInfoRepository := ProvideUserInfoRepository(db)
+	userFeedRepository := ProvideUserFeedRepository(db)
 	bookCache := ProvideBookCatch(client)
 	bookThermalCache := ProvideBookThermalCache(client)
 	bookTagCache := ProvideBookTagCache(client)
-	bookService := ProvideBookService(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, db, config)
+	userInfoCache := ProvideUserInfoCache(client)
+	userFeedCache := ProvideUserFeedCache(client)
+	pool, err := ProvideAgilePool(config)
+	if err != nil {
+		return nil, err
+	}
+	bookService := ProvideBookService(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, userInfoRepository, userFeedRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, userInfoCache, userFeedCache, db, config, pool)
 	bookChapterRepository := ProvideBookChapterRepository(db)
 	bookChapterESRepository := ProvideBookChapterESRepository(elasticsearchClient)
 	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
@@ -56,10 +64,6 @@ func InitializeApp() (*App, error) {
 	limitCache := ProvideLimitCatch(client)
 	feedCache := ProvideFeedCache(client)
 	feedClient := ProvideFeedClient(config)
-	pool, err := ProvideAgilePool(config)
-	if err != nil {
-		return nil, err
-	}
 	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, userBookshelfRepository, feedRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, feedCache, feedClient, db, config, pool)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
@@ -79,11 +83,7 @@ func InitializeApp() (*App, error) {
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
 	feedService := ProvideFeedService(feedRepository, feedCache, db)
-	userFeedRepository := ProvideUserFeedRepository(db)
 	userInboxRepository := ProvideUserInboxRepository(db)
-	userInfoRepository := ProvideUserInfoRepository(db)
-	userFeedCache := ProvideUserFeedCache(client)
-	userInfoCache := ProvideUserInfoCache(client)
 	userBookshelfCache := ProvideUserBookshelfCache(client)
 	feedServiceV2 := ProvideFeedServiceV2(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userLikeRepository, userPurchasedBookRepository, userCache, userAssetCache, userFeedRepository, userInboxRepository, outboxRepository, userInfoRepository, userBookshelfRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, userFeedCache, userLikeCache, userInfoCache, userBookshelfCache, db, config)
 	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, userLikeService, orderService, buyVIP, feedService, feedServiceV2, config)

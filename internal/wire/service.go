@@ -63,12 +63,17 @@ func ProvideBookService(
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
 	outboxRepo repository.OutboxRepository,
+	userInfoRepo repository.UserInfoRepository,
+	userFeedRepo repository.UserFeedRepository,
 	bookCatch cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
 	bookTagCache cache.BookTagCache,
+	userInfoCache cache.UserInfoCache,
+	userFeedCache cache.UserFeedCache,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilepool.Pool,
 ) service.BookService {
 	return service.NewBookService(
 		bookRepo,
@@ -78,12 +83,17 @@ func ProvideBookService(
 		userAssetRepo,
 		purchasedBookRepo,
 		outboxRepo,
+		userInfoRepo,
+		userFeedRepo,
 		bookCatch,
 		userStatCache,
 		bookThermalCache,
 		bookTagCache,
+		userInfoCache,
+		userFeedCache,
 		db,
 		cfg,
+		pool,
 	)
 }
 

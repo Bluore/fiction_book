@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -55,12 +56,17 @@ type bookService struct {
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
 	outboxRepo        repository.OutboxRepository
+	userInfoRepo      repository.UserInfoRepository
+	userFeedRepo      repository.UserFeedRepository
 	bookCache         cache.BookCache
 	userStatCache     cache.UserStatCache
 	bookThermalCache  cache.BookThermalCache
 	bookTagCache      cache.BookTagCache
+	userInfoCache     cache.UserInfoCache
+	userFeedCache     cache.UserFeedCache
 	db                *gorm.DB
 	cfg               *config.Config
+	pool              *agilePool.Pool
 }
 
 // NewBookService 创建书籍服务实例
@@ -72,12 +78,17 @@ func NewBookService(
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
 	outboxRepo repository.OutboxRepository,
+	userInfoRepo repository.UserInfoRepository,
+	userFeedRepo repository.UserFeedRepository,
 	bookCache cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
 	bookTagCache cache.BookTagCache,
+	userInfoCache cache.UserInfoCache,
+	userFeedCache cache.UserFeedCache,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilePool.Pool,
 ) BookService {
 	return &bookService{
 		bookRepo:          bookRepo,
@@ -87,12 +98,17 @@ func NewBookService(
 		userAssetRepo:     userAssetRepo,
 		purchasedBookRepo: purchasedBookRepo,
 		outboxRepo:        outboxRepo,
+		userInfoRepo:      userInfoRepo,
+		userFeedRepo:      userFeedRepo,
 		bookCache:         bookCache,
 		userStatCache:     userStatCache,
 		bookThermalCache:  bookThermalCache,
 		bookTagCache:      bookTagCache,
+		userInfoCache:     userInfoCache,
+		userFeedCache:     userFeedCache,
 		db:                db,
 		cfg:               cfg,
+		pool:              pool,
 	}
 }
 
@@ -103,6 +119,14 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 	}
 	if existingBook != nil {
 		return nil, ErrBookExists
+	}
+
+	userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, userID)
+	if err != nil {
+		return nil, err
+	}
+	if userInfoDetail == nil {
+		return nil, ErrUserNotFound
 	}
 
 	book := &model.Book{
@@ -117,12 +141,42 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		BrowseAmount:    0,
 		BookshelfAmount: 0,
 	}
+
+	calculateRank := func(userInfoDetail *model.UserInfo) int64 {
+		return int64(userInfoDetail.IsV*10) + userInfoDetail.FansNum/100
+	}
+
+	userFeedDetail := &model.UserFeed{
+		FeedID:    uuid.New().String(),
+		UserID:    userID,
+		BookID:    book.ID,
+		Content:   fmt.Sprintf("发布了书籍%s", req.Name),
+		Rank:      calculateRank(userInfoDetail),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		err := s.bookRepo.Create(ctx, tx, book)
+		var err error
+		// 写入数据
+		err = s.bookRepo.Create(ctx, tx, book)
 		if err != nil {
 			return err
 		}
 
+		// 更新用户数据
+		err = s.userInfoRepo.IncrementReadBookNum(ctx, tx, userID, 1)
+		if err != nil {
+			return err
+		}
+
+		// 添加Feed消息
+		err = s.userFeedRepo.CreateUserFeed(ctx, tx, userFeedDetail)
+		if err != nil {
+			return err
+		}
+
+		// 同步到ES
 		bookJSON, err := json.Marshal(book)
 		if err != nil {
 			return err
@@ -143,6 +197,14 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		}
 		return nil
 	})
+
+	if userInfoDetail.IsV == 0 {
+		// 小V用户:feed流写推送
+		s.pool.Submit(agilePool.TaskFunc(func() error {
+			return s.pushFeedTask(userFeedDetail)
+		}))
+	}
+
 	if err != nil {
 		return nil, err
 	}

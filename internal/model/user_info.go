@@ -16,6 +16,7 @@ type UserInfo struct {
 	LikeNum        int64  `json:"like_num" gorm:"type:bigint;not null;default:0"`
 	BookShelfNum   int64  `json:"book_shelf_num" gorm:"type:bigint;not null;default:0"`
 	LastLoginIP    string `json:"last_login_ip" gorm:"type:varchar(50);null"`
+	IsV            int    `json:"is_v" gorm:"type:tinyint;not null;default:0"`
 
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }

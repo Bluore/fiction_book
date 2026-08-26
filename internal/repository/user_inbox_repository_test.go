@@ -58,34 +58,34 @@ func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCu
 	s.createInbox("inbox-other", "user-2", "feed-other", base.Add(time.Hour))
 
 	// 第一页：无游标，取最新的 2 条
-	page1, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", "", "", 2)
+	page1, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", time.Time{}, "", 2)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-5", "feed-4"}, page1)
 
 	// 第二页：以上一页最后一条记录 (created_at, id) 为游标
 	page2, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
-		ctx, s.db, "user-1", base.Add(4*time.Minute).Format(time.RFC3339Nano), "inbox-4", 2)
+		ctx, s.db, "user-1", base.Add(4*time.Minute), "inbox-4", 2)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-3", "feed-2"}, page2)
 
 	// 第三页
 	page3, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
-		ctx, s.db, "user-1", base.Add(2*time.Minute).Format(time.RFC3339Nano), "inbox-2", 2)
+		ctx, s.db, "user-1", base.Add(2*time.Minute), "inbox-2", 2)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-1"}, page3)
 
 	// 游标越过最旧记录后返回空
 	page4, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
-		ctx, s.db, "user-1", base.Add(time.Minute).Format(time.RFC3339Nano), "inbox-1", 2)
+		ctx, s.db, "user-1", base.Add(time.Minute), "inbox-1", 2)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), page4, 0)
 }
 
-func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCursorAndLimitInvalidCursor() {
+func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCursorAndLimitInvalidLimit() {
 	ctx := context.Background()
-	s.createInbox("inbox-1", "user-1", "feed-1", time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC))
 
-	_, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", "not-a-time", "inbox-1", 10)
+	// limit 小于等于 0 时返回错误
+	_, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", time.Time{}, "", 0)
 	assert.Error(s.T(), err)
 }
 
@@ -145,7 +145,7 @@ func (s *UserInboxRepositoryTestSuite) TestDeleteUserInboxBatch() {
 	assert.ElementsMatch(s.T(), []string{"inbox-old-1", "inbox-old-2"}, deletedList)
 
 	// 未过期的记录仍然可见
-	feedList, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", "", "", 10)
+	feedList, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", time.Time{}, "", 10)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-fresh"}, feedList)
 
@@ -182,7 +182,7 @@ func (s *UserInboxRepositoryTestSuite) TestDeleteUserInboxBatchInDisk() {
 	s.db.Unscoped().Model(&model.UserInbox{}).Count(&count)
 	assert.Equal(s.T(), int64(1), count)
 
-	feedList, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", "", "", 10)
+	feedList, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", time.Time{}, "", 10)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-fresh"}, feedList)
 }

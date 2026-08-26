@@ -10,6 +10,8 @@ import (
 )
 
 type UserFeedRepository interface {
+	// CreateUserFeed 创建 Feed
+	CreateUserFeed(ctx context.Context, db *gorm.DB, userFeed *model.UserFeed) error
 	// GetFeedByFeedID 根据FeedID查寻单个Feed
 	GetFeedByFeedID(ctx context.Context, db *gorm.DB, feedID string) (feedDetail *model.UserFeed, err error)
 	// GetFeedListByUserIDWithStartCursorAndLimit 起始游标和数量限制查询
@@ -135,4 +137,8 @@ func (r *userFeedRepository) GetFeedIDListByUserIDWithStartCursorAndEndCursor(ct
 		return nil, err
 	}
 	return feedIDList, nil
+}
+
+func (r *userFeedRepository) CreateUserFeed(ctx context.Context, db *gorm.DB, userFeed *model.UserFeed) error {
+	return db.WithContext(ctx).Create(userFeed).Error
 }
