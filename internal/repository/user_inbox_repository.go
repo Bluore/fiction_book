@@ -16,11 +16,11 @@ type UserInboxRepository interface {
 	// GetUserInboxIDListByUserIDWithStartCursorAndEndCursor 游标查询消息返回FeedID切片
 	GetUserInboxIDListByUserIDWithStartCursorAndEndCursor(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startInboxID string, endTime time.Time) (feedIDList []string, err error)
 	// CreateUserInboxBatch 为一个Feed批量新增收件人消息
-	CreateUserInboxBatch(ctx context.Context, db *gorm.DB, feedID string, userID []string) (successUserIDList []string, err error)
+	CreateUserInboxBatch(ctx context.Context, db *gorm.DB, userInboxList []*model.UserInbox) error
 	// DeleteUserInboxBatch 删除过期消息（软删除）
-	DeleteUserInboxBatch(ctx context.Context, db *gorm.DB, expireTime time.Time) (successDeleteIDList []string, err error)
+	DeleteUserInboxBatch(ctx context.Context, db *gorm.DB, expireTime time.Time) error
 	// DeleteUserInboxBatchInDisk 删除过期消息（硬删除）
-	DeleteUserInboxBatchInDisk(ctx context.Context, db *gorm.DB, expireTime time.Time) (successDeleteIDList []string, err error)
+	DeleteUserInboxBatchInDisk(ctx context.Context, db *gorm.DB, expireTime time.Time) error
 }
 
 type userInboxRepository struct {
@@ -60,94 +60,41 @@ func (r *userInboxRepository) GetUserInboxIDListByUserIDWithStartCursorAndLimit(
 	return feedIDList, nil
 }
 
-func (r *userInboxRepository) CreateUserInboxBatch(ctx context.Context, db *gorm.DB, feedID string, userID []string) ([]string, error) {
-	if feedID == "" || len(userID) == 0 {
-		return make([]string, 0), nil
+// CreateUserInboxBatch 为一个 Feed 批量新增收件人消息。
+// 数量超过 batchMaxSize 直接返回错误，不内部切片，要么全部成功，要么失败返回错误。
+func (r *userInboxRepository) CreateUserInboxBatch(ctx context.Context, db *gorm.DB, userInboxList []*model.UserInbox) error {
+	if len(userInboxList) == 0 {
+		return nil
+	}
+	if len(userInboxList) > batchMaxSize {
+		return fmt.Errorf("user inbox batch size %d exceeds max %d", len(userInboxList), batchMaxSize)
 	}
 
-	inboxList := make([]*model.UserInbox, 0, len(userID))
-	for _, uid := range userID {
-		if uid == "" {
-			continue
+	// 补齐缺失的 ID，避免主键冲突
+	for _, userInbox := range userInboxList {
+		if userInbox != nil && userInbox.ID == "" {
+			userInbox.ID = uuid.NewString()
 		}
-		inboxList = append(inboxList, &model.UserInbox{
-			ID:     uuid.NewString(),
-			UserID: uid,
-			FeedID: feedID,
-		})
-	}
-	if len(inboxList) == 0 {
-		return make([]string, 0), nil
 	}
 
-	successUserIDList := make([]string, 0, len(inboxList))
-	for start := 0; start < len(inboxList); start += batchMaxSize {
-		end := start + batchMaxSize
-		if end > len(inboxList) {
-			end = len(inboxList)
-		}
-		chunk := inboxList[start:end]
-		if err := db.WithContext(ctx).Create(chunk).Error; err != nil {
-			return successUserIDList, err
-		}
-		for _, inbox := range chunk {
-			successUserIDList = append(successUserIDList, inbox.UserID)
-		}
-	}
-	return successUserIDList, nil
+	return db.WithContext(ctx).Create(userInboxList).Error
 }
 
-func (r *userInboxRepository) DeleteUserInboxBatch(ctx context.Context, db *gorm.DB, expireTime time.Time) ([]string, error) {
-	idList, err := r.pluckExpiredInboxIDList(ctx, db, expireTime, false)
-	if err != nil || len(idList) == 0 {
-		return make([]string, 0), err
-	}
-
-	err = db.WithContext(ctx).
-		Where("id IN ?", idList).
-		Delete(&model.UserInbox{}).Error
-	if err != nil {
-		return make([]string, 0), err
-	}
-	return idList, nil
-}
-
-func (r *userInboxRepository) DeleteUserInboxBatchInDisk(
-	ctx context.Context,
-	db *gorm.DB,
-	expireTime time.Time,
-) ([]string, error) {
-	idList, err := r.pluckExpiredInboxIDList(ctx, db, expireTime, true)
-	if err != nil || len(idList) == 0 {
-		return make([]string, 0), err
-	}
-
-	err = db.WithContext(ctx).
-		Unscoped().
-		Where("id IN ?", idList).
-		Delete(&model.UserInbox{}).Error
-	if err != nil {
-		return make([]string, 0), err
-	}
-	return idList, nil
-}
-
-// pluckExpiredInboxIDList 查询创建时间早于 expireTime 的收件箱记录 ID。
-// inDisk 为 true 时包含已软删除的记录（硬删除清理场景），否则只查未删除记录。
-func (r *userInboxRepository) pluckExpiredInboxIDList(ctx context.Context, db *gorm.DB, expireTime time.Time, inDisk bool) ([]string, error) {
-	query := db.WithContext(ctx).Model(&model.UserInbox{})
-	if inDisk {
-		query = query.Unscoped()
-	}
-
-	var idList []string
-	err := query.
+// DeleteUserInboxBatch 删除过期消息（软删除）。
+// 单条 DELETE 直接删除，不返回删除列表，要么全部成功，要么失败返回错误。
+func (r *userInboxRepository) DeleteUserInboxBatch(ctx context.Context, db *gorm.DB, expireTime time.Time) error {
+	return db.WithContext(ctx).
 		Where("created_at < ?", expireTime).
-		Pluck("id", &idList).Error
-	if err != nil {
-		return make([]string, 0), err
-	}
-	return idList, nil
+		Delete(&model.UserInbox{}).Error
+}
+
+// DeleteUserInboxBatchInDisk 删除过期消息（硬删除）。
+// 单条 DELETE 直接删除，不返回删除列表，要么全部成功，要么失败返回错误。
+func (r *userInboxRepository) DeleteUserInboxBatchInDisk(ctx context.Context, db *gorm.DB, expireTime time.Time) error {
+	return db.WithContext(ctx).
+		Unscoped().
+		Where("created_at < ?", expireTime).
+		Delete(&model.UserInbox{}).Error
 }
 
 func (r *userInboxRepository) GetUserInboxIDListByUserIDWithStartCursorAndEndCursor(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startInboxID string, endTime time.Time) ([]string, error) {

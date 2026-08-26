@@ -13,6 +13,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -155,7 +156,22 @@ func (s *feedServer) consumeFeedPushInTx(ctx context.Context, message *model.Use
 			return nil
 		}
 
-		if _, err := s.userInboxRepo.CreateUserInboxBatch(ctx, tx, feed.FeedID, followerIDList); err != nil {
+		userInboxList := make([]*model.UserInbox, 0, len(followerIDList))
+		for _, followerID := range followerIDList {
+			if followerID == "" {
+				continue
+			}
+			userInboxList = append(userInboxList, &model.UserInbox{
+				ID:     uuid.NewString(),
+				UserID: followerID,
+				FeedID: feed.FeedID,
+			})
+		}
+		if len(userInboxList) == 0 {
+			return nil
+		}
+
+		if err := s.userInboxRepo.CreateUserInboxBatch(ctx, tx, userInboxList); err != nil {
 			return err
 		}
 		return nil

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
@@ -92,9 +93,13 @@ func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCu
 func (s *UserInboxRepositoryTestSuite) TestCreateUserInboxBatch() {
 	ctx := context.Background()
 
-	successList, err := s.repo.CreateUserInboxBatch(ctx, s.db, "feed-1", []string{"user-1", "user-2", "user-3"})
+	userInboxList := []*model.UserInbox{
+		{ID: "inbox-1", UserID: "user-1", FeedID: "feed-1"},
+		{ID: "inbox-2", UserID: "user-2", FeedID: "feed-1"},
+		{ID: "inbox-3", UserID: "user-3", FeedID: "feed-1"},
+	}
+	err := s.repo.CreateUserInboxBatch(ctx, s.db, userInboxList)
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), []string{"user-1", "user-2", "user-3"}, successList)
 
 	var count int64
 	s.db.Model(&model.UserInbox{}).Where("feed_id = ?", "feed-1").Count(&count)
@@ -111,24 +116,21 @@ func (s *UserInboxRepositoryTestSuite) TestCreateUserInboxBatch() {
 func (s *UserInboxRepositoryTestSuite) TestCreateUserInboxBatchEmptyInput() {
 	ctx := context.Background()
 
-	// 空 FeedID 直接返回
-	successList, err := s.repo.CreateUserInboxBatch(ctx, s.db, "", []string{"user-1"})
+	// 空列表直接返回
+	err := s.repo.CreateUserInboxBatch(ctx, s.db, nil)
 	assert.NoError(s.T(), err)
-	assert.Nil(s.T(), successList)
 
-	// 空用户列表直接返回
-	successList, err = s.repo.CreateUserInboxBatch(ctx, s.db, "feed-1", nil)
-	assert.NoError(s.T(), err)
-	assert.Nil(s.T(), successList)
-
-	// 空字符串用户被过滤
-	successList, err = s.repo.CreateUserInboxBatch(ctx, s.db, "feed-1", []string{"user-1", "", "user-2"})
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), []string{"user-1", "user-2"}, successList)
+	// 长度超过上限直接返回错误，不内部切片
+	tooLongList := make([]*model.UserInbox, batchMaxSize+1)
+	for i := range tooLongList {
+		tooLongList[i] = &model.UserInbox{ID: uuid.NewString(), UserID: "user-1", FeedID: "feed-1"}
+	}
+	err = s.repo.CreateUserInboxBatch(ctx, s.db, tooLongList)
+	assert.Error(s.T(), err)
 
 	var count int64
-	s.db.Model(&model.UserInbox{}).Where("feed_id = ?", "feed-1").Count(&count)
-	assert.Equal(s.T(), int64(2), count)
+	s.db.Model(&model.UserInbox{}).Count(&count)
+	assert.Equal(s.T(), int64(0), count)
 }
 
 func (s *UserInboxRepositoryTestSuite) TestDeleteUserInboxBatch() {
@@ -140,9 +142,8 @@ func (s *UserInboxRepositoryTestSuite) TestDeleteUserInboxBatch() {
 	s.createInbox("inbox-old-2", "user-1", "feed-old-2", base.Add(2*time.Minute))
 	s.createInbox("inbox-fresh", "user-1", "feed-fresh", base.Add(10*time.Minute))
 
-	deletedList, err := s.repo.DeleteUserInboxBatch(ctx, s.db, expireTime)
+	err := s.repo.DeleteUserInboxBatch(ctx, s.db, expireTime)
 	assert.NoError(s.T(), err)
-	assert.ElementsMatch(s.T(), []string{"inbox-old-1", "inbox-old-2"}, deletedList)
 
 	// 未过期的记录仍然可见
 	feedList, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", time.Time{}, "", 10)
@@ -169,13 +170,11 @@ func (s *UserInboxRepositoryTestSuite) TestDeleteUserInboxBatchInDisk() {
 	s.createInbox("inbox-fresh", "user-1", "feed-fresh", base.Add(10*time.Minute))
 
 	// 先软删除一批过期记录，再硬删除时应一并清除
-	deletedList, err := s.repo.DeleteUserInboxBatch(ctx, s.db, expireTime)
+	err := s.repo.DeleteUserInboxBatch(ctx, s.db, expireTime)
 	assert.NoError(s.T(), err)
-	assert.ElementsMatch(s.T(), []string{"inbox-stale-1", "inbox-stale-2"}, deletedList)
 
-	inDiskDeletedList, err := s.repo.DeleteUserInboxBatchInDisk(ctx, s.db, expireTime)
+	err = s.repo.DeleteUserInboxBatchInDisk(ctx, s.db, expireTime)
 	assert.NoError(s.T(), err)
-	assert.ElementsMatch(s.T(), []string{"inbox-stale-1", "inbox-stale-2"}, inDiskDeletedList)
 
 	// 过期记录已物理删除，未过期记录保留
 	var count int64
