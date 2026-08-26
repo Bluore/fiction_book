@@ -75,7 +75,7 @@ func (s *feedServer) FeedConsumerClient(ctx context.Context, cfg *config.Config)
 
 func (s *feedServer) consumeMessage(ctx context.Context, reader *kafka.Reader) error {
 	message, err := reader.FetchMessage(ctx)
-	if errors.Is(err, io.ErrUnexpectedEOF) {
+	if errors.Is(err, io.EOF) {
 		return nil
 	}
 	if err != nil {
