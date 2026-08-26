@@ -80,12 +80,6 @@ func createUserAssetDetailWithCache(
 		return nil
 	}
 
-	// 删除记录
-	_, err = userAssetCache.DeleteUserAsset(ctx, userID)
-	if err != nil {
-		logger.Warn("delete user_asset cache fail", zap.Error(err))
-	}
-
 	// 抢锁
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userAssetCache.LockUserAsset(ctx, userID)
@@ -105,6 +99,12 @@ func createUserAssetDetailWithCache(
 			logger.Error("unlock user_asset cache fail", zap.Error(err))
 		}
 	}()
+
+	// 删除记录
+	_, err = userAssetCache.DeleteUserAsset(ctx, userID)
+	if err != nil {
+		logger.Warn("delete user_asset cache fail", zap.Error(err))
+	}
 
 	// 锁内二次查询，并发下另一请求可能已创建，保持幂等
 	userAssetExist, err = userAssetRepo.GetByID(ctx, db, userID)
@@ -150,11 +150,6 @@ func updateUserAssetDetailWithCache(
 	var locked bool
 	var err error
 
-	_, err = userAssetCache.DeleteUserAsset(ctx, userAsset.ID)
-	if err != nil {
-		logger.Warn("delete user_asset cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userAssetCache.LockUserAsset(ctx, userAsset.ID)
 		if err != nil {
@@ -173,6 +168,11 @@ func updateUserAssetDetailWithCache(
 			logger.Error("unlock user_asset cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userAssetCache.DeleteUserAsset(ctx, userAsset.ID)
+	if err != nil {
+		logger.Warn("delete user_asset cache fail", zap.Error(err))
+	}
 
 	err = userAssetRepo.UpdateByID(ctx, db, userAsset.ID, userAsset)
 	if err != nil {
@@ -205,11 +205,6 @@ func deleteUserAssetDetailWithCache(
 		return nil
 	}
 
-	_, err = userAssetCache.DeleteUserAsset(ctx, userID)
-	if err != nil {
-		logger.Warn("delete user_asset cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userAssetCache.LockUserAsset(ctx, userID)
 		if err != nil {
@@ -228,6 +223,11 @@ func deleteUserAssetDetailWithCache(
 			logger.Error("unlock user_asset cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userAssetCache.DeleteUserAsset(ctx, userID)
+	if err != nil {
+		logger.Warn("delete user_asset cache fail", zap.Error(err))
+	}
 
 	err = userAssetRepo.DeleteByID(ctx, db, userID)
 	if err != nil {

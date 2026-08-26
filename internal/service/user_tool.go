@@ -84,12 +84,6 @@ func createUserDetailWithCache(
 		return nil
 	}
 
-	// FOCUS 删除记录
-	_, err = userCache.DeleteUser(ctx, user.ID)
-	if err != nil {
-		logger.Warn("delete user cache fail", zap.Error(err))
-	}
-
 	// FOCUS 抢锁
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userCache.LockUser(ctx, user.ID)
@@ -109,6 +103,12 @@ func createUserDetailWithCache(
 			logger.Error("unlock user cache fail", zap.Error(err))
 		}
 	}()
+
+	// FOCUS 删除记录
+	_, err = userCache.DeleteUser(ctx, user.ID)
+	if err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
+	}
 
 	// FOCUS 锁内二次查询，并发下另一请求可能已创建，保持幂等
 	userExist, err = userRepo.GetByID(ctx, db, user.ID)
@@ -149,11 +149,6 @@ func updateUserDetailWithCache(
 	var locked bool
 	var err error
 
-	_, err = userCache.DeleteUser(ctx, user.ID)
-	if err != nil {
-		logger.Warn("delete user cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userCache.LockUser(ctx, user.ID)
 		if err != nil {
@@ -172,6 +167,11 @@ func updateUserDetailWithCache(
 			logger.Error("unlock user cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userCache.DeleteUser(ctx, user.ID)
+	if err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
+	}
 
 	err = userRepo.Update(ctx, db, user)
 	if err != nil {
@@ -204,11 +204,6 @@ func deleteUserDetailWithCache(
 		return nil
 	}
 
-	_, err = userCache.DeleteUser(ctx, userID)
-	if err != nil {
-		logger.Warn("delete user cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userCache.LockUser(ctx, userID)
 		if err != nil {
@@ -227,6 +222,11 @@ func deleteUserDetailWithCache(
 			logger.Error("unlock user cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userCache.DeleteUser(ctx, userID)
+	if err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
+	}
 
 	err = userRepo.Delete(ctx, db, userID)
 	if err != nil {

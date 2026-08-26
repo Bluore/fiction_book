@@ -84,12 +84,6 @@ func createUserInfoDetailWithCache(
 		return nil
 	}
 
-	// 删除记录
-	_, err = userInfoCache.DeleteUserInfo(ctx, userInfo.UserID)
-	if err != nil {
-		logger.Warn("delete user_info cache fail", zap.Error(err))
-	}
-
 	// 抢锁
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userInfoCache.LockUserInfo(ctx, userInfo.UserID)
@@ -109,6 +103,12 @@ func createUserInfoDetailWithCache(
 			logger.Error("unlock user_info cache fail", zap.Error(err))
 		}
 	}()
+
+	// 删除记录
+	_, err = userInfoCache.DeleteUserInfo(ctx, userInfo.UserID)
+	if err != nil {
+		logger.Warn("delete user_info cache fail", zap.Error(err))
+	}
 
 	// 锁内二次查询，并发下另一请求可能已创建，保持幂等
 	userInfoExist, err = userInfoRepo.GetByUserID(ctx, db, userInfo.UserID)
@@ -149,11 +149,6 @@ func updateUserInfoDetailWithCache(
 	var locked bool
 	var err error
 
-	_, err = userInfoCache.DeleteUserInfo(ctx, userInfo.UserID)
-	if err != nil {
-		logger.Warn("delete user_info cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userInfoCache.LockUserInfo(ctx, userInfo.UserID)
 		if err != nil {
@@ -172,6 +167,11 @@ func updateUserInfoDetailWithCache(
 			logger.Error("unlock user_info cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userInfoCache.DeleteUserInfo(ctx, userInfo.UserID)
+	if err != nil {
+		logger.Warn("delete user_info cache fail", zap.Error(err))
+	}
 
 	err = userInfoRepo.Update(ctx, db, userInfo)
 	if err != nil {
@@ -204,11 +204,6 @@ func deleteUserInfoDetailWithCache(
 		return nil
 	}
 
-	_, err = userInfoCache.DeleteUserInfo(ctx, userID)
-	if err != nil {
-		logger.Warn("delete user_info cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userInfoCache.LockUserInfo(ctx, userID)
 		if err != nil {
@@ -227,6 +222,11 @@ func deleteUserInfoDetailWithCache(
 			logger.Error("unlock user_info cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userInfoCache.DeleteUserInfo(ctx, userID)
+	if err != nil {
+		logger.Warn("delete user_info cache fail", zap.Error(err))
+	}
 
 	err = userInfoRepo.Delete(ctx, db, userID)
 	if err != nil {

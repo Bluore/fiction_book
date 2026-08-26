@@ -85,12 +85,6 @@ func createUserLikeDetailWithCache(
 		return nil
 	}
 
-	// FOCUS 删除记录
-	_, err = userLikeCache.DeleteUserLike(ctx, userLike.UserID, userLike.LikerID)
-	if err != nil {
-		logger.Warn("delete user_like cache fail", zap.Error(err))
-	}
-
 	// FOCUS 抢锁
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userLikeCache.LockUserLike(ctx, userLike.UserID, userLike.LikerID)
@@ -110,6 +104,12 @@ func createUserLikeDetailWithCache(
 			logger.Error("unlock user_like cache fail", zap.Error(err))
 		}
 	}()
+
+	// FOCUS 删除记录
+	_, err = userLikeCache.DeleteUserLike(ctx, userLike.UserID, userLike.LikerID)
+	if err != nil {
+		logger.Warn("delete user_like cache fail", zap.Error(err))
+	}
 
 	// FOCUS 锁内二次查询，并发下另一请求可能已创建，保持幂等
 	userLikeExist, err = userLikeRepo.GetByUserIDAndLikerID(ctx, db, userLike.UserID, userLike.LikerID)
@@ -150,11 +150,6 @@ func updateUserLikeDetailWithCache(
 	var locked bool
 	var err error
 
-	_, err = userLikeCache.DeleteUserLike(ctx, userLike.UserID, userLike.LikerID)
-	if err != nil {
-		logger.Warn("delete user_like cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userLikeCache.LockUserLike(ctx, userLike.UserID, userLike.LikerID)
 		if err != nil {
@@ -173,6 +168,11 @@ func updateUserLikeDetailWithCache(
 			logger.Error("unlock user_like cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userLikeCache.DeleteUserLike(ctx, userLike.UserID, userLike.LikerID)
+	if err != nil {
+		logger.Warn("delete user_like cache fail", zap.Error(err))
+	}
 
 	err = userLikeRepo.Update(ctx, db, userLike)
 	if err != nil {
@@ -209,11 +209,6 @@ func deleteUserLikeDetailWithCache(
 		return nil
 	}
 
-	_, err = userLikeCache.DeleteUserLike(ctx, userLike.UserID, userLike.LikerID)
-	if err != nil {
-		logger.Warn("delete user_like cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userLikeCache.LockUserLike(ctx, userLike.UserID, userLike.LikerID)
 		if err != nil {
@@ -232,6 +227,11 @@ func deleteUserLikeDetailWithCache(
 			logger.Error("unlock user_like cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userLikeCache.DeleteUserLike(ctx, userLike.UserID, userLike.LikerID)
+	if err != nil {
+		logger.Warn("delete user_like cache fail", zap.Error(err))
+	}
 
 	err = userLikeRepo.DeleteByUserIDAndLikerID(ctx, db, userLike.UserID, userLike.LikerID)
 	if err != nil {
@@ -310,12 +310,6 @@ func deleteUserLikeIDListWithCache(
 		return nil
 	}
 
-	// 删除列表缓存，避免读到旧数据
-	err = userLikeCache.DeleteUserLikeUserIDList(ctx, likerID)
-	if err != nil {
-		logger.Warn("delete user_like_user_id_list cache fail", zap.Error(err))
-	}
-
 	// 抢锁
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userLikeCache.LockUserLikeUserIDList(ctx, likerID)
@@ -336,6 +330,12 @@ func deleteUserLikeIDListWithCache(
 		}
 	}()
 
+	// 删除列表缓存，避免读到旧数据
+	err = userLikeCache.DeleteUserLikeUserIDList(ctx, likerID)
+	if err != nil {
+		logger.Warn("delete user_like_user_id_list cache fail", zap.Error(err))
+	}
+
 	// 删除记录
 	err = userLikeRepo.DeleteAllUserByLikerID(ctx, db, likerID)
 	if err != nil {
@@ -349,10 +349,5 @@ func deleteUserLikeIDListWithCache(
 		}
 	}
 
-	// 删除列表缓存，保证与数据库一致
-	err = userLikeCache.DeleteUserLikeUserIDList(ctx, likerID)
-	if err != nil {
-		logger.Warn("delete user_like_user_id_list cache fail", zap.Error(err))
-	}
 	return nil
 }

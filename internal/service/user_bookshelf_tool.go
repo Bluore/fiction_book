@@ -82,12 +82,6 @@ func createUserBookshelfDetailWithCache(
 		return nil
 	}
 
-	// FOCUS 删除记录
-	_, err = userBookshelfCache.DeleteUserBookshelf(ctx, userID, bookID)
-	if err != nil {
-		logger.Warn("delete user_bookshelf cache fail", zap.Error(err))
-	}
-
 	// FOCUS 抢锁
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userBookshelfCache.LockUserBookshelf(ctx, userID, bookID)
@@ -107,6 +101,12 @@ func createUserBookshelfDetailWithCache(
 			logger.Error("unlock user_bookshelf cache fail", zap.Error(err))
 		}
 	}()
+
+	// FOCUS 删除记录
+	_, err = userBookshelfCache.DeleteUserBookshelf(ctx, userID, bookID)
+	if err != nil {
+		logger.Warn("delete user_bookshelf cache fail", zap.Error(err))
+	}
 
 	// FOCUS 锁内二次查询，并发下另一请求可能已创建，保持幂等
 	userBookshelfExist, err = userBookshelfRepo.GetByUserIDAndBookID(ctx, db, userID, bookID)
@@ -157,11 +157,6 @@ func deleteUserBookshelfDetailWithCache(
 		return nil
 	}
 
-	_, err = userBookshelfCache.DeleteUserBookshelf(ctx, userID, bookID)
-	if err != nil {
-		logger.Warn("delete user_bookshelf cache fail", zap.Error(err))
-	}
-
 	for i := 0; i < lockTryTimes; i++ {
 		token, locked, err = userBookshelfCache.LockUserBookshelf(ctx, userID, bookID)
 		if err != nil {
@@ -180,6 +175,11 @@ func deleteUserBookshelfDetailWithCache(
 			logger.Error("unlock user_bookshelf cache fail", zap.Error(err))
 		}
 	}()
+
+	_, err = userBookshelfCache.DeleteUserBookshelf(ctx, userID, bookID)
+	if err != nil {
+		logger.Warn("delete user_bookshelf cache fail", zap.Error(err))
+	}
 
 	err = userBookshelfRepo.DeleteByUserIDAndBookID(ctx, db, userID, bookID)
 	if err != nil {
