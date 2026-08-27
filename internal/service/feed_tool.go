@@ -279,6 +279,178 @@ GetFeedIDList:
 	return targetCursor, feedIDListAfterCut, nil
 }
 
+// guestFeedCacheUserID 游客 Feed 复用 UserFeedCache 时的固定键，真实用户 ID 为 UUID，不会冲突
+const guestFeedCacheUserID = "guest"
+
+// 游客 Feed 每个游标节点缓存的Feed数量与单页返回数量
+const (
+	guestFeedListBatchSize = 100
+	guestFeedListPageSize  = 10
+)
+
+// queryGuestFeedIDListWithCache 获取游客 Feed 的FeedID列表（全局 Feed 按创建时间倒序）
+// 游标机制与 queryFeedIDListWithCache 保持一致，仅数据源不同：全局 Feed 表
+func (s *feedServiceV2) queryGuestFeedIDListWithCache(
+	ctx context.Context,
+	lastCursorID string,
+	targetCursorID string,
+	targetCursorOffset int,
+) (*nextQueryCursor, []string, error) {
+	if feedIDList, cacheHit, err := s.feedCache.GetUserFeedFeedIDs(ctx, guestFeedCacheUserID, targetCursorID, targetCursorOffset, guestFeedListPageSize); err != nil {
+		logger.Warn("get guest feed id failed", zap.Error(err))
+		return nil, make([]string, 0), err
+	} else if cacheHit {
+		if len(feedIDList) != 0 {
+			// FOCUS 命中直接返回
+			return &nextQueryCursor{
+				nextCursorID: targetCursorID,
+				nextOffset:   targetCursorOffset + len(feedIDList),
+			}, feedIDList, nil
+		}
+
+		// FOCUS 当前节点列表已空，向下寻找下一个节点
+		curCursor, cacheHit, err := s.feedCache.GetUserFeedCursor(ctx, guestFeedCacheUserID, targetCursorID)
+		if err != nil {
+			logger.Warn("get guest feed cursor failed", zap.Error(err))
+			return nil, make([]string, 0), err
+		}
+		if cacheHit {
+			nextFeedIDList, cacheHit, err := s.feedCache.GetUserFeedFeedIDs(ctx, guestFeedCacheUserID, curCursor.NextCursorID, 0, guestFeedListPageSize)
+			if err != nil {
+				logger.Warn("get guest feed id failed", zap.Error(err))
+				return nil, make([]string, 0), err
+			} else if cacheHit {
+				if len(nextFeedIDList) == 0 {
+					return &nextQueryCursor{
+						nextCursorID: model.DefaultFeedCursor,
+						nextOffset:   0,
+					}, make([]string, 0), nil
+				}
+
+				return &nextQueryCursor{
+					nextCursorID: curCursor.NextCursorID,
+					nextOffset:   guestFeedListPageSize,
+				}, nextFeedIDList, nil
+			}
+
+			// FOCUS 下一个节点尚未建立，向下新建一个 Cursor
+			_, nextFeedIDList, err = s.refreshGuestFeedIDListInCache(ctx, curCursor.LastTime, curCursor.LastID, curCursor.NextCursorID)
+			if err != nil {
+				logger.Warn("get guest feed id failed", zap.Error(err))
+				return nil, make([]string, 0), err
+			}
+			if len(nextFeedIDList) == 0 {
+				return &nextQueryCursor{
+					nextCursorID: model.DefaultFeedCursor,
+					nextOffset:   0,
+				}, make([]string, 0), nil
+			}
+
+			return &nextQueryCursor{
+				nextCursorID: curCursor.NextCursorID,
+				nextOffset:   guestFeedListPageSize,
+			}, nextFeedIDList, nil
+		}
+
+		// FOCUS 缓存未命中直接下一步
+	}
+
+	// FOCUS 如果是起始节点，直接刷新当前节点
+	if targetCursorID == model.DefaultFeedCursor {
+		_, feedIDList, err := s.refreshGuestFeedIDListInCache(ctx, time.Time{}, "", model.DefaultFeedCursor)
+		if err != nil {
+			logger.Error("get guest feed id list failed", zap.Error(err))
+			return nil, make([]string, 0), err
+		}
+		if len(feedIDList) == 0 {
+			// FOCUS 没有任何 Feed
+			return nil, make([]string, 0), nil
+		}
+		return &nextQueryCursor{
+			nextCursorID: model.DefaultFeedCursor,
+			nextOffset:   len(feedIDList),
+		}, feedIDList, nil
+	}
+
+	// FOCUS 非起始节点先查找上一个节点，确认目标节点是链上的下一个节点
+	if lastFeedCursorDetail, cacheHit, err := s.feedCache.GetUserFeedCursor(ctx, guestFeedCacheUserID, lastCursorID); err != nil {
+		logger.Warn("get guest feed cursor failed", zap.Error(err))
+		return nil, make([]string, 0), err
+	} else if cacheHit && lastFeedCursorDetail != nil && lastFeedCursorDetail.NextCursorID == targetCursorID {
+		_, feedIDList, err := s.refreshGuestFeedIDListInCache(ctx, lastFeedCursorDetail.LastTime, lastFeedCursorDetail.LastID, targetCursorID)
+		return &nextQueryCursor{
+			nextCursorID: targetCursorID,
+			nextOffset:   len(feedIDList),
+		}, feedIDList, err
+	}
+
+	// FOCUS 如果寻找父节点失败，返回根节点
+	_, feedIDList, err := s.refreshGuestFeedIDListInCache(ctx, time.Time{}, "", model.DefaultFeedCursor)
+	if err != nil {
+		logger.Error("get guest feed id list failed", zap.Error(err))
+		return nil, make([]string, 0), err
+	}
+	if len(feedIDList) == 0 {
+		// FOCUS 没有任何 Feed
+		return nil, make([]string, 0), nil
+	}
+	return &nextQueryCursor{
+		nextCursorID: model.DefaultFeedCursor,
+		nextOffset:   len(feedIDList),
+	}, feedIDList, nil
+}
+
+// refreshGuestFeedIDListInCache 按创建时间倒序拉取一批全局 FeedID 并缓存到指定游标节点
+// 尾部 Feed 的 (创建时间, FeedID) 作为下一个游标节点的起点，保证分页不重不漏
+func (s *feedServiceV2) refreshGuestFeedIDListInCache(
+	ctx context.Context,
+	lastFeedTime time.Time,
+	lastFeedID string,
+	targetCursorID string,
+) (*model.UserFeedCursor, []string, error) {
+	feedDetailList, err := s.userFeedRepo.GetFeedListWithStartCursorAndLimit(ctx, s.db, lastFeedTime, lastFeedID, guestFeedListBatchSize)
+	if err != nil {
+		logger.Error("query guest feed list failed", zap.Error(err))
+		return nil, make([]string, 0), err
+	}
+	if len(feedDetailList) == 0 {
+		return nil, make([]string, 0), nil
+	}
+
+	feedIDList := make([]string, 0, len(feedDetailList))
+	for _, feedDetail := range feedDetailList {
+		feedIDList = append(feedIDList, feedDetail.FeedID)
+	}
+
+	// FOCUS 尾部的 (创建时间, FeedID) 作为下一页的游标起点
+	lastFeed := feedDetailList[len(feedDetailList)-1]
+
+	err = s.feedCache.UpdateUserFeedFeedIDs(ctx, guestFeedCacheUserID, targetCursorID, feedIDList)
+	if err != nil {
+		logger.Warn("update guest feed id failed", zap.Error(err))
+		return nil, make([]string, 0), err
+	}
+
+	targetCursor := &model.UserFeedCursor{
+		CursorID:     targetCursorID,
+		NextCursorID: uuid.New().String(),
+		LastTime:     lastFeed.CreatedAt,
+		LastID:       lastFeed.FeedID,
+	}
+
+	err = s.feedCache.UpdateUserFeedCursor(ctx, guestFeedCacheUserID, targetCursorID, targetCursor)
+	if err != nil {
+		logger.Warn("update guest feed cursor failed", zap.Error(err))
+		return nil, make([]string, 0), err
+	}
+
+	feedIDListAfterCut := feedIDList
+	if len(feedIDListAfterCut) > guestFeedListPageSize {
+		feedIDListAfterCut = feedIDListAfterCut[:guestFeedListPageSize]
+	}
+	return targetCursor, feedIDListAfterCut, nil
+}
+
 func queryUserFeedDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,

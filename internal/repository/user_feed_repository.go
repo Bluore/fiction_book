@@ -16,6 +16,9 @@ type UserFeedRepository interface {
 	GetFeedByFeedID(ctx context.Context, db *gorm.DB, feedID string) (feedDetail *model.UserFeed, err error)
 	// GetFeedListByUserIDWithStartCursorAndLimit 起始游标和数量限制查询
 	GetFeedListByUserIDWithStartCursorAndLimit(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startFeedID string, itemLimit int) (feedDetailList []*model.UserFeed, err error)
+	// GetFeedListWithStartCursorAndLimit 全局 Feed 起始游标和数量限制查询（不区分用户，供游客 Feed 使用）
+	// 按 created_at DESC, feed_id DESC 排序，返回比游标 (startTime, startFeedID) 更旧的 Feed
+	GetFeedListWithStartCursorAndLimit(ctx context.Context, db *gorm.DB, startTime time.Time, startFeedID string, itemLimit int) (feedDetailList []*model.UserFeed, err error)
 	// GetFeedListByUserIDWithStartCursorAndEndCursor 起始游标和结束游标查询
 	// 返回起始游标 (startTime, startFeedID)（不含）到结束游标 endTime（含）之间的 Feed 列表，按 created_at DESC 排序
 	GetFeedListByUserIDWithStartCursorAndEndCursor(ctx context.Context, db *gorm.DB, userID string, startTime time.Time, startFeedID string, endTime time.Time) (feedDetailList []*model.UserFeed, err error)
@@ -54,6 +57,25 @@ func (r *userFeedRepository) GetFeedListByUserIDWithStartCursorAndLimit(ctx cont
 	query := db.WithContext(ctx).
 		Model(&model.UserFeed{}).
 		Where("user_id = ?", userID)
+
+	query = applyUserFeedCursor(query, startTime, startFeedID)
+
+	// itemLimit 小于等于 0 时不做限制，由调用方保证传入有效分页大小
+	if itemLimit > 0 {
+		query = query.Limit(int(itemLimit))
+	}
+	query = query.Order("created_at DESC").Order("feed_id DESC")
+
+	var feedDetailList []*model.UserFeed
+	if err := query.Find(&feedDetailList).Error; err != nil {
+		return nil, err
+	}
+	return feedDetailList, nil
+}
+
+func (r *userFeedRepository) GetFeedListWithStartCursorAndLimit(ctx context.Context, db *gorm.DB, startTime time.Time, startFeedID string, itemLimit int) ([]*model.UserFeed, error) {
+	query := db.WithContext(ctx).
+		Model(&model.UserFeed{})
 
 	query = applyUserFeedCursor(query, startTime, startFeedID)
 

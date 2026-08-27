@@ -22,7 +22,7 @@ type FeedServiceV2 interface {
 	// GetUserFeed 获取用户 Feed 流
 	GetUserFeed(ctx context.Context, userID string, req *dto.GetUserFeedRequestV2) (*dto.GetUserFeedResponseV2, error)
 	// GuestGetUserFeed 获取用户 Feed 流 （未登录用户）
-	GuestGetUserFeed(ctx context.Context, req *dto.GetUserFeedRequestV2) (*dto.GetUserFeedResponseV2, error)
+	GuestGetUserFeed(ctx context.Context, req *dto.GetUserFeedRequestV2) (*dto.GetGuestUserFeedResponseV2, error)
 }
 
 type feedServiceV2 struct {
@@ -187,7 +187,7 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 			isInBookshelf = false
 		}
 
-		feedDto := &dto.FeedResponse{
+		var feedDto = &dto.FeedResponse{
 			FeedID:              feedID,
 			BookID:              feedDetail.BookID,
 			UserID:              feedDetail.UserID,
@@ -210,7 +210,6 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 			IsInBookShelf:       isInBookshelf,
 			IsUserLiker:         isUserLiker,
 		}
-
 		feedListResponse = append(feedListResponse, feedDto)
 	}
 
@@ -222,7 +221,94 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 	return userFeedResponse, nil
 }
 
-func (s *feedServiceV2) GuestGetUserFeed(ctx context.Context, req *dto.GetUserFeedRequestV2) (*dto.GetUserFeedResponseV2, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *feedServiceV2) GuestGetUserFeed(ctx context.Context, req *dto.GetUserFeedRequestV2) (*dto.GetGuestUserFeedResponseV2, error) {
+	nextCursor, feedIDList, err := s.queryGuestFeedIDListWithCache(ctx, req.LastCursorID, req.TargetCursorID, req.Offset)
+	if err != nil {
+		return nil, err
+	}
+	if nextCursor == nil {
+		return &dto.GetGuestUserFeedResponseV2{
+			Feeds:        make([]*dto.GuestFeedResponse, 0),
+			NextCursorID: model.DefaultFeedCursor,
+			NextOffset:   0,
+		}, nil
+	}
+
+	var feedListResponse = make([]*dto.GuestFeedResponse, 0, len(feedIDList))
+	// 组装 Feed 信息（游客场景：全局 Feed 时间线，无登录态字段）
+	for _, feedID := range feedIDList {
+		feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
+		if err != nil {
+			logger.Warn("query user feed detail fail", zap.Error(err))
+			continue
+		}
+		if feedDetail == nil {
+			continue
+		}
+
+		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, feedDetail.BookID)
+		if err != nil {
+			logger.Warn("query book detail fail", zap.Error(err))
+			continue
+		}
+		if bookDetail == nil {
+			continue
+		}
+
+		userDetail, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user detail fail", zap.Error(err))
+			continue
+		}
+		if userDetail == nil {
+			continue
+		}
+
+		userAssetDetail, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user asset detail fail", zap.Error(err))
+			continue
+		}
+		if userAssetDetail == nil {
+			continue
+		}
+
+		userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, feedDetail.UserID)
+		if err != nil {
+			logger.Warn("query user info detail fail", zap.Error(err))
+			continue
+		}
+		if userInfoDetail == nil {
+			continue
+		}
+
+		var feedDto = &dto.GuestFeedResponse{
+			FeedID:              feedID,
+			BookID:              feedDetail.BookID,
+			UserID:              feedDetail.UserID,
+			Content:             feedDetail.Content,
+			FeedCreatedAt:       dto.UnixTime(feedDetail.CreatedAt),
+			FeedUpdatedAt:       dto.UnixTime(feedDetail.UpdatedAt),
+			BookName:            bookDetail.Name,
+			BookDescription:     bookDetail.Description,
+			BookCoverUrl:        bookDetail.CoverImage,
+			BookVIPLevel:        bookDetail.VIPLevel,
+			BookPrice:           bookDetail.Price,
+			BookBrowseAmount:    bookDetail.BrowseAmount,
+			BookBookshelfAmount: bookDetail.BookshelfAmount,
+			BookPushAt:          dto.UnixTime(bookDetail.PushedAt),
+			BookCreatedAt:       dto.UnixTime(bookDetail.CreatedAt),
+			BookUpdatedAt:       dto.UnixTime(bookDetail.UpdatedAt),
+			UserProfileUrl:      userDetail.ProfileImage,
+			UserFans:            userInfoDetail.FansNum,
+			UserVIPLevel:        userAssetDetail.VIPLevel,
+		}
+		feedListResponse = append(feedListResponse, feedDto)
+	}
+
+	return &dto.GetGuestUserFeedResponseV2{
+		Feeds:        feedListResponse,
+		NextCursorID: nextCursor.nextCursorID,
+		NextOffset:   nextCursor.nextOffset,
+	}, nil
 }

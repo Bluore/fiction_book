@@ -58,7 +58,7 @@ func (h *Handler) GetUserFeedV2(c *gin.Context) {
 // @Param last_cursor_id query string false "上一页游标ID"
 // @Param target_cursor_id query string false "目标游标ID"
 // @Param offset query int false "游标内偏移量"
-// @Success 200 {object} response.Response{data=dto.GetUserFeedResponseV2}
+// @Success 200 {object} response.Response{data=dto.GetGuestUserFeedResponseV2}
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v2/feed/guest [post]
