@@ -47,13 +47,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserAssetResponse"
+                                            "$ref": "#/definitions/dto.UserAssetResponse"
                                         }
                                     }
                                 }
@@ -63,19 +63,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4011": {
                         "description": "用户不存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -101,7 +101,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.EmailVerifyRequest"
+                            "$ref": "#/definitions/dto.EmailVerifyRequest"
                         }
                     }
                 ],
@@ -111,13 +111,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.EmailVerifyResponse"
+                                            "$ref": "#/definitions/dto.EmailVerifyResponse"
                                         }
                                     }
                                 }
@@ -127,13 +127,13 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部出错",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -159,7 +159,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.ForgetPasswordRequest"
+                            "$ref": "#/definitions/dto.ForgetPasswordRequest"
                         }
                     }
                 ],
@@ -169,13 +169,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -185,31 +185,31 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4003": {
                         "description": "验证码验证失败",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4004": {
                         "description": "验证码未发送",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -235,7 +235,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.LoginRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
@@ -245,13 +245,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.LoginResponse"
+                                            "$ref": "#/definitions/dto.LoginResponse"
                                         }
                                     }
                                 }
@@ -261,19 +261,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4006": {
                         "description": "用户名或密码错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -304,7 +304,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.CreateBookRequest"
+                            "$ref": "#/definitions/dto.CreateBookRequest"
                         }
                     }
                 ],
@@ -314,13 +314,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookResponse"
+                                            "$ref": "#/definitions/dto.BookResponse"
                                         }
                                     }
                                 }
@@ -330,25 +330,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4008": {
                         "description": "书籍已存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -392,25 +392,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UploadBookCoverResponse"
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "用户登录失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -477,13 +477,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookListResponse"
+                                            "$ref": "#/definitions/dto.BookListResponse"
                                         }
                                     }
                                 }
@@ -493,13 +493,13 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -543,25 +543,25 @@ const docTemplate = `{
                     "200": {
                         "description": "封面URL",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UploadBookCoverResponse"
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "用户登录失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -600,19 +600,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UploadBookCoverResponse"
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -651,19 +651,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UploadBookCoverResponse"
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -702,19 +702,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UploadBookCoverResponse"
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -748,13 +748,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookResponse"
+                                            "$ref": "#/definitions/dto.BookResponse"
                                         }
                                     }
                                 }
@@ -764,25 +764,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -814,25 +814,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -876,55 +876,55 @@ const docTemplate = `{
                     "200": {
                         "description": "封面URL",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UploadBookCoverResponse"
+                            "$ref": "#/definitions/dto.UploadBookCoverResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4005": {
                         "description": "文件大小超出",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "用户未登录",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4011": {
                         "description": "文件类型出错",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4012": {
                         "description": "图片不合规",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "你没有该书籍的所有权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -962,7 +962,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateBookRequest"
+                            "$ref": "#/definitions/dto.UpdateBookRequest"
                         }
                     }
                 ],
@@ -970,37 +970,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.BookResponse"
+                            "$ref": "#/definitions/dto.BookResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4008": {
                         "description": "书籍名称已存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "用户登录失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "你没有该书籍的所有权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1031,7 +1031,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.CreateUserBookshelfRequest"
+                            "$ref": "#/definitions/dto.CreateUserBookshelfRequest"
                         }
                     }
                 ],
@@ -1039,25 +1039,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1088,7 +1088,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.DeleteUserBookshelfRequest"
+                            "$ref": "#/definitions/dto.DeleteUserBookshelfRequest"
                         }
                     }
                 ],
@@ -1096,31 +1096,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1166,13 +1166,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookListResponse"
+                                            "$ref": "#/definitions/dto.BookListResponse"
                                         }
                                     }
                                 }
@@ -1182,19 +1182,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1247,13 +1247,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookListResponse"
+                                            "$ref": "#/definitions/dto.BookListResponse"
                                         }
                                     }
                                 }
@@ -1263,19 +1263,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1313,7 +1313,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.BuyBookRequest"
+                            "$ref": "#/definitions/dto.BuyBookRequest"
                         }
                     }
                 ],
@@ -1323,13 +1323,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -1339,55 +1339,55 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4009": {
                         "description": "书籍已购买",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4016": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4017": {
                         "description": "价格校验出错",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4018": {
                         "description": "余额不足",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1418,7 +1418,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.BuyBookChapterRequest"
+                            "$ref": "#/definitions/dto.BuyBookChapterRequest"
                         }
                     }
                 ],
@@ -1428,7 +1428,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -1444,49 +1444,49 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4009": {
                         "description": "书籍已购买",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4017": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4018": {
                         "description": "余额不足",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1517,7 +1517,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.CreatBookChapterRequest"
+                            "$ref": "#/definitions/dto.CreatBookChapterRequest"
                         }
                     }
                 ],
@@ -1527,13 +1527,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookChapterResponse"
+                                            "$ref": "#/definitions/dto.BookChapterResponse"
                                         }
                                     }
                                 }
@@ -1543,31 +1543,31 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "缺失对应权限",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1605,13 +1605,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookChapterResponse"
+                                            "$ref": "#/definitions/dto.BookChapterResponse"
                                         }
                                     }
                                 }
@@ -1621,37 +1621,37 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4010": {
                         "description": "章节未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4015": {
                         "description": "该章节需要付费",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1687,7 +1687,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateBookChapterRequest"
+                            "$ref": "#/definitions/dto.UpdateBookChapterRequest"
                         }
                     }
                 ],
@@ -1697,13 +1697,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookChapterResponse"
+                                            "$ref": "#/definitions/dto.BookChapterResponse"
                                         }
                                     }
                                 }
@@ -1713,37 +1713,37 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4010": {
                         "description": "章节未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "你没有编辑权限",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1778,49 +1778,49 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4010": {
                         "description": "章节未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "你没有权限操作",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "403": {
                         "description": "禁止访问",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1853,13 +1853,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookChapterResponse"
+                                            "$ref": "#/definitions/dto.BookChapterResponse"
                                         }
                                     }
                                 }
@@ -1869,31 +1869,31 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4010": {
                         "description": "章节未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4014": {
                         "description": "请先完成登录",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -1927,13 +1927,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BookChapterResponse"
+                                            "$ref": "#/definitions/dto.BookChapterResponse"
                                         }
                                     }
                                 }
@@ -1943,25 +1943,83 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4010": {
                         "description": "章节未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/feed/list": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "服务端自动维护游标获取 Feed，获取后自动标记为已读；每次固定返回 10 条",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "获取当前用户 Feed 流",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetFeedListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2009,13 +2067,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.ListUserHistoryResponse"
+                                            "$ref": "#/definitions/dto.ListUserHistoryResponse"
                                         }
                                     }
                                 }
@@ -2025,19 +2083,153 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户不存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/likes": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "查询当前登录用户是否已关注目标用户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "关注管理"
+                ],
+                "summary": "查询用户关注状态",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "目标用户ID",
+                        "name": "target_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserLikeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "当前登录用户对目标用户执行关注或取消关注操作",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "关注管理"
+                ],
+                "summary": "关注或取消关注用户",
+                "parameters": [
+                    {
+                        "description": "关注操作",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateUserLikeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.UpdateUserLikeResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2083,13 +2275,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.GetOrderListResponse"
+                                            "$ref": "#/definitions/dto.GetOrderListResponse"
                                         }
                                     }
                                 }
@@ -2099,19 +2291,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2142,7 +2334,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.CreateOrderRequest"
+                            "$ref": "#/definitions/dto.CreateOrderRequest"
                         }
                     }
                 ],
@@ -2152,13 +2344,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.OrderResponse"
+                                            "$ref": "#/definitions/dto.OrderResponse"
                                         }
                                     }
                                 }
@@ -2168,25 +2360,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4017": {
                         "description": "价格计算校对失败",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2225,13 +2417,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.OrderResponse"
+                                            "$ref": "#/definitions/dto.OrderResponse"
                                         }
                                     }
                                 }
@@ -2241,31 +2433,31 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "缺失对应权限",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4021": {
                         "description": "缺失对应权限",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2295,7 +2487,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2303,7 +2495,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/fiction-book_internal_dto.GetUserPurchasedBookResponse"
+                                                "$ref": "#/definitions/dto.GetUserPurchasedBookResponse"
                                             }
                                         }
                                     }
@@ -2314,19 +2506,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2365,13 +2557,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.GetUserPurchasedBookResponse"
+                                            "$ref": "#/definitions/dto.GetUserPurchasedBookResponse"
                                         }
                                     }
                                 }
@@ -2381,25 +2573,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4016": {
                         "description": "没有购买这本书籍的记录",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2429,7 +2621,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2437,7 +2629,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/fiction-book_internal_dto.GetUserPurchasedChapterResponse"
+                                                "$ref": "#/definitions/dto.GetUserPurchasedChapterResponse"
                                             }
                                         }
                                     }
@@ -2448,19 +2640,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2499,13 +2691,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.GetUserPurchasedChapterResponse"
+                                            "$ref": "#/definitions/dto.GetUserPurchasedChapterResponse"
                                         }
                                     }
                                 }
@@ -2515,25 +2707,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "未授权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4016": {
                         "description": "没有购买本章节的记录",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2574,7 +2766,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -2591,13 +2783,13 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2621,7 +2813,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.CreateUserRequest"
+                            "$ref": "#/definitions/dto.CreateUserRequest"
                         }
                     }
                 ],
@@ -2631,13 +2823,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -2647,37 +2839,37 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4003": {
                         "description": "验证码验证失败",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4004": {
                         "description": "验证码未发送",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4007": {
                         "description": "用户已存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4013": {
                         "description": "邮箱已存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2716,13 +2908,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -2732,43 +2924,43 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4005": {
                         "description": "文件大小超出",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4011": {
                         "description": "文件类型出错",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4012": {
                         "description": "图片不合规",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2796,31 +2988,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2851,7 +3043,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateUserEmailRequest"
+                            "$ref": "#/definitions/dto.UpdateUserEmailRequest"
                         }
                     }
                 ],
@@ -2861,13 +3053,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -2877,43 +3069,43 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4003": {
                         "description": "验证码验证失败",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4004": {
                         "description": "验证码未发送",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4013": {
                         "description": "邮箱已存在",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -2943,13 +3135,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserStatResponse"
+                                            "$ref": "#/definitions/dto.UserStatResponse"
                                         }
                                     }
                                 }
@@ -2959,25 +3151,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "用户未登录",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3008,7 +3200,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateUserRequest"
+                            "$ref": "#/definitions/dto.UpdateUserRequest"
                         }
                     }
                 ],
@@ -3018,13 +3210,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -3034,31 +3226,31 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4017": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3089,7 +3281,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateUserPasswordRequest"
+                            "$ref": "#/definitions/dto.UpdateUserPasswordRequest"
                         }
                     }
                 ],
@@ -3099,13 +3291,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -3115,37 +3307,37 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4003": {
                         "description": "验证码验证失败",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4004": {
                         "description": "验证码未发送",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3179,13 +3371,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
@@ -3195,19 +3387,19 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3339,13 +3531,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.SearchBooksV2Response"
+                                            "$ref": "#/definitions/dto.SearchBooksV2Response"
                                         }
                                     }
                                 }
@@ -3355,13 +3547,13 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3395,13 +3587,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.GetBookTagResponse"
+                                            "$ref": "#/definitions/dto.GetBookTagResponse"
                                         }
                                     }
                                 }
@@ -3411,25 +3603,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4017": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3465,7 +3657,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateBookTagRequest"
+                            "$ref": "#/definitions/dto.UpdateBookTagRequest"
                         }
                     }
                 ],
@@ -3473,43 +3665,43 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpdateBookTagResponse"
+                            "$ref": "#/definitions/dto.UpdateBookTagResponse"
                         }
                     },
                     "400": {
                         "description": "请求参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4001": {
                         "description": "书籍未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "用户登录失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4017": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4020": {
                         "description": "你没有该书籍的所有权",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3596,13 +3788,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.SearchBookChaptersV2Response"
+                                            "$ref": "#/definitions/dto.SearchBookChaptersV2Response"
                                         }
                                     }
                                 }
@@ -3612,13 +3804,158 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/feed": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "获取当前登录用户的 Feed 流，通过游标分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "获取用户 Feed 流",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "上一页游标ID",
+                        "name": "last_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标游标ID",
+                        "name": "target_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "游标内偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserFeedResponseV2"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "登录已失效",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/feed/guest": {
+            "get": {
+                "description": "未登录用户获取 Feed 流，通过游标分页",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "获取用户 Feed 流（游客）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "上一页游标ID",
+                        "name": "last_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "目标游标ID",
+                        "name": "target_cursor_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "游标内偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/dto.GetUserFeedResponseV2"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3649,7 +3986,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.BuyVIPRequest"
+                            "$ref": "#/definitions/dto.BuyVIPRequest"
                         }
                     }
                 ],
@@ -3659,13 +3996,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.BuyVIPResponse"
+                                            "$ref": "#/definitions/dto.BuyVIPResponse"
                                         }
                                     }
                                 }
@@ -3675,25 +4012,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4018": {
                         "description": "余额不足",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3723,13 +4060,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.ShopListOfVIPResponse"
+                                            "$ref": "#/definitions/dto.ShopListOfVIPResponse"
                                         }
                                     }
                                 }
@@ -3739,25 +4076,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4002": {
                         "description": "用户未找到",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3788,7 +4125,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_internal_dto.UpgradeVIPRequest"
+                            "$ref": "#/definitions/dto.UpgradeVIPRequest"
                         }
                     }
                 ],
@@ -3798,13 +4135,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/fiction-book_internal_dto.UpgradeVIPResponse"
+                                            "$ref": "#/definitions/dto.UpgradeVIPResponse"
                                         }
                                     }
                                 }
@@ -3814,25 +4151,25 @@ const docTemplate = `{
                     "400": {
                         "description": "参数错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
                         "description": "登录已失效",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "4018": {
                         "description": "余额不足",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
                         "description": "服务器内部错误",
                         "schema": {
-                            "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -3857,7 +4194,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/fiction-book_pkg_response.Response"
+                                    "$ref": "#/definitions/response.Response"
                                 },
                                 {
                                     "type": "object",
@@ -3878,11 +4215,11 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "fiction-book_internal_dto.BookChapterResponse": {
+        "dto.BookChapterResponse": {
             "type": "object",
             "properties": {
                 "Book": {
-                    "$ref": "#/definitions/fiction-book_internal_dto.BookResponse"
+                    "$ref": "#/definitions/dto.BookResponse"
                 },
                 "chapter_id": {
                     "type": "string"
@@ -3904,11 +4241,11 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BookChapterSearchResult": {
+        "dto.BookChapterSearchResult": {
             "type": "object",
             "properties": {
                 "book_chapter": {
-                    "$ref": "#/definitions/fiction-book_internal_dto.BookChapterResponse"
+                    "$ref": "#/definitions/dto.BookChapterResponse"
                 },
                 "highlight": {
                     "type": "object",
@@ -3918,13 +4255,13 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BookListResponse": {
+        "dto.BookListResponse": {
             "type": "object",
             "properties": {
                 "books": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/fiction-book_internal_dto.BookResponse"
+                        "$ref": "#/definitions/dto.BookResponse"
                     }
                 },
                 "count": {
@@ -3938,7 +4275,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BookResponse": {
+        "dto.BookResponse": {
             "type": "object",
             "properties": {
                 "bookshelf_amount": {
@@ -3979,11 +4316,11 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BookSearchResult": {
+        "dto.BookSearchResult": {
             "type": "object",
             "properties": {
                 "book": {
-                    "$ref": "#/definitions/fiction-book_internal_dto.BookResponse"
+                    "$ref": "#/definitions/dto.BookResponse"
                 },
                 "highlight": {
                     "type": "object",
@@ -3993,7 +4330,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BuyBookChapterRequest": {
+        "dto.BuyBookChapterRequest": {
             "type": "object",
             "required": [
                 "book_id",
@@ -4012,7 +4349,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BuyBookRequest": {
+        "dto.BuyBookRequest": {
             "type": "object",
             "properties": {
                 "bookID": {
@@ -4023,7 +4360,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BuyVIPRequest": {
+        "dto.BuyVIPRequest": {
             "type": "object",
             "required": [
                 "duration",
@@ -4050,7 +4387,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.BuyVIPResponse": {
+        "dto.BuyVIPResponse": {
             "type": "object",
             "properties": {
                 "duration": {
@@ -4076,7 +4413,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.CreatBookChapterRequest": {
+        "dto.CreatBookChapterRequest": {
             "type": "object",
             "required": [
                 "book_id",
@@ -4103,7 +4440,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.CreateBookRequest": {
+        "dto.CreateBookRequest": {
             "type": "object",
             "required": [
                 "description",
@@ -4131,7 +4468,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.CreateOrderRequest": {
+        "dto.CreateOrderRequest": {
             "type": "object",
             "required": [
                 "price",
@@ -4146,7 +4483,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.CreateUserBookshelfRequest": {
+        "dto.CreateUserBookshelfRequest": {
             "type": "object",
             "required": [
                 "book_id"
@@ -4157,7 +4494,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.CreateUserRequest": {
+        "dto.CreateUserRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -4185,7 +4522,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.DeleteUserBookshelfRequest": {
+        "dto.DeleteUserBookshelfRequest": {
             "type": "object",
             "required": [
                 "book_id"
@@ -4196,7 +4533,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.EmailVerifyRequest": {
+        "dto.EmailVerifyRequest": {
             "type": "object",
             "required": [
                 "email"
@@ -4207,7 +4544,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.EmailVerifyResponse": {
+        "dto.EmailVerifyResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -4215,7 +4552,104 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.ForgetPasswordRequest": {
+        "dto.FeedItemResponse": {
+            "type": "object",
+            "properties": {
+                "book_cover": {
+                    "type": "string"
+                },
+                "book_id": {
+                    "type": "string"
+                },
+                "book_name": {
+                    "type": "string"
+                },
+                "chapter_id": {
+                    "type": "string"
+                },
+                "chapter_title": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "event_type": {
+                    "$ref": "#/definitions/model.FeedEventType"
+                },
+                "feed_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.FeedResponse": {
+            "type": "object",
+            "properties": {
+                "book_bookshelf_amount": {
+                    "type": "integer"
+                },
+                "book_browse_amount": {
+                    "type": "integer"
+                },
+                "book_cover_url": {
+                    "type": "string"
+                },
+                "book_created_at": {
+                    "type": "string"
+                },
+                "book_description": {
+                    "type": "string"
+                },
+                "book_id": {
+                    "type": "string"
+                },
+                "book_name": {
+                    "type": "string"
+                },
+                "book_price": {
+                    "type": "integer"
+                },
+                "book_push_at": {
+                    "type": "string"
+                },
+                "book_updated_at": {
+                    "type": "string"
+                },
+                "book_vip_level": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "feed_created_at": {
+                    "type": "string"
+                },
+                "feed_updated_at": {
+                    "type": "string"
+                },
+                "is_in_book_shelf": {
+                    "type": "boolean"
+                },
+                "is_user_liker": {
+                    "type": "boolean"
+                },
+                "user_fans": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_profile_url": {
+                    "type": "string"
+                },
+                "user_vip_level": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ForgetPasswordRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -4235,7 +4669,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.GetBookTagResponse": {
+        "dto.GetBookTagResponse": {
             "type": "object",
             "properties": {
                 "book_id": {
@@ -4249,7 +4683,21 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.GetOrderListResponse": {
+        "dto.GetFeedListResponse": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.FeedItemResponse"
+                    }
+                },
+                "restarted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dto.GetOrderListResponse": {
             "type": "object",
             "properties": {
                 "count": {
@@ -4258,7 +4706,7 @@ const docTemplate = `{
                 "orders": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/fiction-book_internal_dto.OrderResponse"
+                        "$ref": "#/definitions/dto.OrderResponse"
                     }
                 },
                 "page": {
@@ -4269,7 +4717,35 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.GetUserPurchasedBookResponse": {
+        "dto.GetUserFeedResponseV2": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.FeedResponse"
+                    }
+                },
+                "next_cursor_id": {
+                    "type": "string"
+                },
+                "next_offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.GetUserLikeResponse": {
+            "type": "object",
+            "properties": {
+                "is_like": {
+                    "type": "boolean"
+                },
+                "target_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GetUserPurchasedBookResponse": {
             "type": "object",
             "properties": {
                 "active_at": {
@@ -4289,7 +4765,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.GetUserPurchasedChapterResponse": {
+        "dto.GetUserPurchasedChapterResponse": {
             "type": "object",
             "properties": {
                 "active_at": {
@@ -4312,13 +4788,13 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.ListUserHistoryResponse": {
+        "dto.ListUserHistoryResponse": {
             "type": "object",
             "properties": {
                 "books": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/fiction-book_internal_dto.UserHistoryResponse"
+                        "$ref": "#/definitions/dto.UserHistoryResponse"
                     }
                 },
                 "count": {
@@ -4332,7 +4808,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.LoginRequest": {
+        "dto.LoginRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -4347,7 +4823,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.LoginResponse": {
+        "dto.LoginResponse": {
             "type": "object",
             "properties": {
                 "token": {
@@ -4361,7 +4837,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.OrderResponse": {
+        "dto.OrderResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -4390,40 +4866,40 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.SearchBookChaptersV2Response": {
+        "dto.SearchBookChaptersV2Response": {
             "type": "object",
             "properties": {
                 "chapters": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/fiction-book_internal_dto.BookChapterSearchResult"
+                        "$ref": "#/definitions/dto.BookChapterSearchResult"
                     }
                 }
             }
         },
-        "fiction-book_internal_dto.SearchBooksV2Response": {
+        "dto.SearchBooksV2Response": {
             "type": "object",
             "properties": {
                 "books": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/fiction-book_internal_dto.BookSearchResult"
+                        "$ref": "#/definitions/dto.BookSearchResult"
                     }
                 }
             }
         },
-        "fiction-book_internal_dto.ShopListOfVIPResponse": {
+        "dto.ShopListOfVIPResponse": {
             "type": "object",
             "properties": {
                 "shop": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/fiction-book_internal_dto.ShopVIPItem"
+                        "$ref": "#/definitions/dto.ShopVIPItem"
                     }
                 }
             }
         },
-        "fiction-book_internal_dto.ShopVIPItem": {
+        "dto.ShopVIPItem": {
             "type": "object",
             "properties": {
                 "active_at": {
@@ -4443,7 +4919,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateBookChapterRequest": {
+        "dto.UpdateBookChapterRequest": {
             "type": "object",
             "required": [
                 "id"
@@ -4466,7 +4942,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateBookRequest": {
+        "dto.UpdateBookRequest": {
             "type": "object",
             "required": [
                 "bookID"
@@ -4486,7 +4962,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateBookTagRequest": {
+        "dto.UpdateBookTagRequest": {
             "type": "object",
             "required": [
                 "bookID",
@@ -4506,7 +4982,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateBookTagResponse": {
+        "dto.UpdateBookTagResponse": {
             "type": "object",
             "properties": {
                 "book_id": {
@@ -4520,7 +4996,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateUserEmailRequest": {
+        "dto.UpdateUserEmailRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -4540,7 +5016,37 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateUserPasswordRequest": {
+        "dto.UpdateUserLikeRequest": {
+            "type": "object",
+            "required": [
+                "operator",
+                "target_id"
+            ],
+            "properties": {
+                "operator": {
+                    "type": "string",
+                    "enum": [
+                        "create",
+                        "delete"
+                    ]
+                },
+                "target_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateUserLikeResponse": {
+            "type": "object",
+            "properties": {
+                "is_like": {
+                    "type": "boolean"
+                },
+                "target_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UpdateUserPasswordRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -4556,7 +5062,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpdateUserRequest": {
+        "dto.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "age": {
@@ -4573,7 +5079,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpgradeVIPRequest": {
+        "dto.UpgradeVIPRequest": {
             "type": "object",
             "required": [
                 "original_vip_level",
@@ -4598,7 +5104,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UpgradeVIPResponse": {
+        "dto.UpgradeVIPResponse": {
             "type": "object",
             "properties": {
                 "gold": {
@@ -4627,7 +5133,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UploadBookCoverResponse": {
+        "dto.UploadBookCoverResponse": {
             "type": "object",
             "properties": {
                 "book_id": {
@@ -4638,7 +5144,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UserAssetResponse": {
+        "dto.UserAssetResponse": {
             "type": "object",
             "properties": {
                 "gold": {
@@ -4658,7 +5164,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UserHistoryResponse": {
+        "dto.UserHistoryResponse": {
             "type": "object",
             "properties": {
                 "book_id": {
@@ -4675,7 +5181,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UserResponse": {
+        "dto.UserResponse": {
             "type": "object",
             "properties": {
                 "age": {
@@ -4707,7 +5213,7 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_internal_dto.UserStatResponse": {
+        "dto.UserStatResponse": {
             "type": "object",
             "properties": {
                 "age": {
@@ -4758,7 +5264,18 @@ const docTemplate = `{
                 }
             }
         },
-        "fiction-book_pkg_response.Response": {
+        "model.FeedEventType": {
+            "type": "string",
+            "enum": [
+                "book_update",
+                "new_chapter"
+            ],
+            "x-enum-varnames": [
+                "FeedEventBookUpdate",
+                "FeedEventNewChapter"
+            ]
+        },
+        "response.Response": {
             "type": "object",
             "properties": {
                 "code": {

@@ -24,6 +24,7 @@ type UserAssetRepository interface {
 	SubGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error)
 	GetGoldByID(ctx context.Context, db *gorm.DB, id string) (int64, error)
 	CreateUserAsset(ctx context.Context, db *gorm.DB, id string) error
+	DeleteByID(ctx context.Context, db *gorm.DB, id string) error
 }
 
 type userAssetRepository struct {
@@ -151,6 +152,11 @@ func (u userAssetRepository) CreateUserAsset(ctx context.Context, db *gorm.DB, i
 		return errors.New("user_asset create failed")
 	}
 	return nil
+}
+
+// DeleteByID 软删除用户资产记录（DeletedAt 置位）
+func (u userAssetRepository) DeleteByID(ctx context.Context, db *gorm.DB, id string) error {
+	return db.WithContext(ctx).Where("id = ?", id).Delete(&model.UserAsset{}).Error
 }
 
 func safeAddInt64(a int64, b int64) (int64, error) {

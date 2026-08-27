@@ -1,11 +1,11 @@
-package outbox
+package kafka_server
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fiction-book/internal/model"
-	"fiction-book/internal/wire"
+	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
 	"fmt"
@@ -13,9 +13,34 @@ import (
 	"time"
 
 	"github.com/segmentio/kafka-go"
+	"gorm.io/gorm"
 )
 
-func outboxConsumerClient(ctx context.Context, cfg *config.Config, h *wire.MassageQueue) {
+type OutboxServer interface {
+	OutboxConsumerClient(ctx context.Context, cfg *config.Config)
+}
+type outboxServer struct {
+	OutboxRepository        repository.OutboxRepository
+	BookESRepository        repository.BookESRepository
+	BookChapterESRepository repository.BookChapterESRepository
+	DB                      *gorm.DB
+}
+
+func NewOutboxServer(
+	outboxRepository repository.OutboxRepository,
+	bookESRepository repository.BookESRepository,
+	bookChapterESRepository repository.BookChapterESRepository,
+	db *gorm.DB,
+) OutboxServer {
+	return &outboxServer{
+		OutboxRepository:        outboxRepository,
+		BookESRepository:        bookESRepository,
+		BookChapterESRepository: bookChapterESRepository,
+		DB:                      db,
+	}
+}
+
+func (s *outboxServer) OutboxConsumerClient(ctx context.Context, cfg *config.Config) {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   cfg.Kafka.Addr,
 		Topic:     cfg.Kafka.Topic.DatabaseSync,
@@ -29,7 +54,7 @@ func outboxConsumerClient(ctx context.Context, cfg *config.Config, h *wire.Massa
 	for {
 		select {
 		case <-ticker.C:
-			consumeMassage(ctx, h, reader)
+			s.consumeMassage(ctx, reader)
 		case <-ctx.Done():
 			logger.Info("exit outbox consumer")
 			return
@@ -37,7 +62,7 @@ func outboxConsumerClient(ctx context.Context, cfg *config.Config, h *wire.Massa
 	}
 }
 
-func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) {
+func (s *outboxServer) consumeMassage(ctx context.Context, r *kafka.Reader) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -46,7 +71,7 @@ func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) 
 		}
 
 		massage, err := r.FetchMessage(ctx)
-		if err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.ErrUnexpectedEOF) {
 			return
 		}
 		if err != nil {
@@ -68,7 +93,7 @@ func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) 
 			return
 		}
 
-		err = syncData(ctx, h, massageDecodeData)
+		err = s.syncData(ctx, massageDecodeData)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
@@ -91,12 +116,12 @@ func consumeMassage(ctx context.Context, h *wire.MassageQueue, r *kafka.Reader) 
 }
 
 // syncData 同步数据
-func syncData(ctx context.Context, h *wire.MassageQueue, massageDecodeData *model.Outbox) error {
+func (s *outboxServer) syncData(ctx context.Context, massageDecodeData *model.Outbox) error {
 	switch massageDecodeData.Type {
-	case model.Book{}.TableName():
-		return syncBookES(ctx, h, massageDecodeData.Operation, &massageDecodeData.Payload)
-	case model.BookChapter{}.TableName():
-		return syncBookChapterES(ctx, h, massageDecodeData.Operation, &massageDecodeData.Payload)
+	case (&model.Book{}).TableName():
+		return s.syncBookES(ctx, massageDecodeData.Operation, &massageDecodeData.Payload)
+	case (&model.BookChapter{}).TableName():
+		return s.syncBookChapterES(ctx, massageDecodeData.Operation, &massageDecodeData.Payload)
 	default:
 	}
 
@@ -105,7 +130,7 @@ func syncData(ctx context.Context, h *wire.MassageQueue, massageDecodeData *mode
 }
 
 // syncBookES 同步图书ES
-func syncBookES(ctx context.Context, h *wire.MassageQueue, operation model.DatabaseOperation, bookDecode *json.RawMessage) error {
+func (s *outboxServer) syncBookES(ctx context.Context, operation model.DatabaseOperation, bookDecode *json.RawMessage) error {
 	var book model.Book
 	err := json.Unmarshal(*bookDecode, &book)
 	if err != nil {
@@ -114,17 +139,17 @@ func syncBookES(ctx context.Context, h *wire.MassageQueue, operation model.Datab
 
 	switch operation {
 	case model.DatabaseOperationCreate:
-		return h.Handler.BookESRepository.Create(ctx, &book)
+		return s.BookESRepository.Create(ctx, &book)
 	case model.DatabaseOperationUpdate:
-		return h.Handler.BookESRepository.Update(ctx, &book)
+		return s.BookESRepository.Update(ctx, &book)
 	case model.DatabaseOperationDelete:
-		return h.Handler.BookESRepository.Delete(ctx, book.ID)
+		return s.BookESRepository.Delete(ctx, book.ID)
 	}
 	return nil
 }
 
 // syncBookChapterES 同步图书章节ES
-func syncBookChapterES(ctx context.Context, h *wire.MassageQueue, operation model.DatabaseOperation, chapterDecode *json.RawMessage) error {
+func (s *outboxServer) syncBookChapterES(ctx context.Context, operation model.DatabaseOperation, chapterDecode *json.RawMessage) error {
 	var chapter model.BookChapter
 	err := json.Unmarshal(*chapterDecode, &chapter)
 	if err != nil {
@@ -133,11 +158,11 @@ func syncBookChapterES(ctx context.Context, h *wire.MassageQueue, operation mode
 
 	switch operation {
 	case model.DatabaseOperationCreate:
-		return h.Handler.BookChapterESRepository.Create(ctx, &chapter)
+		return s.BookChapterESRepository.Create(ctx, &chapter)
 	case model.DatabaseOperationUpdate:
-		return h.Handler.BookChapterESRepository.Update(ctx, &chapter)
+		return s.BookChapterESRepository.Update(ctx, &chapter)
 	case model.DatabaseOperationDelete:
-		return h.Handler.BookChapterESRepository.Delete(ctx, chapter.ID)
+		return s.BookChapterESRepository.Delete(ctx, chapter.ID)
 	}
 	return nil
 }

@@ -12,12 +12,18 @@ var CatchSet = wire.NewSet(
 	ProvideBookCatch,
 	ProvideBookChapterCatch,
 	ProvideLimitCatch,
+	ProvideUserCache,
 	ProvideUserStatCache,
 	ProvideUserAssetCache,
 	ProvideAuthCache,
 	ProvideOrderCache,
 	ProvideBookThermalCache,
 	ProvideBookTagCache,
+	ProvideFeedCache,
+	ProvideUserLikeCache,
+	ProvideUserBookshelfCache,
+	ProvideUserFeedCache,
+	ProvideUserInfoCache,
 )
 
 // ProvideBookCatch 创建Book缓存仓库
@@ -38,6 +44,11 @@ func ProvideLimitCatch(redis *redis.Client) cache.LimitCache {
 // ProvideUserStatCache 创建用户信息仓库
 func ProvideUserStatCache(redis *redis.Client) cache.UserStatCache {
 	return cache.NewUserStatCache(redis)
+}
+
+// ProvideUserCache 创建用户缓存
+func ProvideUserCache(redis *redis.Client) cache.UserCache {
+	return cache.NewUserCache(redis)
 }
 
 // ProvideUserAssetCache 创建用户资产缓存
@@ -62,4 +73,29 @@ func ProvideBookThermalCache(redis *redis.Client) cache.BookThermalCache {
 // ProvideBookTagCache 创建BookTag缓存
 func ProvideBookTagCache(redis *redis.Client) cache.BookTagCache {
 	return cache.NewBookTagCache(redis)
+}
+
+// ProvideFeedCache 创建 Feed 缓存
+func ProvideFeedCache(redis *redis.Client) cache.FeedCache {
+	return cache.NewFeedCache(redis)
+}
+
+// ProvideUserLikeCache 创建用户关注缓存
+func ProvideUserLikeCache(redis *redis.Client) cache.UserLikeCache {
+	return cache.NewUserLikeCache(redis)
+}
+
+// ProvideUserBookshelfCache 创建用户书架缓存
+func ProvideUserBookshelfCache(redis *redis.Client) cache.UserBookshelfCache {
+	return cache.NewUserBookshelfCache(redis)
+}
+
+// ProvideUserFeedCache 创建用户 Feed 缓存
+func ProvideUserFeedCache(redis *redis.Client) cache.UserFeedCache {
+	return cache.NewUserFeedCache(redis)
+}
+
+// ProvideUserInfoCache 创建用户详情缓存
+func ProvideUserInfoCache(redis *redis.Client) cache.UserInfoCache {
+	return cache.NewUserInfoCache(redis)
 }

@@ -19,10 +19,16 @@ var RepositorySet = wire.NewSet(
 	ProvideUserPurchasedChapterRepository,
 	ProvideUserBookshelfRepository,
 	ProvideUserHistoryRepository,
+	ProvideUserLikeRepository,
 	ProvideOrderRepository,
 	ProvideOutboxRepository,
 	ProvideBookESRepository,
 	ProvideBookChapterESRepository,
+	ProvideFeedRepository,
+	ProvideUserFeedRepository,
+	ProvideUserInboxRepository,
+	ProvideConsumeRecordRepository,
+	ProvideUserInfoRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -69,6 +75,11 @@ func ProvideUserHistoryRepository(db *gorm.DB) repository.UserHistoryRepository 
 	return repository.NewUserHistoryRepository(db)
 }
 
+// ProvideUserLikeRepository 提供用户关注仓储
+func ProvideUserLikeRepository(db *gorm.DB) repository.UserLikeRepository {
+	return repository.NewUserLikeRepository(db)
+}
+
 // ProvideOrderRepository 提供订单仓库
 func ProvideOrderRepository(db *gorm.DB) repository.OrderRepository {
 	return repository.NewOrderRepository(db)
@@ -87,4 +98,29 @@ func ProvideBookESRepository(esClient *elasticsearch.Client) repository.BookESRe
 // ProvideBookChapterESRepository 提供书籍章节ES仓库
 func ProvideBookChapterESRepository(esClient *elasticsearch.Client) repository.BookChapterESRepository {
 	return repository.NewBookChapterESRepository(esClient)
+}
+
+// ProvideFeedRepository 提供 Feed 仓储
+func ProvideFeedRepository(db *gorm.DB) repository.FeedRepository {
+	return repository.NewFeedRepository(db)
+}
+
+// ProvideUserFeedRepository 提供用户 Feed 仓储
+func ProvideUserFeedRepository(db *gorm.DB) repository.UserFeedRepository {
+	return repository.NewUserFeedRepository(db)
+}
+
+// ProvideUserInboxRepository 提供用户 Feed 收件箱仓储
+func ProvideUserInboxRepository(db *gorm.DB) repository.UserInboxRepository {
+	return repository.NewUserInboxRepository(db)
+}
+
+// ProvideConsumeRecordRepository 提供 Kafka 消费记录仓储（用于幂等防重复消费）
+func ProvideConsumeRecordRepository(db *gorm.DB) repository.ConsumeRecordRepository {
+	return repository.NewConsumeRecordRepository(db)
+}
+
+// ProvideUserInfoRepository 提供用户详情仓储
+func ProvideUserInfoRepository(db *gorm.DB) repository.UserInfoRepository {
+	return repository.NewUserInfoRepository(db)
 }

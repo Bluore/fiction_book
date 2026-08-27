@@ -84,13 +84,13 @@ func (suite *UserBookshelfServiceTestSuite) TestGetUserBookshelfListCacheMiss() 
 	suite.bookshelfRepo.On("ListByUserID", ctx, mock.Anything, "u1", 1, 10).Return(shelf, nil)
 	suite.bookCache.On("GetBook", ctx, "b1").Return(nil, false, nil)
 	suite.bookRepo.On("GetByID", ctx, "b1").Return(book, nil)
-	suite.bookCache.On("UpdateBook", ctx, book).Return(nil)
+	suite.bookCache.On("UpdateBook", ctx, "b1", book).Return(nil)
 	suite.bookshelfRepo.On("CountByUserID", ctx, mock.Anything, "u1").Return(1, nil)
 
 	res, err := suite.svc.GetUserBookshelfList(ctx, "u1", req)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), res.Books, 1)
-	suite.bookCache.AssertCalled(suite.T(), "UpdateBook", ctx, book)
+	suite.bookCache.AssertCalled(suite.T(), "UpdateBook", ctx, "b1", book)
 }
 
 // TestGetUserBookshelfListEmpty 测试书架为空时返回空数组而不是 nil
@@ -288,7 +288,7 @@ func (suite *BookThermalTaskTestSuite) TestAddValueCacheHit() {
 	suite.thermalCache.On("GetBookThermalValue", mock.Anything, "b1").Return(uint64(110), true, nil)
 	suite.bookRepo.On("UpdateBookThermal", mock.Anything, mock.Anything, "b1", uint64(110)).Return(nil)
 	suite.bookRepo.On("GetByID", mock.Anything, "b1").Return(book, nil)
-	suite.bookCache.On("UpdateBook", mock.Anything, book).Return(nil)
+	suite.bookCache.On("UpdateBook", mock.Anything, "b1", book).Return(nil)
 	suite.bookCache.On("IncreaseBookThermalDaily", mock.Anything, "b1", 10).Return(nil)
 
 	err := suite.runAddValueTask("b1", 10)
@@ -311,7 +311,7 @@ func (suite *BookThermalTaskTestSuite) TestAddValueCacheMissInitFromDB() {
 	suite.thermalCache.On("LockBookThermalValue", mock.Anything, "b1").Return(nil)
 	suite.thermalCache.On("GetBookThermalValue", mock.Anything, "b1").Return(uint64(110), true, nil)
 	suite.bookRepo.On("UpdateBookThermal", mock.Anything, mock.Anything, "b1", uint64(110)).Return(nil)
-	suite.bookCache.On("UpdateBook", mock.Anything, book).Return(nil)
+	suite.bookCache.On("UpdateBook", mock.Anything, "b1", book).Return(nil)
 	suite.bookCache.On("IncreaseBookThermalDaily", mock.Anything, "b1", 10).Return(nil)
 
 	err := suite.runAddValueTask("b1", 10)
@@ -368,7 +368,7 @@ func (suite *BookThermalTaskTestSuite) TestAddValueRankingErrorIgnored() {
 	suite.thermalCache.On("GetBookThermalValue", mock.Anything, "b1").Return(uint64(110), true, nil)
 	suite.bookRepo.On("UpdateBookThermal", mock.Anything, mock.Anything, "b1", uint64(110)).Return(nil)
 	suite.bookRepo.On("GetByID", mock.Anything, "b1").Return(book, nil)
-	suite.bookCache.On("UpdateBook", mock.Anything, book).Return(nil)
+	suite.bookCache.On("UpdateBook", mock.Anything, "b1", book).Return(nil)
 	suite.bookCache.On("IncreaseBookThermalDaily", mock.Anything, "b1", 10).
 		Return(errors.New("zset fail"))
 
@@ -409,7 +409,7 @@ func (suite *BookThermalTaskTestSuite) TestSyncToDatabaseCacheUpdateErrorIgnored
 	suite.thermalCache.On("GetBookThermalValue", mock.Anything, "b1").Return(uint64(110), true, nil)
 	suite.bookRepo.On("UpdateBookThermal", mock.Anything, mock.Anything, "b1", uint64(110)).Return(nil)
 	suite.bookRepo.On("GetByID", mock.Anything, "b1").Return(book, nil)
-	suite.bookCache.On("UpdateBook", mock.Anything, book).Return(errors.New("cache fail"))
+	suite.bookCache.On("UpdateBook", mock.Anything, "b1", book).Return(errors.New("cache fail"))
 
 	err := bookThermalCacheSyncToDatabaseTask(
 		context.Background(), suite.db, suite.thermalCache, suite.bookCache, suite.bookRepo, "b1",

@@ -29,10 +29,11 @@ func InitializeApp() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
+	userCache := ProvideUserCache(client)
 	userStatCache := ProvideUserStatCache(client)
 	userAssetCache := ProvideUserAssetCache(client)
 	authCache := ProvideAuthCache(client)
-	userService := ProvideUserService(userRepository, userAssetRepository, userStatCache, userAssetCache, authCache, db, config)
+	userService := ProvideUserService(userRepository, userAssetRepository, userCache, userStatCache, userAssetCache, authCache, db, config)
 	bookRepository := ProvideBookRepository(db)
 	bookTagRepository := ProvideBookTagRepository(db)
 	elasticsearchClient, err := ProvideESClient(config)
@@ -42,27 +43,38 @@ func InitializeApp() (*App, error) {
 	bookESRepository := ProvideBookESRepository(elasticsearchClient)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	outboxRepository := ProvideOutboxRepository(db)
+	userInfoRepository := ProvideUserInfoRepository(db)
+	userFeedRepository := ProvideUserFeedRepository(db)
 	bookCache := ProvideBookCatch(client)
 	bookThermalCache := ProvideBookThermalCache(client)
 	bookTagCache := ProvideBookTagCache(client)
-	bookService := ProvideBookService(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, db, config)
-	bookChapterRepository := ProvideBookChapterRepository(db)
-	bookChapterESRepository := ProvideBookChapterESRepository(elasticsearchClient)
-	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
-	bookChapterCache := ProvideBookChapterCatch(client)
-	limitCache := ProvideLimitCatch(client)
+	userInfoCache := ProvideUserInfoCache(client)
+	userFeedCache := ProvideUserFeedCache(client)
+	feedClient := ProvideFeedClient(config)
 	pool, err := ProvideAgilePool(config)
 	if err != nil {
 		return nil, err
 	}
-	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, db, config, pool)
+	bookService := ProvideBookService(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userPurchasedBookRepository, outboxRepository, userInfoRepository, userFeedRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, userInfoCache, userFeedCache, feedClient, db, config, pool)
+	bookChapterRepository := ProvideBookChapterRepository(db)
+	bookChapterESRepository := ProvideBookChapterESRepository(elasticsearchClient)
+	userPurchasedChapterRepository := ProvideUserPurchasedChapterRepository(db)
+	userBookshelfRepository := ProvideUserBookshelfRepository(db)
+	feedRepository := ProvideFeedRepository(db)
+	bookChapterCache := ProvideBookChapterCatch(client)
+	limitCache := ProvideLimitCatch(client)
+	feedCache := ProvideFeedCache(client)
+	feedClientV1 := ProvideFeedClientV1(config)
+	bookChapterService := ProvideBookChapterService(userRepository, bookRepository, bookChapterRepository, bookChapterESRepository, userPurchasedChapterRepository, userAssetRepository, userBookshelfRepository, feedRepository, outboxRepository, bookCache, bookThermalCache, bookChapterCache, userStatCache, limitCache, feedCache, feedClientV1, db, config, pool)
 	userAssetService := ProvideUserAssetService(userRepository, userAssetRepository, db, config)
 	userPurchasedBookService := ProvideUserPurchasedBookService(userRepository, userPurchasedBookRepository, config)
 	userPurchasedChapterService := ProvideUserPurchasedChapterService(userRepository, userPurchasedChapterRepository, config)
-	userBookshelfRepository := ProvideUserBookshelfRepository(db)
 	userBookshelfService := ProvideUserBookshelfService(userRepository, bookRepository, userBookshelfRepository, bookCache, bookThermalCache, limitCache, db, config, pool)
 	userHistoryRepository := ProvideUserHistoryRepository(db)
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
+	userLikeRepository := ProvideUserLikeRepository(db)
+	userLikeCache := ProvideUserLikeCache(client)
+	userLikeService := ProvideUserLikeService(userRepository, userLikeRepository, userLikeCache, db)
 	orderRepository := ProvideOrderRepository(db)
 	orderCache := ProvideOrderCache(client)
 	strategy, err := ProvideAlipayStrategy(config)
@@ -71,30 +83,18 @@ func InitializeApp() (*App, error) {
 	}
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
-	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, orderService, buyVIP, config)
-	app := NewApp(handler)
+	feedService := ProvideFeedService(feedRepository, feedCache, db)
+	userInboxRepository := ProvideUserInboxRepository(db)
+	userBookshelfCache := ProvideUserBookshelfCache(client)
+	feedServiceV2 := ProvideFeedServiceV2(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userLikeRepository, userPurchasedBookRepository, userCache, userAssetCache, userFeedRepository, userInboxRepository, outboxRepository, userInfoRepository, userBookshelfRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, userFeedCache, userLikeCache, userInfoCache, userBookshelfCache, db, config)
+	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, userLikeService, orderService, buyVIP, feedService, feedServiceV2, config)
+	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
+	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
+	consumeRecordRepository := ProvideConsumeRecordRepository(db)
+	feedServer := ProvideFeedServer(userInboxRepository, userLikeRepository, userLikeCache, userFeedCache, consumeRecordRepository, db)
+	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
+	app := NewApp(handler, kafkaHandler)
 	return app, nil
-}
-
-func InitializeMassageQueue() (*MassageQueue, error) {
-	config, err := ProvideConfig()
-	if err != nil {
-		return nil, err
-	}
-	db, err := ProvideDatabase(config)
-	if err != nil {
-		return nil, err
-	}
-	outboxRepository := ProvideOutboxRepository(db)
-	client, err := ProvideESClient(config)
-	if err != nil {
-		return nil, err
-	}
-	bookESRepository := ProvideBookESRepository(client)
-	bookChapterESRepository := ProvideBookChapterESRepository(client)
-	handler := ProvideMassageHandlerSer(outboxRepository, bookESRepository, bookChapterESRepository, db)
-	massageQueue := NewMassageQueue(handler)
-	return massageQueue, nil
 }
 
 // wire.go:
@@ -102,17 +102,10 @@ func InitializeMassageQueue() (*MassageQueue, error) {
 // App 应用容器
 type App struct {
 	Handler *handler.Handler
+	Kafka   *kafka.Handler
 }
 
 // NewApp 创建 App 实例
-func NewApp(h *handler.Handler) *App {
-	return &App{Handler: h}
-}
-
-type MassageQueue struct {
-	Handler *kafka.Handler
-}
-
-func NewMassageQueue(h *kafka.Handler) *MassageQueue {
-	return &MassageQueue{Handler: h}
+func NewApp(h *handler.Handler, k *kafka.Handler) *App {
+	return &App{Handler: h, Kafka: k}
 }

@@ -141,6 +141,19 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			history.GET("/:user_id", middleware.Validation(&dto.ListUserHistoryRequest{}), h.ListUserHistory)
 		}
 
+		// 关注管理
+		likes := v1.Group("/likes")
+		{
+			likes.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserLikeRequest{}), h.GetUserLike)
+			likes.PUT("", middleware.Auth(cfg), middleware.Validation(&dto.UpdateUserLikeRequest{}), h.UpdateUserLike)
+		}
+
+		// Feed 管理
+		feed := v1.Group("/feed")
+		{
+			feed.GET("/list", middleware.Auth(cfg), h.GetFeedList)
+		}
+
 		// 订单管理
 		orders := v1.Group("/orders")
 		{
@@ -163,6 +176,13 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		chapters := v2.Group("/chapters")
 		{
 			chapters.GET("/search", middleware.Validation(&dto.SearchBookChaptersV2Request{}), h.SearchBookChaptersV2)
+		}
+
+		// Feed 管理
+		feed := v2.Group("/feed")
+		{
+			feed.POST("", middleware.Auth(cfg), middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GetUserFeedV2)
+			feed.POST("/guest", middleware.Validation(&dto.GetUserFeedRequestV2{}), h.GuestGetUserFeedV2)
 		}
 
 		// VIP购买管理

@@ -1,11 +1,11 @@
 package wire
 
 import (
-	mq "fiction-book/internal/kafka"
-	"fiction-book/internal/repository"
+	"fiction-book/internal/kafka"
+	"fiction-book/internal/kafka/kafka_client"
+	"fiction-book/internal/kafka/kafka_server"
 
 	"github.com/google/wire"
-	"gorm.io/gorm"
 
 	"fiction-book/internal/api/handler"
 	"fiction-book/internal/service"
@@ -15,6 +15,7 @@ import (
 // HandlerSet Handler 层 Provider 集合
 var HandlerSet = wire.NewSet(
 	ProvideHandler,
+	ProvideKafkaHandler,
 )
 
 // ProvideHandler 提供主 Handler
@@ -27,8 +28,11 @@ func ProvideHandler(
 	userPurchasedChapterService service.UserPurchasedChapterService,
 	userBookshelfService service.UserBookshelfService,
 	userHistoryService service.UserHistoryService,
+	userLikeService service.UserLikeService,
 	orderService service.OrderService,
 	buyVIPService service.BuyVIP,
+	feedService service.FeedService,
+	feedServiceV2 service.FeedServiceV2,
 	cfg *config.Config,
 ) *handler.Handler {
 	return handler.NewHandler(
@@ -40,21 +44,20 @@ func ProvideHandler(
 		userPurchasedChapterService,
 		userBookshelfService,
 		userHistoryService,
+		userLikeService,
 		orderService,
 		buyVIPService,
+		feedService,
+		feedServiceV2,
 		cfg,
 	)
 }
 
-var MassageHandlerSet = wire.NewSet(
-	ProvideMassageHandlerSer,
-)
-
-func ProvideMassageHandlerSer(
-	outboxRepository repository.OutboxRepository,
-	bookESRepository repository.BookESRepository,
-	bookChapterESRepository repository.BookChapterESRepository,
-	db *gorm.DB,
-) *mq.Handler {
-	return mq.NewHandler(outboxRepository, bookESRepository, bookChapterESRepository, db)
+// ProvideKafkaHandler 提供 Kafka Handler
+func ProvideKafkaHandler(
+	outboxClient kafka_client.OutboxClient,
+	outboxServer kafka_server.OutboxServer,
+	feedServer kafka_server.FeedServer,
+) *kafka.Handler {
+	return kafka.NewHandler(outboxClient, outboxServer, feedServer)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/stretchr/testify/mock"
@@ -182,8 +183,20 @@ func (m *MockUserBookshelfRepository) ListByUserID(ctx context.Context, db *gorm
 	return list, args.Error(1)
 }
 
+func (m *MockUserBookshelfRepository) ListUserIDsByBookID(ctx context.Context, db *gorm.DB, bookID string) ([]string, error) {
+	args := m.Called(ctx, db, bookID)
+	userIDs, _ := args.Get(0).([]string)
+	return userIDs, args.Error(1)
+}
+
 func (m *MockUserBookshelfRepository) CreateByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error {
 	return m.Called(ctx, db, userID, bookID).Error(0)
+}
+
+func (m *MockUserBookshelfRepository) GetByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) (*model.UserBookshelf, error) {
+	args := m.Called(ctx, db, userID, bookID)
+	item, _ := args.Get(0).(*model.UserBookshelf)
+	return item, args.Error(1)
 }
 
 func (m *MockUserBookshelfRepository) DeleteByUserIDAndBookID(ctx context.Context, db *gorm.DB, userID string, bookID string) error {
@@ -201,6 +214,10 @@ func (m *MockUserBookshelfRepository) CountByUserID(ctx context.Context, db *gor
 	return args.Int(0), args.Error(1)
 }
 
+func (m *MockUserBookshelfRepository) DeleteAllUserByBookID(ctx context.Context, db *gorm.DB, bookID string) error {
+	return m.Called(ctx, db, bookID).Error(0)
+}
+
 // ---------- BookCache ----------
 
 type MockBookCache struct {
@@ -213,8 +230,8 @@ func (m *MockBookCache) GetBook(ctx context.Context, id string) (*model.Book, bo
 	return book, args.Bool(1), args.Error(2)
 }
 
-func (m *MockBookCache) UpdateBook(ctx context.Context, book *model.Book) error {
-	return m.Called(ctx, book).Error(0)
+func (m *MockBookCache) UpdateBook(ctx context.Context, bookID string, book *model.Book) error {
+	return m.Called(ctx, bookID, book).Error(0)
 }
 
 func (m *MockBookCache) DeleteBook(ctx context.Context, id string) error {
@@ -241,6 +258,15 @@ func (m *MockBookCache) GetBookThermalMonthly(ctx context.Context, page int, siz
 	args := m.Called(ctx, page, size)
 	ids, _ := args.Get(0).([]string)
 	return ids, args.Error(1)
+}
+
+func (m *MockBookCache) LockBook(ctx context.Context, bookID string) (string, bool, error) {
+	args := m.Called(ctx, bookID)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *MockBookCache) UnlockBook(ctx context.Context, bookID string, token string) error {
+	return m.Called(ctx, bookID, token).Error(0)
 }
 
 // ---------- BookThermalCache ----------
@@ -298,6 +324,16 @@ func (m *MockLimitCache) CheckUserBookshelfBook1Hour(ctx context.Context, userId
 
 func (m *MockLimitCache) AddUserBookshelfBook1Hour(ctx context.Context, userId string, bookId string) error {
 	return m.Called(ctx, userId, bookId).Error(0)
+}
+
+// ---------- FeedClient ----------
+
+type MockFeedClient struct {
+	mock.Mock
+}
+
+func (m *MockFeedClient) PublishFeeds(ctx context.Context, cfg *config.Config, feeds []*model.FeedInbox, users []string) error {
+	return m.Called(ctx, cfg, feeds, users).Error(0)
 }
 
 // ---------- UserStatCache ----------
@@ -380,6 +416,26 @@ func (m *MockBookChapterRepository) Delete(ctx context.Context, id string) error
 
 func (m *MockBookChapterRepository) Update(ctx context.Context, id string, bookChapter *model.BookChapter) error {
 	return m.Called(ctx, id, bookChapter).Error(0)
+}
+
+func (m *MockBookChapterRepository) BookChapterInfoGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterInfo, error) {
+	args := m.Called(ctx, db, id)
+	info, _ := args.Get(0).(*model.BookChapterInfo)
+	return info, args.Error(1)
+}
+
+func (m *MockBookChapterRepository) BookChapterInfoUpdate(ctx context.Context, db *gorm.DB, id string, bookChapterInfo *model.BookChapterInfo) error {
+	return m.Called(ctx, db, id, bookChapterInfo).Error(0)
+}
+
+func (m *MockBookChapterRepository) BookChapterContentGetByID(ctx context.Context, db *gorm.DB, id string) (*model.BookChapterContent, error) {
+	args := m.Called(ctx, db, id)
+	content, _ := args.Get(0).(*model.BookChapterContent)
+	return content, args.Error(1)
+}
+
+func (m *MockBookChapterRepository) BookChapterContentUpdate(ctx context.Context, db *gorm.DB, id string, bookChapterContent *model.BookChapterContent) error {
+	return m.Called(ctx, db, id, bookChapterContent).Error(0)
 }
 
 // ---------- BookChapterESRepository ----------
@@ -472,6 +528,10 @@ func (m *MockUserAssetRepository) CreateUserAsset(ctx context.Context, db *gorm.
 	return m.Called(ctx, db, id).Error(0)
 }
 
+func (m *MockUserAssetRepository) DeleteByID(ctx context.Context, db *gorm.DB, id string) error {
+	return m.Called(ctx, db, id).Error(0)
+}
+
 // ---------- OutboxRepository ----------
 
 type MockOutboxRepository struct {
@@ -498,12 +558,148 @@ type MockBookChapterCache struct {
 	mock.Mock
 }
 
-func (m *MockBookChapterCache) UpdateBookChapter(ctx context.Context, chapter *model.BookChapter) error {
-	return m.Called(ctx, chapter).Error(0)
+func (m *MockBookChapterCache) UpdateBookChapterInfo(ctx context.Context, chapterID string, chapterInfo *model.BookChapterInfo) error {
+	return m.Called(ctx, chapterID, chapterInfo).Error(0)
 }
 
-func (m *MockBookChapterCache) GetBookChapter(ctx context.Context, chapter string) (*model.BookChapter, bool, error) {
-	args := m.Called(ctx, chapter)
-	item, _ := args.Get(0).(*model.BookChapter)
+func (m *MockBookChapterCache) UpdateBookChapterContent(ctx context.Context, chapterID string, chapterContent *model.BookChapterContent) error {
+	return m.Called(ctx, chapterID, chapterContent).Error(0)
+}
+
+func (m *MockBookChapterCache) GetBookChapterInfo(ctx context.Context, chapterID string) (*model.BookChapterInfo, bool, error) {
+	args := m.Called(ctx, chapterID)
+	item, _ := args.Get(0).(*model.BookChapterInfo)
 	return item, args.Bool(1), args.Error(2)
+}
+
+func (m *MockBookChapterCache) GetBookChapterContent(ctx context.Context, chapterID string) (*model.BookChapterContent, bool, error) {
+	args := m.Called(ctx, chapterID)
+	item, _ := args.Get(0).(*model.BookChapterContent)
+	return item, args.Bool(1), args.Error(2)
+}
+
+func (m *MockBookChapterCache) LockBookChapterInfo(ctx context.Context, chapterID string) (string, bool, error) {
+	args := m.Called(ctx, chapterID)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *MockBookChapterCache) LockBookChapterContent(ctx context.Context, chapterID string) (string, bool, error) {
+	args := m.Called(ctx, chapterID)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *MockBookChapterCache) UnlockBookChapterInfo(ctx context.Context, chapterID string, token string) error {
+	return m.Called(ctx, chapterID, token).Error(0)
+}
+
+func (m *MockBookChapterCache) UnlockBookChapterContent(ctx context.Context, chapterID string, token string) error {
+	return m.Called(ctx, chapterID, token).Error(0)
+}
+
+// ---------- FeedRepository ----------
+
+type MockFeedRepository struct {
+	mock.Mock
+}
+
+func (m *MockFeedRepository) CreateBatchIgnoreConflict(
+	ctx context.Context,
+	db *gorm.DB,
+	feeds []*model.FeedInbox,
+) (int64, error) {
+	args := m.Called(ctx, db, feeds)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFeedRepository) GetUserFeeds(
+	ctx context.Context,
+	db *gorm.DB,
+	filter *model.FeedFilterWithTimePage,
+) ([]*model.FeedInbox, error) {
+	args := m.Called(ctx, db, filter)
+	feeds, _ := args.Get(0).([]*model.FeedInbox)
+	return feeds, args.Error(1)
+}
+
+func (m *MockFeedRepository) GetUserFeedsIDs(ctx context.Context, db *gorm.DB, filter *model.FeedFilterWithTimePage) ([]string, error) {
+	args := m.Called(ctx, db, filter)
+	ids, _ := args.Get(0).([]string)
+	return ids, args.Error(1)
+}
+
+func (m *MockFeedRepository) GetUserFeedSingle(ctx context.Context, db *gorm.DB, feedID string) (*model.FeedInbox, bool, error) {
+	args := m.Called(ctx, db, feedID)
+	feed, _ := args.Get(0).(*model.FeedInbox)
+	return feed, args.Bool(1), args.Error(2)
+}
+
+func (m *MockFeedRepository) MarkAsRead(ctx context.Context, db *gorm.DB, userID string, feedIDs []string) (int64, error) {
+	args := m.Called(ctx, db, userID, feedIDs)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFeedRepository) MarkAllAsRead(ctx context.Context, db *gorm.DB, userID string) error {
+	return m.Called(ctx, db, userID).Error(0)
+}
+
+func (m *MockFeedRepository) DeleteOldFeeds(ctx context.Context, db *gorm.DB, before time.Time) error {
+	return m.Called(ctx, db, before).Error(0)
+}
+
+func (m *MockFeedRepository) DeleteByBookID(ctx context.Context, db *gorm.DB, bookID string) error {
+	return m.Called(ctx, db, bookID).Error(0)
+}
+
+// ---------- FeedCache ----------
+
+type MockFeedCache struct {
+	mock.Mock
+}
+
+func (m *MockFeedCache) PushFeeds(ctx context.Context, userID string, feeds []*model.FeedInbox) error {
+	return m.Called(ctx, userID, feeds).Error(0)
+}
+
+func (m *MockFeedCache) GetFeeds(
+	ctx context.Context,
+	userID string,
+	feedIDs []string,
+) ([]*model.FeedInbox, error) {
+	args := m.Called(ctx, userID, feedIDs)
+	feeds, _ := args.Get(0).([]*model.FeedInbox)
+	return feeds, args.Error(1)
+}
+
+func (m *MockFeedCache) TrimFeeds(ctx context.Context, userID string, maxLen int64) error {
+	return m.Called(ctx, userID, maxLen).Error(0)
+}
+
+func (m *MockFeedCache) DelFeeds(ctx context.Context, userID string, feedIDs []string) (int64, error) {
+	args := m.Called(ctx, userID, feedIDs)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFeedCache) GetFeedSingle(ctx context.Context, userID string, feedID string) (*model.FeedInbox, bool, error) {
+	args := m.Called(ctx, userID, feedID)
+	feed, _ := args.Get(0).(*model.FeedInbox)
+	return feed, args.Bool(1), args.Error(2)
+}
+
+func (m *MockFeedCache) WarmFeeds(ctx context.Context, userID string, feeds []*model.FeedInbox) (int64, error) {
+	args := m.Called(ctx, userID, feeds)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *MockFeedCache) GetCursor(ctx context.Context, userID string) (*model.FeedCursor, bool, error) {
+	args := m.Called(ctx, userID)
+	cursor, _ := args.Get(0).(*model.FeedCursor)
+	return cursor, args.Bool(1), args.Error(2)
+}
+
+func (m *MockFeedCache) SetCursor(ctx context.Context, userID string, cursor *model.FeedCursor) error {
+	return m.Called(ctx, userID, cursor).Error(0)
+}
+
+func (m *MockFeedCache) DeleteCursor(ctx context.Context, userID string) error {
+	return m.Called(ctx, userID).Error(0)
 }

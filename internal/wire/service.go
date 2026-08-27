@@ -2,6 +2,7 @@ package wire
 
 import (
 	"fiction-book/internal/cache"
+	"fiction-book/internal/kafka/kafka_client"
 
 	agilepool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/wire"
@@ -24,13 +25,17 @@ var ServiceSet = wire.NewSet(
 	ProvideBuyVIPService,
 	ProvideUserBookshelfService,
 	ProvideUserHistoryService,
+	ProvideUserLikeService,
 	ProvideOrderService,
+	ProvideFeedService,
+	ProvideFeedServiceV2,
 )
 
 // ProvideUserService 提供用户服务
 func ProvideUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userCache cache.UserCache,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
 	authCache cache.AuthCache,
@@ -40,6 +45,7 @@ func ProvideUserService(
 	return service.NewUserService(
 		userRepo,
 		userAssetRepo,
+		userCache,
 		userStatCache,
 		userAssetCache,
 		authCache,
@@ -57,12 +63,18 @@ func ProvideBookService(
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
 	outboxRepo repository.OutboxRepository,
+	userInfoRepo repository.UserInfoRepository,
+	userFeedRepo repository.UserFeedRepository,
 	bookCatch cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
 	bookTagCache cache.BookTagCache,
+	userInfoCache cache.UserInfoCache,
+	userFeedCache cache.UserFeedCache,
+	feedClient kafka_client.FeedClient,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilepool.Pool,
 ) service.BookService {
 	return service.NewBookService(
 		bookRepo,
@@ -72,12 +84,18 @@ func ProvideBookService(
 		userAssetRepo,
 		purchasedBookRepo,
 		outboxRepo,
+		userInfoRepo,
+		userFeedRepo,
 		bookCatch,
 		userStatCache,
 		bookThermalCache,
 		bookTagCache,
+		userInfoCache,
+		userFeedCache,
+		feedClient,
 		db,
 		cfg,
+		pool,
 	)
 }
 
@@ -89,12 +107,16 @@ func ProvideBookChapterService(
 	bookChapterESRepo repository.BookChapterESRepository,
 	userPurchasedChapterRepo repository.UserPurchasedChapterRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userBookshelfRepo repository.UserBookshelfRepository,
+	feedRepo repository.FeedRepository,
 	outboxRepo repository.OutboxRepository,
 	bookCatch cache.BookCache,
 	bookThermalCache cache.BookThermalCache,
 	bookChapterCatch cache.BookChapterCache,
 	userStatCache cache.UserStatCache,
 	limitCatch cache.LimitCache,
+	feedCache cache.FeedCache,
+	feedClient kafka_client.FeedClientV1,
 	db *gorm.DB,
 	cfg *config.Config,
 	pool *agilepool.Pool,
@@ -106,12 +128,16 @@ func ProvideBookChapterService(
 		bookChapterESRepo,
 		userPurchasedChapterRepo,
 		userAssetRepo,
+		userBookshelfRepo,
+		feedRepo,
 		outboxRepo,
 		bookCatch,
 		bookThermalCache,
 		bookChapterCatch,
 		userStatCache,
 		limitCatch,
+		feedCache,
+		feedClient,
 		db,
 		cfg,
 		pool,
@@ -198,6 +224,16 @@ func ProvideUserHistoryService(
 	return service.NewUserHistoryService(userRepo, userHistoryRepo, bookRepo, db, cfg)
 }
 
+// ProvideUserLikeService 提供用户关注服务
+func ProvideUserLikeService(
+	userRepo repository.UserRepository,
+	userLikeRepo repository.UserLikeRepository,
+	userLikeCache cache.UserLikeCache,
+	db *gorm.DB,
+) service.UserLikeService {
+	return service.NewUserLikeService(userRepo, userLikeRepo, userLikeCache, db)
+}
+
 // ProvideOrderService 提供订单服务
 func ProvideOrderService(
 	userRepo repository.UserRepository,
@@ -210,4 +246,68 @@ func ProvideOrderService(
 	pool *agilepool.Pool,
 ) service.OrderService {
 	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderCache, db, cfg, alipayStrategy, pool)
+}
+
+// Deprecated: ProvideFeedService 旧版提供 Feed 服务的依赖注入
+func ProvideFeedService(
+	feedRepo repository.FeedRepository,
+	feedCache cache.FeedCache,
+	db *gorm.DB,
+) service.FeedService {
+	return service.NewFeedService(feedRepo, feedCache, db)
+}
+
+// ProvideFeedServiceV2 提供新版 Feed 服务
+func ProvideFeedServiceV2(
+	bookRepo repository.BookRepository,
+	bookTagRepo repository.BookTagRepository,
+	bookESRepo repository.BookESRepository,
+	userRepo repository.UserRepository,
+	userAssetRepo repository.UserAssetRepository,
+	userLikeRepo repository.UserLikeRepository,
+	purchasedBookRepo repository.UserPurchasedBookRepository,
+	userCache cache.UserCache,
+	userAssetCache cache.UserAssetCache,
+	userFeedRepo repository.UserFeedRepository,
+	userInboxRepo repository.UserInboxRepository,
+	outboxRepo repository.OutboxRepository,
+	userInfoRepo repository.UserInfoRepository,
+	userBookshelfRepo repository.UserBookshelfRepository,
+	bookCache cache.BookCache,
+	userStatCache cache.UserStatCache,
+	bookThermalCache cache.BookThermalCache,
+	bookTagCache cache.BookTagCache,
+	feedCache cache.UserFeedCache,
+	userLikeCache cache.UserLikeCache,
+	userInfoCache cache.UserInfoCache,
+	userBookshelfCache cache.UserBookshelfCache,
+	db *gorm.DB,
+	cfg *config.Config,
+) service.FeedServiceV2 {
+	return service.NewFeedServiceV2(
+		bookRepo,
+		bookTagRepo,
+		bookESRepo,
+		userRepo,
+		userAssetRepo,
+		userLikeRepo,
+		purchasedBookRepo,
+		userCache,
+		userAssetCache,
+		userFeedRepo,
+		userInboxRepo,
+		outboxRepo,
+		userInfoRepo,
+		userBookshelfRepo,
+		bookCache,
+		userStatCache,
+		bookThermalCache,
+		bookTagCache,
+		feedCache,
+		userLikeCache,
+		userInfoCache,
+		userBookshelfCache,
+		db,
+		cfg,
+	)
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
+	"fiction-book/internal/kafka/kafka_client"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -55,12 +57,18 @@ type bookService struct {
 	userAssetRepo     repository.UserAssetRepository
 	purchasedBookRepo repository.UserPurchasedBookRepository
 	outboxRepo        repository.OutboxRepository
+	userInfoRepo      repository.UserInfoRepository
+	userFeedRepo      repository.UserFeedRepository
 	bookCache         cache.BookCache
 	userStatCache     cache.UserStatCache
 	bookThermalCache  cache.BookThermalCache
 	bookTagCache      cache.BookTagCache
+	userInfoCache     cache.UserInfoCache
+	userFeedCache     cache.UserFeedCache
+	feedClient        kafka_client.FeedClient
 	db                *gorm.DB
 	cfg               *config.Config
+	pool              *agilePool.Pool
 }
 
 // NewBookService 创建书籍服务实例
@@ -72,12 +80,18 @@ func NewBookService(
 	userAssetRepo repository.UserAssetRepository,
 	purchasedBookRepo repository.UserPurchasedBookRepository,
 	outboxRepo repository.OutboxRepository,
+	userInfoRepo repository.UserInfoRepository,
+	userFeedRepo repository.UserFeedRepository,
 	bookCache cache.BookCache,
 	userStatCache cache.UserStatCache,
 	bookThermalCache cache.BookThermalCache,
 	bookTagCache cache.BookTagCache,
+	userInfoCache cache.UserInfoCache,
+	userFeedCache cache.UserFeedCache,
+	feedClient kafka_client.FeedClient,
 	db *gorm.DB,
 	cfg *config.Config,
+	pool *agilePool.Pool,
 ) BookService {
 	return &bookService{
 		bookRepo:          bookRepo,
@@ -87,12 +101,18 @@ func NewBookService(
 		userAssetRepo:     userAssetRepo,
 		purchasedBookRepo: purchasedBookRepo,
 		outboxRepo:        outboxRepo,
+		userInfoRepo:      userInfoRepo,
+		userFeedRepo:      userFeedRepo,
 		bookCache:         bookCache,
 		userStatCache:     userStatCache,
 		bookThermalCache:  bookThermalCache,
 		bookTagCache:      bookTagCache,
+		userInfoCache:     userInfoCache,
+		userFeedCache:     userFeedCache,
+		feedClient:        feedClient,
 		db:                db,
 		cfg:               cfg,
+		pool:              pool,
 	}
 }
 
@@ -103,6 +123,14 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 	}
 	if existingBook != nil {
 		return nil, ErrBookExists
+	}
+
+	userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, userID)
+	if err != nil {
+		return nil, err
+	}
+	if userInfoDetail == nil {
+		return nil, ErrUserNotFound
 	}
 
 	book := &model.Book{
@@ -117,12 +145,42 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		BrowseAmount:    0,
 		BookshelfAmount: 0,
 	}
+
+	calculateRank := func(userInfoDetail *model.UserInfo) int64 {
+		return int64(userInfoDetail.IsV*10) + userInfoDetail.FansNum/100
+	}
+
+	userFeedDetail := &model.UserFeed{
+		FeedID:    uuid.New().String(),
+		UserID:    userID,
+		BookID:    book.ID,
+		Content:   fmt.Sprintf("发布了书籍%s", req.Name),
+		Rank:      calculateRank(userInfoDetail),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		err := s.bookRepo.Create(ctx, tx, book)
+		var err error
+		// 写入数据
+		err = s.bookRepo.Create(ctx, tx, book)
 		if err != nil {
 			return err
 		}
 
+		// 更新用户数据
+		err = s.userInfoRepo.IncrementReadBookNum(ctx, tx, userID, 1)
+		if err != nil {
+			return err
+		}
+
+		// 添加Feed消息
+		err = s.userFeedRepo.CreateUserFeed(ctx, tx, userFeedDetail)
+		if err != nil {
+			return err
+		}
+
+		// 同步到ES
 		bookJSON, err := json.Marshal(book)
 		if err != nil {
 			return err
@@ -130,7 +188,7 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 
 		outbox := &model.Outbox{
 			ID:        uuid.New().String(),
-			Type:      model.Book{}.TableName(),
+			Type:      (&model.Book{}).TableName(),
 			Operation: model.DatabaseOperationCreate,
 			Payload:   bookJSON,
 			Status:    model.OutboxStatusCreated,
@@ -143,6 +201,16 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		}
 		return nil
 	})
+
+	if userInfoDetail.IsV == 0 {
+		// 小V用户:feed流写推送
+		err := s.feedClient.PublishFeed(ctx, *userFeedDetail)
+		if err != nil {
+			logger.Error("error publishing feed", zap.Error(err))
+			return nil, nil
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +443,7 @@ func (s *bookService) UploadBookCover(ctx context.Context, userID string, req *d
 
 		outbox := &model.Outbox{
 			ID:        uuid.New().String(),
-			Type:      model.Book{}.TableName(),
+			Type:      (&model.Book{}).TableName(),
 			Operation: model.DatabaseOperationUpdate,
 			Payload:   bookJSON,
 			Status:    model.OutboxStatusCreated,
@@ -430,7 +498,7 @@ func (s *bookService) GetBookListByThermalDaily(ctx context.Context, req *dto.Ge
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			_ = s.bookCache.UpdateBook(ctx, book)
+			_ = s.bookCache.UpdateBook(ctx, book.ID, book)
 		}
 		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, book))
 	}
@@ -503,7 +571,7 @@ func (s *bookService) GetReadHistoryRecently(ctx context.Context, userID string,
 			if err != nil {
 				return nil, err
 			}
-			_ = s.bookCache.UpdateBook(ctx, bookCache)
+			_ = s.bookCache.UpdateBook(ctx, bookCache.ID, bookCache)
 		}
 		bookListResponse = append(bookListResponse, toBookResponse(s.cfg, bookCache))
 	}
@@ -560,7 +628,7 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 
 		outbox := &model.Outbox{
 			ID:        uuid.New().String(),
-			Type:      model.Book{}.TableName(),
+			Type:      (&model.Book{}).TableName(),
 			Operation: model.DatabaseOperationUpdate,
 			Payload:   bookJSON,
 			Status:    model.OutboxStatusCreated,
@@ -577,7 +645,7 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 		return nil, err
 	}
 
-	_ = s.bookCache.UpdateBook(ctx, book)
+	_ = s.bookCache.UpdateBook(ctx, book.ID, book)
 
 	return toBookResponse(s.cfg, book), nil
 }
@@ -630,7 +698,7 @@ func (s *bookService) bookListToResponse(ctx context.Context, rankRes []string) 
 				logger.Error(fmt.Sprintf("error find book: %s", bookRecord))
 				continue
 			}
-			_ = s.bookCache.UpdateBook(ctx, book)
+			_ = s.bookCache.UpdateBook(ctx, book.ID, book)
 		}
 		bookResponse = append(bookResponse, toBookResponse(s.cfg, book))
 	}

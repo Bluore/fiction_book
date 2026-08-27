@@ -4,7 +4,7 @@
 package wire
 
 import (
-	mq "fiction-book/internal/kafka"
+	"fiction-book/internal/kafka"
 
 	"github.com/google/wire"
 
@@ -23,6 +23,9 @@ func InitializeApp() (*App, error) {
 		// 缓存层
 		CatchSet,
 
+		// MQ层
+		MassageQueueSet,
+
 		// 服务层
 		ServiceSet,
 
@@ -38,27 +41,10 @@ func InitializeApp() (*App, error) {
 // App 应用容器
 type App struct {
 	Handler *handler.Handler
+	Kafka   *kafka.Handler
 }
 
 // NewApp 创建 App 实例
-func NewApp(h *handler.Handler) *App {
-	return &App{Handler: h}
-}
-
-func InitializeMassageQueue() (*MassageQueue, error) {
-	wire.Build(
-		InfraSet,
-		RepositorySet,
-		MassageHandlerSet,
-		NewMassageQueue,
-	)
-	return nil, nil
-}
-
-type MassageQueue struct {
-	Handler *mq.Handler
-}
-
-func NewMassageQueue(h *mq.Handler) *MassageQueue {
-	return &MassageQueue{Handler: h}
+func NewApp(h *handler.Handler, k *kafka.Handler) *App {
+	return &App{Handler: h, Kafka: k}
 }

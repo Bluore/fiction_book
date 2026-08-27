@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fiction-book/internal/kafka/outbox"
 	"fiction-book/pkg/constant"
 	"fmt"
 	"net/http"
@@ -61,14 +60,6 @@ func main() {
 		zap.Int("port", cfg.Server.Port),
 	)
 
-	// 初始化Kafka
-	kafkaApp, err := wire.InitializeMassageQueue()
-	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize kafka app: %v", err))
-	}
-	massageQueueStartContext, massageQueueCancel := context.WithCancel(context.Background())
-	outbox.KafkaInit(massageQueueStartContext, cfg, kafkaApp)
-
 	// 初始化 Sentry（如果启用）
 	if cfg.Sentry.Enabled {
 		err := middleware.InitSentry(middleware.SentryConfig{
@@ -112,6 +103,10 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to initialize app", zap.Error(err))
 	}
+
+	// 初始化Kafka
+	massageQueueStartContext, massageQueueCancel := context.WithCancel(context.Background())
+	app.Kafka.KafkaInit(massageQueueStartContext, cfg)
 
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
