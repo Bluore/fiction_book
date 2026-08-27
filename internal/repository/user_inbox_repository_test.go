@@ -63,23 +63,44 @@ func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCu
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-5", "feed-4"}, page1)
 
-	// 第二页：以上一页最后一条记录 (created_at, id) 为游标
+	// 第二页：以上一页最后一条记录 (created_at, feed_id) 为游标
 	page2, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
-		ctx, s.db, "user-1", base.Add(4*time.Minute), "inbox-4", 2)
+		ctx, s.db, "user-1", base.Add(4*time.Minute), "feed-4", 2)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-3", "feed-2"}, page2)
 
 	// 第三页
 	page3, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
-		ctx, s.db, "user-1", base.Add(2*time.Minute), "inbox-2", 2)
+		ctx, s.db, "user-1", base.Add(2*time.Minute), "feed-2", 2)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), []string{"feed-1"}, page3)
 
 	// 游标越过最旧记录后返回空
 	page4, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
-		ctx, s.db, "user-1", base.Add(time.Minute), "inbox-1", 2)
+		ctx, s.db, "user-1", base.Add(time.Minute), "feed-1", 2)
 	assert.NoError(s.T(), err)
 	assert.Len(s.T(), page4, 0)
+}
+
+func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCursorAndLimitSameTimestamp() {
+	ctx := context.Background()
+	createdAt := time.Date(2026, 8, 1, 10, 0, 0, 0, time.UTC)
+
+	// 相同创建时间的消息，按 feed_id DESC 排序，用 feed_id 做游标打破平局（而非内部主键 id）
+	// 这里刻意让 id 与 feed_id 的顺序相反，确保排序依据是 feed_id 而不是主键
+	s.createInbox("inbox-b", "user-1", "feed-a", createdAt)
+	s.createInbox("inbox-a", "user-1", "feed-b", createdAt)
+
+	page1, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(ctx, s.db, "user-1", time.Time{}, "", 1)
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), page1, 1)
+	assert.Equal(s.T(), "feed-b", page1[0])
+
+	page2, err := s.repo.GetUserInboxIDListByUserIDWithStartCursorAndLimit(
+		ctx, s.db, "user-1", createdAt, "feed-b", 1)
+	assert.NoError(s.T(), err)
+	assert.Len(s.T(), page2, 1)
+	assert.Equal(s.T(), "feed-a", page2[0])
 }
 
 func (s *UserInboxRepositoryTestSuite) TestGetUserInboxIDListByUserIDWithStartCursorAndLimitInvalidLimit() {
