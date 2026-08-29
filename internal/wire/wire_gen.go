@@ -9,6 +9,7 @@ package wire
 import (
 	"fiction-book/internal/api/handler"
 	"fiction-book/internal/kafka"
+	"fiction-book/internal/server"
 )
 
 // Injectors from wire.go:
@@ -76,12 +77,13 @@ func InitializeApp() (*App, error) {
 	userLikeCache := ProvideUserLikeCache(client)
 	userLikeService := ProvideUserLikeService(userRepository, userLikeRepository, userLikeCache, db)
 	orderRepository := ProvideOrderRepository(db)
+	orderTempRepository := ProvideOrderTempRepository(config, client)
 	orderCache := ProvideOrderCache(client)
 	strategy, err := ProvideAlipayStrategy(config)
 	if err != nil {
 		return nil, err
 	}
-	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderCache, db, config, strategy, pool)
+	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderTempRepository, orderCache, db, config, strategy, pool)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
 	feedService := ProvideFeedService(feedRepository, feedCache, db)
 	userInboxRepository := ProvideUserInboxRepository(db)
@@ -93,7 +95,9 @@ func InitializeApp() (*App, error) {
 	consumeRecordRepository := ProvideConsumeRecordRepository(db)
 	feedServer := ProvideFeedServer(userInboxRepository, userLikeRepository, userLikeCache, userFeedCache, consumeRecordRepository, db)
 	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
-	app := NewApp(handler, kafkaHandler)
+	orderTempServer := ProvideOrderTempServer(orderRepository, orderTempRepository, userAssetRepository, orderCache, userAssetCache, config, db, client, pool, strategy)
+	handle := ProvideServerHandle(orderTempServer, config)
+	app := NewApp(handler, kafkaHandler, handle)
 	return app, nil
 }
 
@@ -103,9 +107,10 @@ func InitializeApp() (*App, error) {
 type App struct {
 	Handler *handler.Handler
 	Kafka   *kafka.Handler
+	Server  *server.Handle
 }
 
 // NewApp 创建 App 实例
-func NewApp(h *handler.Handler, k *kafka.Handler) *App {
-	return &App{Handler: h, Kafka: k}
+func NewApp(h *handler.Handler, k *kafka.Handler, s *server.Handle) *App {
+	return &App{Handler: h, Kafka: k, Server: s}
 }

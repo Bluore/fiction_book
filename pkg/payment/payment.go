@@ -20,6 +20,17 @@ const (
 	StatusError
 )
 
+// CloseStatus 关闭订单状态
+type CloseStatus int
+
+const (
+	CloseStatusSuccess CloseStatus = iota + 1
+	CloseStatusFail
+	CloseStatusError
+	// CloseStatusPending 关闭状态不合法
+	CloseStatusPending
+)
+
 // Strategy 支付策略接口
 type Strategy interface {
 	// CreateOrder 创建支付订单
@@ -28,6 +39,8 @@ type Strategy interface {
 	QueryOrder(thirdOrderNo string) (status OrderStatus, paidTime *time.Time, err error)
 	// PayType 支付类型标识
 	PayType() string
+	// CloseOrder 删除订单
+	CloseOrder(orderNo string) (closeSuccess bool, status CloseStatus, err error)
 }
 
 // PaymentStrategy 支付策略接口别名 (保持向后兼容)

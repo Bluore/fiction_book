@@ -8,7 +8,6 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
-	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/payment"
 	"fmt"
@@ -27,14 +26,6 @@ var (
 	ErrCreateAlipayOrder = errors.New("create alipay order fail")
 )
 
-const (
-	StatusPending = 1  // 待付款
-	StatusSending = 2  // 待发货
-	StatusSuccess = 3  // 已发货
-	StatusDeleted = -1 // 已删除
-	StatusOutDate = -2 // 已超时
-)
-
 type OrderService interface {
 	CreateOrder(ctx context.Context, userId string, req *dto.CreateOrderRequest) (*dto.CreateOrderResponse, error)
 	GetOrder(ctx context.Context, userId string, id string) (*dto.OrderResponse, error)
@@ -45,6 +36,7 @@ type orderService struct {
 	userRepo       repository.UserRepository
 	userAssetRepo  repository.UserAssetRepository
 	orderRepo      repository.OrderRepository
+	orderTempRepo  repository.OrderTempRepository
 	orderCache     cache.OrderCache
 	db             *gorm.DB
 	cfg            *config.Config
@@ -56,6 +48,7 @@ func NewOrderService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
+	orderTempRepo repository.OrderTempRepository,
 	orderCache cache.OrderCache,
 	db *gorm.DB,
 	cfg *config.Config,
@@ -66,6 +59,7 @@ func NewOrderService(
 		userRepo:       userRepo,
 		userAssetRepo:  userAssetRepo,
 		orderRepo:      orderRepo,
+		orderTempRepo:  orderTempRepo,
 		orderCache:     orderCache,
 		db:             db,
 		cfg:            cfg,
@@ -80,66 +74,59 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 	var orderNo string = strings.ReplaceAll(orderID, "-", "_")
 	var err error
 
-	order := model.Order{
+	orderDetail := model.Order{
 		ID:            orderID,
 		UserId:        userId,
 		PayPrice:      req.Price,
 		OriginalPrice: req.Price,
 		RewordGold:    req.RewardGold,
-		Status:        StatusPending,
-		PastAt:        time.Now().Add(time.Hour * 24),
+		Status:        model.OrderStatusPending,
+		ExpireAt:      time.Now().Add(time.Minute * 5),
 		PaidAt:        nil,
 		CreatedAt:     time.Now(),
 	}
 
 	// 货币转化率
-	if int64(req.Price)*s.cfg.Purchased.CurrencyRatio != req.RewardGold {
+	if int64(req.Price*float64(s.cfg.Purchased.CurrencyRatio)) != req.RewardGold {
 		return nil, ErrParam
 	}
 
 	// 创建订单
 	payUrl, _, err = s.alipayStrategy.CreateOrder(
 		payment.Amount{
-			Total:    int64(order.PayPrice * 100),
+			Total:    int64(orderDetail.PayPrice * 100),
 			Currency: "CNY",
 		},
 		orderNo,
-		fmt.Sprintf("GSF充值账单: %d G币", order.RewordGold),
+		fmt.Sprintf("GSF充值账单: %d G币", orderDetail.RewordGold),
 	)
 	if err != nil {
 		return nil, ErrCreateAlipayOrder
 	}
 
 	// 添加数据
-	err = s.orderRepo.CreateOrder(ctx, s.db, &order)
+	err = s.orderRepo.CreateOrder(ctx, s.db, &orderDetail)
 	if err != nil {
 		return nil, err
 	}
 
-	// 写入缓存
-	if err := s.orderCache.Set(ctx, orderID, &order); err != nil {
-		logger.Error("Failed to set order cache after creation", zap.String("orderId", orderID), zap.Error(err))
-	}
-
-	var submitSuccess bool = false
-	if err := s.orderCache.LockGoroutine(ctx, orderID, time.Minute); err == nil {
-		// 添加到线程池异步返回结果
-		submitSuccess = s.pool.TrySubmit(s.taskCheckOrderTradeSuccess(
-			constant.DoneServerCtx,
-			userId,
-			&order,
-		))
-	}
-
-	if !submitSuccess {
-		logger.Error("submit task error (order)", zap.Any("order", order))
-		return nil, errors.New("submit task error")
+	// 写入redis数据
+	for i := 1; i <= 3; i++ {
+		err := s.orderTempRepo.CreateOrderTemp(ctx, orderDetail)
+		if err != nil {
+			logger.Error("create order temp fail", zap.Error(err))
+			if i == 3 {
+				return nil, fmt.Errorf("create order temp fail")
+			}
+			continue
+		}
+		break
 	}
 
 	return &dto.CreateOrderResponse{
 		OrderID: orderID,
 		PayURL:  payUrl,
-		Price:   order.PayPrice,
+		Price:   orderDetail.PayPrice,
 	}, nil
 }
 
@@ -151,14 +138,11 @@ func toOrderResponse(in *model.Order) *dto.OrderResponse {
 		OriginalPrice: in.OriginalPrice,
 		RewordGold:    in.RewordGold,
 		PastAt:        in.CreatedAt,
+		Status:        in.Status,
 		CreatedAt:     in.CreatedAt,
 	}
 	if time.Now().Before(in.CreatedAt) {
-		out.Status = StatusOutDate
-	} else if in.Status == StatusDeleted {
-		out.Status = StatusDeleted
-	} else {
-		out.Status = int(in.Status)
+		out.Status = model.OrderStatusOutDate
 	}
 	return &out
 }
@@ -188,17 +172,6 @@ func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*
 
 	if order.UserId != userId {
 		return nil, ErrPermission
-	}
-
-	if order.Status == StatusPending {
-		err := s.orderCache.LockGoroutine(ctx, order.ID, time.Minute)
-		if err == nil {
-			s.pool.Submit(s.taskCheckOrderTradeSuccess(
-				constant.DoneServerCtx,
-				userId,
-				order,
-			))
-		}
 	}
 
 	return toOrderResponse(order), nil
@@ -235,6 +208,7 @@ func (s orderService) GetOrderListByUserID(ctx context.Context, userId string, r
 	return out, nil
 }
 
+// Deprecated: 通过order_temp中创建订单
 func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId string, order *model.Order) agilePool.TaskFunc {
 	// 默认等待 60s
 	contextWithCancelTime, contextWithCancelTimeCancel := context.WithTimeout(context.Background(), time.Minute)
@@ -288,7 +262,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 							return ErrOrderNotFound
 						}
 
-						txOrder.Status = StatusOutDate
+						txOrder.Status = model.OrderStatusOutDate
 
 						err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
 						return err
@@ -322,7 +296,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 						}
 
 						txOrder.PaidAt = paidTime
-						txOrder.Status = StatusSuccess
+						txOrder.Status = model.OrderStatusSuccess
 
 						err = s.orderRepo.UpdateOrder(ctx, tx, txOrder)
 						return err

@@ -108,6 +108,10 @@ func main() {
 	massageQueueStartContext, massageQueueCancel := context.WithCancel(context.Background())
 	app.Kafka.KafkaInit(massageQueueStartContext, cfg)
 
+	// 启动后台服务
+	serverStartContext, serverCancel := context.WithCancel(context.Background())
+	app.Server.Start(serverStartContext)
+
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
 
@@ -147,6 +151,9 @@ func main() {
 
 	// 关闭kafka消息队列
 	massageQueueCancel()
+
+	// 关闭后台服务
+	serverCancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Fatal("Server forced to shutdown", zap.Error(err))

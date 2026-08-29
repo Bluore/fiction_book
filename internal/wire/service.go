@@ -239,13 +239,14 @@ func ProvideOrderService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
+	orderTempRepo repository.OrderTempRepository,
 	orderCache cache.OrderCache,
 	db *gorm.DB,
 	cfg *config.Config,
 	alipayStrategy payment.Strategy,
 	pool *agilepool.Pool,
 ) service.OrderService {
-	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderCache, db, cfg, alipayStrategy, pool)
+	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderTempRepo, orderCache, db, cfg, alipayStrategy, pool)
 }
 
 // Deprecated: ProvideFeedService 旧版提供 Feed 服务的依赖注入
