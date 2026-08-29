@@ -92,8 +92,8 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		CreatedAt:     time.Now(),
 	}
 
-	// 货币转化率 1:100
-	if int64(req.Price*100) != req.RewardGold {
+	// 货币转化率
+	if int64(req.Price)*s.cfg.Purchased.CurrencyRatio != req.RewardGold {
 		return nil, ErrParam
 	}
 

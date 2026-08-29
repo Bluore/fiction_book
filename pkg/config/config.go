@@ -116,8 +116,9 @@ type TopicKafkaConfig struct {
 }
 
 type PurchasedConfig struct {
-	VIP1 VIPPriceConfig `mapstructure:"vip_1"`
-	VIP2 VIPPriceConfig `mapstructure:"vip_2"`
+	VIP1          VIPPriceConfig `mapstructure:"vip_1"`
+	VIP2          VIPPriceConfig `mapstructure:"vip_2"`
+	CurrencyRatio int64          `mapstructure:"currency_ratio"`
 }
 
 type VIPPriceConfig struct {
