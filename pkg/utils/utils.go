@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/binary"
 	"unicode"
 )
 
@@ -47,4 +49,12 @@ func IsEnglishLetter(letter rune) bool {
 		return true
 	}
 	return false
+}
+
+func HashToInt(in string, numRange uint64) int {
+	hashByte := md5.Sum([]byte(in))
+	hashHigh := binary.BigEndian.Uint64(hashByte[:8])
+	hashLow := binary.BigEndian.Uint64(hashByte[8:16])
+
+	return int((hashLow + hashHigh) % numRange)
 }

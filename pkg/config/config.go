@@ -22,6 +22,7 @@ type Config struct {
 	Purchased     PurchasedConfig     `mapstructure:"purchased"`
 	Payment       payment.Config      `mapstructure:"payment"`
 	BookTags      []string            `mapstructure:"book_tags"`
+	Setting       SettingConfig       `mapstructure:"setting"`
 }
 
 // OSSConfig 对象存储配置
@@ -124,6 +125,10 @@ type PurchasedConfig struct {
 type VIPPriceConfig struct {
 	Month int64 `mapstructure:"month"`
 	Year  int64 `mapstructure:"year"`
+}
+
+type SettingConfig struct {
+	OrderConsumeNum int `mapstructure:"order_consume_num"`
 }
 
 // Load 加载配置

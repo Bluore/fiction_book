@@ -89,3 +89,7 @@ purchased:
     month: 3000
     year: 30000
   currency_ratio: 100 # 货币转化比率，1元 = N G币
+
+# 服务器设置
+Setting:
+  order_consume_num: 16
