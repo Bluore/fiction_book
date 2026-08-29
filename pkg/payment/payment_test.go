@@ -53,10 +53,13 @@ func TestWechatConfig(t *testing.T) {
 
 // MockPaymentStrategy 用于测试的 mock 策略
 type MockPaymentStrategy struct {
-	payType     string
-	createErr   error
-	queryStatus OrderStatus
-	queryPaidAt *time.Time
+	payType      string
+	createErr    error
+	queryStatus  OrderStatus
+	queryPaidAt  *time.Time
+	closeSuccess bool
+	closeStatus  CloseStatus
+	closeErr     error
 }
 
 func (m *MockPaymentStrategy) CreateOrder(_ Amount, orderNo, _ string) (string, string, error) {
@@ -72,6 +75,10 @@ func (m *MockPaymentStrategy) QueryOrder(_ string) (OrderStatus, *time.Time, err
 
 func (m *MockPaymentStrategy) PayType() string {
 	return m.payType
+}
+
+func (m *MockPaymentStrategy) CloseOrder(_ string) (bool, CloseStatus, error) {
+	return m.closeSuccess, m.closeStatus, m.closeErr
 }
 
 func TestMockPaymentStrategy(t *testing.T) {
@@ -99,6 +106,42 @@ func TestMockPaymentStrategy(t *testing.T) {
 
 	// 测试支付类型
 	assert.Equal(t, "mock", mock.PayType())
+}
+
+// TestPaymentStrategyContract 通过 MockPaymentStrategy 验证 PaymentStrategy 接口契约，
+// 对应 TestMockPaymentStrategy 中 var _ PaymentStrategy = mock 的编译期断言
+func TestPaymentStrategyContract(t *testing.T) {
+	now := time.Now()
+	mock := &MockPaymentStrategy{
+		payType:      "mock",
+		queryStatus:  StatusSuccess,
+		queryPaidAt:  &now,
+		closeSuccess: true,
+		closeStatus:  CloseStatusSuccess,
+	}
+
+	// 编译期检查：MockPaymentStrategy 实现了 Strategy 接口
+	var _ Strategy = (*MockPaymentStrategy)(nil)
+
+	// 以接口类型持有 mock，验证接口全部方法的行为契约
+	var strategy Strategy = mock
+
+	payURL, thirdOrderNo, err := strategy.CreateOrder(Amount{Total: 100, Currency: "CNY"}, "order123", "Test Order")
+	assert.NoError(t, err)
+	assert.Contains(t, payURL, "order123")
+	assert.Equal(t, "order123", thirdOrderNo)
+
+	status, paidAt, err := strategy.QueryOrder("order123")
+	assert.NoError(t, err)
+	assert.Equal(t, StatusSuccess, status)
+	assert.NotNil(t, paidAt)
+
+	assert.Equal(t, "mock", strategy.PayType())
+
+	closeSuccess, closeStatus, err := strategy.CloseOrder("order123")
+	assert.NoError(t, err)
+	assert.True(t, closeSuccess)
+	assert.Equal(t, CloseStatusSuccess, closeStatus)
 }
 
 func TestPaymentStrategyInterface(_ *testing.T) {
