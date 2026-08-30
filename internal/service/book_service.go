@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
+	"time"
+
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/kafka/kafka_client"
@@ -12,22 +16,12 @@ import (
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/parameter"
-	"fmt"
-	"strings"
-	"time"
+	"fiction-book/pkg/response"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrBookExists      = errors.New("book already exists")
-	ErrBookNotFound    = errors.New("book not found")
-	ErrParam           = errors.New("invalid param")
-	ErrSufficientFunds = errors.New("sufficient funds")
-	ErrBookAlreadyBuy  = errors.New("book already buy")
 )
 
 // BookService 书籍服务接口
@@ -122,7 +116,7 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		return nil, err
 	}
 	if existingBook != nil {
-		return nil, ErrBookExists
+		return nil, response.ErrBookExists
 	}
 
 	userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, userID)
@@ -130,7 +124,7 @@ func (s *bookService) Create(ctx context.Context, userID string, req *dto.Create
 		return nil, err
 	}
 	if userInfoDetail == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	book := &model.Book{
@@ -247,7 +241,7 @@ func (s *bookService) GetByID(ctx context.Context, id string) (*dto.BookResponse
 		return nil, err
 	}
 	if book == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 	return toBookResponse(s.cfg, book), nil
 }
@@ -327,7 +321,7 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 			return err
 		}
 		if book == nil {
-			return ErrBookNotFound
+			return response.ErrBookNotFound
 		}
 
 		// 获取用户资产
@@ -336,11 +330,11 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 			return err
 		}
 		if userAsset == nil {
-			return ErrUserNotFound
+			return response.ErrUserNotFound
 		}
 
 		if req.Price != book.Price {
-			return ErrParam
+			return response.ErrParam
 		}
 
 		// 判断是否已经购买
@@ -349,12 +343,12 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 			return err
 		}
 		if exist {
-			return ErrBookAlreadyBuy
+			return response.ErrBookAlreadyBuy
 		}
 
 		// 判断资产是否足够
 		if userAsset.Gold < book.Price {
-			return ErrSufficientFunds
+			return response.ErrSufficientFunds
 		}
 
 		// 获取资产
@@ -363,7 +357,7 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 			return err
 		}
 		if userAssetNow == nil {
-			return ErrUserNotFound
+			return response.ErrUserNotFound
 		}
 		if userAsset.Gold-userAssetNow.Gold != book.Price {
 			return errors.New("资产扣费失败")
@@ -402,11 +396,11 @@ func (s *bookService) UploadBookCover(ctx context.Context, userID string, req *d
 		return nil, err
 	}
 	if book == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	if book.OwnerID != userID {
-		return nil, ErrPermission
+		return nil, response.ErrPermission
 	}
 
 	imgId := getFileID(book.CoverImage, "/upload/book_cover/")
@@ -589,11 +583,11 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 		return nil, err
 	}
 	if book == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	if book.OwnerID != userID {
-		return nil, ErrPermission
+		return nil, response.ErrPermission
 	}
 
 	if req.Name != nil && *req.Name != book.Name {
@@ -605,7 +599,7 @@ func (s *bookService) UpdateBook(ctx context.Context, userID string, req *dto.Up
 			return nil, err
 		}
 		if exist != nil {
-			return nil, ErrBookExists
+			return nil, response.ErrBookExists
 		}
 	}
 	if req.Description != nil {
@@ -751,20 +745,20 @@ func (s *bookService) UpdateBookTag(ctx context.Context, userID string, req *dto
 			return nil, err
 		}
 		if book == nil {
-			return nil, ErrBookNotFound
+			return nil, response.ErrBookNotFound
 		}
 	}
 
 	// 验证所有权
 	if book.OwnerID != userID {
-		return nil, ErrPermission
+		return nil, response.ErrPermission
 	}
 
 	// 验证标签是否重复
 	tagsSet := make(map[string]struct{})
 	for _, tag := range req.Tags {
 		if _, ok := tagsSet[tag]; ok {
-			return nil, ErrParam
+			return nil, response.ErrParam
 		}
 		tagsSet[tag] = struct{}{}
 	}
@@ -775,7 +769,7 @@ func (s *bookService) UpdateBookTag(ctx context.Context, userID string, req *dto
 	for _, tagStr := range req.Tags {
 		singleTag, err := model.StringToSingleBookTag(tagStr)
 		if err != nil {
-			return nil, ErrParam
+			return nil, response.ErrParam
 		}
 		tags = append(tags, model.BookTag{
 			ID:        uuid.New().String(),
@@ -820,7 +814,7 @@ func (s *bookService) GetBookTags(ctx context.Context, bookID string) (*dto.GetB
 			return nil, err
 		}
 		if book == nil {
-			return nil, ErrBookNotFound
+			return nil, response.ErrBookNotFound
 		}
 	}
 

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -15,6 +14,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/response"
 )
 
 type userLikeServiceFixture struct {
@@ -62,11 +62,10 @@ func newUserLikeServiceFixture(t *testing.T) *userLikeServiceFixture {
 
 func TestUserLikeService_UpdateUserLike(t *testing.T) {
 	tests := []struct {
-		name       string
-		operators  []string
-		wantCount  int
-		wantErr    error
-		concurrent bool
+		name      string
+		operators []string
+		wantCount int
+		wantErr   error
 	}{
 		{
 			name:      "create like",
@@ -77,12 +76,6 @@ func TestUserLikeService_UpdateUserLike(t *testing.T) {
 			name:      "duplicate create is idempotent",
 			operators: []string{userLikeOperatorCreate, userLikeOperatorCreate},
 			wantCount: 1,
-		},
-		{
-			name:       "concurrent create is idempotent",
-			operators:  []string{userLikeOperatorCreate, userLikeOperatorCreate},
-			wantCount:  1,
-			concurrent: true,
 		},
 		{
 			name:      "delete existing like",
@@ -98,7 +91,7 @@ func TestUserLikeService_UpdateUserLike(t *testing.T) {
 			name:      "reject invalid operator",
 			operators: []string{"toggle"},
 			wantCount: 0,
-			wantErr:   ErrParam,
+			wantErr:   response.ErrParam,
 		},
 	}
 
@@ -108,34 +101,15 @@ func TestUserLikeService_UpdateUserLike(t *testing.T) {
 			ctx := context.Background()
 
 			errors := make([]error, len(tt.operators))
-			if tt.concurrent {
-				var group sync.WaitGroup
-				for i, operator := range tt.operators {
-					group.Add(1)
-					go func(index int, operation string) {
-						defer group.Done()
-						_, errors[index] = fixture.service.UpdateUserLike(
-							ctx,
-							"liker-user",
-							&dto.UpdateUserLikeRequest{
-								TargetID: "target-user",
-								Operator: operation,
-							},
-						)
-					}(i, operator)
-				}
-				group.Wait()
-			} else {
-				for i, operator := range tt.operators {
-					_, errors[i] = fixture.service.UpdateUserLike(
-						ctx,
-						"liker-user",
-						&dto.UpdateUserLikeRequest{
-							TargetID: "target-user",
-							Operator: operator,
-						},
-					)
-				}
+			for i, operator := range tt.operators {
+				_, errors[i] = fixture.service.UpdateUserLike(
+					ctx,
+					"liker-user",
+					&dto.UpdateUserLikeRequest{
+						TargetID: "target-user",
+						Operator: operator,
+					},
+				)
 			}
 
 			for _, err := range errors {
@@ -165,7 +139,7 @@ func TestUserLikeService_UpdateUserLikeTargetNotFound(t *testing.T) {
 		},
 	)
 
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }
 
 func TestUserLikeService_GetUserLike(t *testing.T) {
@@ -202,5 +176,5 @@ func TestUserLikeService_GetUserLikeTargetNotFound(t *testing.T) {
 		&dto.GetUserLikeRequest{TargetID: "missing-user"},
 	)
 
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }

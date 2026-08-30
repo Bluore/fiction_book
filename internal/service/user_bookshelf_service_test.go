@@ -14,6 +14,7 @@ import (
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
+	"fiction-book/pkg/response"
 )
 
 // UserBookshelfServiceTestSuite 书架服务测试套件
@@ -162,7 +163,7 @@ func (suite *UserBookshelfServiceTestSuite) TestDeleteUserBookshelf() {
 	assert.NoError(suite.T(), err)
 }
 
-// TestDeleteUserBookshelfNotFound 测试删除不存在的书架记录返回 ErrBookNotFound
+// TestDeleteUserBookshelfNotFound 测试删除不存在的书架记录返回 response.ErrBookNotFound
 func (suite *UserBookshelfServiceTestSuite) TestDeleteUserBookshelfNotFound() {
 	ctx := context.Background()
 	req := &dto.DeleteUserBookshelfRequest{BookID: "b1"}
@@ -171,7 +172,7 @@ func (suite *UserBookshelfServiceTestSuite) TestDeleteUserBookshelfNotFound() {
 		Return(false, nil, nil)
 
 	err := suite.svc.DeleteUserBookshelf(ctx, "u1", req)
-	assert.ErrorIs(suite.T(), err, ErrBookNotFound)
+	assert.ErrorIs(suite.T(), err, response.ErrBookNotFound)
 	suite.bookshelfRepo.AssertNotCalled(suite.T(), "DeleteByUserIDAndBookID",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
@@ -320,14 +321,14 @@ func (suite *BookThermalTaskTestSuite) TestAddValueCacheMissInitFromDB() {
 		mock.Anything, "b1", cache.BookThermalValue(110))
 }
 
-// TestAddValueBookNotFound 测试缓存不存在且数据库也查不到书籍时返回 ErrBookNotFound
+// TestAddValueBookNotFound 测试缓存不存在且数据库也查不到书籍时返回 response.ErrBookNotFound
 func (suite *BookThermalTaskTestSuite) TestAddValueBookNotFound() {
 	suite.thermalCache.On("AddBookThermalValue", mock.Anything, "b1", cache.BookThermalValue(10)).
 		Return(cache.ErrorBookThermalValueNotExist)
 	suite.bookRepo.On("GetByID", mock.Anything, "b1").Return(nil, nil)
 
 	err := suite.runAddValueTask("b1", 10)
-	assert.ErrorIs(suite.T(), err, ErrBookNotFound)
+	assert.ErrorIs(suite.T(), err, response.ErrBookNotFound)
 	suite.thermalCache.AssertNotCalled(suite.T(), "LockBookThermalValue", mock.Anything, mock.Anything)
 }
 

@@ -61,6 +61,7 @@ func queryUserLikeDetailWithCache(
 	return userLike, nil
 }
 
+// Deprecated: createUserLikeDetailWithCache 旧版创建点赞带缓存，将被移除
 func createUserLikeDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -135,6 +136,7 @@ func createUserLikeDetailWithCache(
 	return nil
 }
 
+// Deprecated: updateUserLikeDetailWithCache 旧版更新点赞带缓存，将被移除
 func updateUserLikeDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -185,6 +187,7 @@ func updateUserLikeDetailWithCache(
 	return nil
 }
 
+// Deprecated: deleteUserLikeDetailWithCache 旧版删除点赞带缓存，将被移除
 func deleteUserLikeDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -355,6 +358,7 @@ func queryUserLikeSmallVUserIDListWithCache(
 	return userIDList, nil
 }
 
+// Deprecated: deleteUserLikeIDListWithCache 旧版删除点赞ID列表带缓存，将被移除
 func deleteUserLikeIDListWithCache(
 	ctx context.Context,
 	db *gorm.DB,

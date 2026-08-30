@@ -62,6 +62,9 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 
 	resp, err := s.client.TradeQuery(context.Background(), bm)
 	if err != nil {
+		if resp != nil && resp.Response.Code == "40004" {
+			return StatusFail, nil, nil
+		}
 		return StatusError, nil, err
 	}
 
@@ -81,6 +84,32 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 // PayType 返回支付类型
 func (s *AlipayStrategy) PayType() string {
 	return "alipay"
+}
+
+// CloseOrder 关闭订单
+func (s *AlipayStrategy) CloseOrder(orderNo string) (closeSuccess bool, status CloseStatus, err error) {
+	bm := make(gopay.BodyMap)
+	bm.Set("out_trade_no", orderNo)
+
+	result, err := s.client.TradeClose(context.Background(), bm)
+	if err != nil {
+		return false, CloseStatusError, err
+	}
+
+	if result.Response.Code == "10000" {
+		return true, CloseStatusSuccess, nil
+	}
+
+	switch result.Response.SubCode {
+	case "ACQ.REASON_ILLEGAL_STATUS", "ACQ.REASON_TRADE_STATUS_INVALID", "ACQ.TRADE_STATUS_ERROR":
+		return false, CloseStatusPending, nil
+	case "ACQ.TRADE_NOT_EXIST":
+		return true, CloseStatusFail, nil
+	case "ACQ.SYSTEM_ERROR", "ACQ.INVALID_PARAMETER":
+		return false, CloseStatusError, nil
+	default:
+		return false, CloseStatusError, nil
+	}
 }
 
 var _ PaymentStrategy = (*AlipayStrategy)(nil)

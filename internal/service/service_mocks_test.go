@@ -578,6 +578,14 @@ func (m *MockBookChapterCache) GetBookChapterContent(ctx context.Context, chapte
 	return item, args.Bool(1), args.Error(2)
 }
 
+func (m *MockBookChapterCache) DeleteBookChapterInfo(ctx context.Context, chapterID string) error {
+	return m.Called(ctx, chapterID).Error(0)
+}
+
+func (m *MockBookChapterCache) DeleteBookChapterContent(ctx context.Context, chapterID string) error {
+	return m.Called(ctx, chapterID).Error(0)
+}
+
 func (m *MockBookChapterCache) LockBookChapterInfo(ctx context.Context, chapterID string) (string, bool, error) {
 	args := m.Called(ctx, chapterID)
 	return args.String(0), args.Bool(1), args.Error(2)

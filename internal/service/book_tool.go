@@ -79,6 +79,7 @@ func queryBookDetailWithCache(
 	return book, nil
 }
 
+// Deprecated: createBookDetailWithCache 旧版创建书籍带缓存，将被移除
 func createBookDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -153,6 +154,7 @@ func createBookDetailWithCache(
 	return nil
 }
 
+// Deprecated: updateBookDetailWithCache 旧版更新书籍带缓存，将被移除
 func updateBookDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -203,6 +205,7 @@ func updateBookDetailWithCache(
 	return nil
 }
 
+// Deprecated: deleteBookDetailWithCache 旧版删除书籍带缓存，将被移除
 func deleteBookDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,

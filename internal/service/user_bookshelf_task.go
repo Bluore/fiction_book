@@ -8,6 +8,7 @@ import (
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
+	"fiction-book/pkg/response"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
 	"go.uber.org/zap"
@@ -41,7 +42,7 @@ func bookThermalCacheAddValueTask(ctx context.Context, db *gorm.DB, bookThermalC
 			return err
 		}
 		if bookDetail == nil {
-			return ErrBookNotFound
+			return response.ErrBookNotFound
 		}
 		bookThermalValue := cache.BookThermalValue(bookDetail.ThermalValue)
 		bookThermalValue += value

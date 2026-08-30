@@ -173,10 +173,13 @@ definitions:
     properties:
       price:
         type: number
+      request_uuid:
+        type: string
       reward_gold:
         type: integer
     required:
     - price
+    - request_uuid
     - reward_gold
     type: object
   dto.CreateUserBookshelfRequest:
@@ -274,6 +277,8 @@ definitions:
         type: string
       feed_created_at:
         type: string
+      feed_id:
+        type: string
       feed_updated_at:
         type: string
       is_in_book_shelf:
@@ -320,6 +325,17 @@ definitions:
         type: array
       restarted:
         type: boolean
+    type: object
+  dto.GetGuestUserFeedResponseV2:
+    properties:
+      feeds:
+        items:
+          $ref: '#/definitions/dto.GuestFeedResponse'
+        type: array
+      next_cursor_id:
+        type: string
+      next_offset:
+        type: integer
     type: object
   dto.GetOrderListResponse:
     properties:
@@ -378,6 +394,47 @@ definitions:
       purchased_id:
         type: string
       user_id:
+        type: string
+    type: object
+  dto.GuestFeedResponse:
+    properties:
+      book_bookshelf_amount:
+        type: integer
+      book_browse_amount:
+        type: integer
+      book_cover_url:
+        type: string
+      book_created_at:
+        type: string
+      book_description:
+        type: string
+      book_id:
+        type: string
+      book_name:
+        type: string
+      book_price:
+        type: integer
+      book_push_at:
+        type: string
+      book_updated_at:
+        type: string
+      book_vip_level:
+        type: string
+      content:
+        type: string
+      feed_created_at:
+        type: string
+      feed_id:
+        type: string
+      feed_updated_at:
+        type: string
+      user_fans:
+        type: integer
+      user_id:
+        type: string
+      user_profile_url:
+        type: string
+      user_vip_level:
         type: string
     type: object
   dto.ListUserHistoryResponse:
@@ -3081,7 +3138,7 @@ paths:
       tags:
       - 章节管理
   /api/v2/feed:
-    get:
+    post:
       consumes:
       - application/json
       description: 获取当前登录用户的 Feed 流，通过游标分页
@@ -3128,7 +3185,7 @@ paths:
       tags:
       - Feed
   /api/v2/feed/guest:
-    get:
+    post:
       consumes:
       - application/json
       description: 未登录用户获取 Feed 流，通过游标分页
@@ -3155,7 +3212,7 @@ paths:
             - $ref: '#/definitions/response.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.GetUserFeedResponseV2'
+                  $ref: '#/definitions/dto.GetGuestUserFeedResponseV2'
               type: object
         "400":
           description: 参数错误

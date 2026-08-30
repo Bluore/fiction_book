@@ -2,15 +2,12 @@ package service
 
 import (
 	"context"
-	"errors"
+
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
-)
-
-var (
-	ErrUserPurchasedChapterNotFound = errors.New("user purchased chapter not found")
+	"fiction-book/pkg/response"
 )
 
 type UserPurchasedChapterService interface {
@@ -55,7 +52,7 @@ func (s userPurchasedChapterService) GetPurchasedChapterByUserIDAndChapterID(ctx
 		return nil, err
 	}
 	if !exist {
-		return nil, ErrUserPurchasedChapterNotFound
+		return nil, response.ErrUserPurchasedChapterNotFound
 	}
 
 	return toUserPurchasedChapterResponse(purchasedChapter), nil

@@ -3,9 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fiction-book/internal/cache"
-	"fiction-book/pkg/logger"
-	"fiction-book/pkg/parameter"
 	"fmt"
 	"image"
 	"io"
@@ -15,12 +12,16 @@ import (
 	"strings"
 	"time"
 
+	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/email"
 	"fiction-book/pkg/jwt"
+	"fiction-book/pkg/logger"
+	"fiction-book/pkg/parameter"
+	"fiction-book/pkg/response"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -28,20 +29,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	ErrUserExists      = errors.New("user already exists")
-	ErrEmailExists     = errors.New("email already exists")
-	ErrUserNotFound    = errors.New("user not found")
-	ErrInvalidPassword = errors.New("invalid password")
-	ErrVerification    = errors.New("verification failed")
-	ErrEmailVerifySend = errors.New("email verification not send")
-	ErrSizeExceed      = errors.New("size exceed")
-	ErrImage           = errors.New("image error")
-	ErrFileType        = errors.New("file type error")
-	ErrUserNotLogin    = errors.New("user need login")
-
-	imageFilePath = "/upload/avatar/"
-)
+var imageFilePath = "/upload/avatar/"
 
 // UserService 用户服务接口
 type UserService interface {
@@ -100,11 +88,11 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	if !checkPasswordHash(req.Password, user.Password) {
-		return nil, ErrInvalidPassword
+		return nil, response.ErrInvalidPassword
 	}
 
 	err = s.emailVerify(ctx, req.Email, req.Verify)
@@ -117,13 +105,15 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 		return nil, err
 	}
 	if exist != nil {
-		return nil, ErrEmailExists
+		return nil, response.ErrEmailExists
 	}
 
 	user.Email = req.Email
-	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
-	if err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 	return s.toUserResponse(user), nil
 }
@@ -135,7 +125,7 @@ func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.Up
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	err = s.emailVerify(ctx, user.Email, req.Verify)
@@ -150,9 +140,11 @@ func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.Up
 	}
 	user.Password = hashPwd
 
-	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
-	if err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 	return s.toUserResponse(user), nil
 }
@@ -172,7 +164,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 			return err
 		}
 		if existingUser != nil {
-			return ErrUserExists
+			return response.ErrUserExists
 		}
 
 		// 检查邮箱是否已存在
@@ -181,7 +173,7 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 			return err
 		}
 		if existingUser != nil {
-			return ErrEmailExists
+			return response.ErrEmailExists
 		}
 
 		// 加密密码
@@ -236,10 +228,10 @@ func (s *userService) emailVerify(ctx context.Context, emailVer string, pwdVer s
 	// 验证码是否正确
 	rVerify, err := s.authCache.GetEmailVerification(ctx, emailVer)
 	if err != nil {
-		return ErrEmailVerifySend
+		return response.ErrEmailVerifySend
 	}
 	if pwdVer != rVerify {
-		return ErrVerification
+		return response.ErrVerification
 	}
 	err = s.authCache.DeleteEmailVerification(ctx, emailVer)
 
@@ -255,7 +247,7 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 	return s.toUserResponse(user), nil
 }
@@ -267,7 +259,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	// 更新字段
@@ -281,8 +273,11 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 		user.Description = *req.Description
 	}
 
-	if err := updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user); err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 
 	return s.toUserResponse(user), nil
@@ -294,10 +289,16 @@ func (s *userService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	if user == nil {
-		return ErrUserNotFound
+		return response.ErrUserNotFound
 	}
 
-	return deleteUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, id)
+	if err := s.userRepo.Delete(ctx, s.db, id); err != nil {
+		return err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, id); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
+	}
+	return nil
 }
 
 func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
@@ -306,12 +307,12 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	// 验证密码
 	if !checkPasswordHash(req.Password, user.Password) {
-		return nil, ErrInvalidPassword
+		return nil, response.ErrInvalidPassword
 	}
 
 	// 生成 JWT token
@@ -424,7 +425,7 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	// 获取ID
@@ -452,9 +453,11 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 
 	// 更新数据库
 	user.ProfileImage = uploadOut.FilePath
-	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
-	if err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 
 	return s.toUserResponse(user), nil
@@ -463,15 +466,15 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 func uploadImage(in *parameter.UploadImageIn) (*parameter.UploadImageOut, error) {
 	// 判断图像大小
 	if in.Avatar.Size > in.SizeFile {
-		return nil, ErrSizeExceed
+		return nil, response.ErrSizeExceed
 	}
 	// 判断图像类型
 	if len(strings.Split(in.Avatar.Filename, ".")) > 2 {
-		return nil, ErrFileType
+		return nil, response.ErrFileType
 	}
 	suf := strings.Split(in.Avatar.Filename, ".")[1]
 	if _, ok := in.AcceptType[suf]; !ok {
-		return nil, ErrFileType
+		return nil, response.ErrFileType
 	}
 	path := fmt.Sprintf("%s%s.%s", in.ImagePath, in.ImageId, suf)
 
@@ -495,7 +498,7 @@ func uploadImage(in *parameter.UploadImageIn) (*parameter.UploadImageOut, error)
 
 	// 判断图像像素大小
 	if img.Bounds().Dx() != in.SizeWidth || img.Bounds().Dy() != in.SizeHeight {
-		return nil, ErrImage
+		return nil, response.ErrImage
 	}
 
 	// 创建文件
@@ -547,7 +550,7 @@ func (s *userService) GetStatByID(ctx context.Context, userID string) (*dto.User
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	userAsset, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, userID)
@@ -595,7 +598,7 @@ func (s *userService) ForgetPassword(ctx context.Context, req *dto.ForgetPasswor
 			return err
 		}
 		if userModel == nil {
-			return ErrUserNotFound
+			return response.ErrUserNotFound
 		}
 
 		err = s.emailVerify(ctx, req.Email, req.EmailVerify)

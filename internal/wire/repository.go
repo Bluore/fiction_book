@@ -3,9 +3,11 @@ package wire
 import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/google/wire"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/config"
 )
 
 // RepositorySet 仓储层 Provider 集合
@@ -29,6 +31,7 @@ var RepositorySet = wire.NewSet(
 	ProvideUserInboxRepository,
 	ProvideConsumeRecordRepository,
 	ProvideUserInfoRepository,
+	ProvideOrderTempRepository,
 )
 
 // ProvideUserRepository 提供用户仓储
@@ -123,4 +126,9 @@ func ProvideConsumeRecordRepository(db *gorm.DB) repository.ConsumeRecordReposit
 // ProvideUserInfoRepository 提供用户详情仓储
 func ProvideUserInfoRepository(db *gorm.DB) repository.UserInfoRepository {
 	return repository.NewUserInfoRepository(db)
+}
+
+// ProvideOrderTempRepository 提供订单临时仓储
+func ProvideOrderTempRepository(cfg *config.Config, redis *redis.Client) repository.OrderTempRepository {
+	return repository.NewOrderTemp(cfg, redis)
 }

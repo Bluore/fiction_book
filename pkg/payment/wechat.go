@@ -94,4 +94,9 @@ func (s *WechatStrategy) PayType() string {
 	return "wechat"
 }
 
+func (s *WechatStrategy) CloseOrder(orderNo string) (closeSuccess bool, status CloseStatus, err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 var _ PaymentStrategy = (*WechatStrategy)(nil)

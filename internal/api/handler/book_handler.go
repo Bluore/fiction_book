@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
-	"fiction-book/internal/service"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/response"
 	"fiction-book/pkg/transmit"
@@ -41,7 +40,7 @@ func (h *Handler) CreateBook(c *gin.Context) {
 
 	book, err := h.bookService.Create(c.Request.Context(), userID, req)
 	if err != nil {
-		if err == service.ErrBookExists {
+		if err == response.ErrBookExists {
 			response.PushError(c, err)
 			return
 		}
@@ -69,7 +68,7 @@ func (h *Handler) GetBook(c *gin.Context) {
 
 	book, err := h.bookService.GetByID(c.Request.Context(), req.ID)
 	if err != nil {
-		if err == service.ErrBookNotFound {
+		if err == response.ErrBookNotFound {
 			response.PushError(c, err)
 			return
 		}

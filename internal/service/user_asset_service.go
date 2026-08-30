@@ -6,6 +6,7 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/response"
 
 	"gorm.io/gorm"
 )
@@ -42,7 +43,7 @@ func (u *userAssetService) GetByID(ctx context.Context, id string) (*dto.UserAss
 		return nil, err
 	}
 	if userAsset == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	return toUserAssetResponse(userAsset), nil
