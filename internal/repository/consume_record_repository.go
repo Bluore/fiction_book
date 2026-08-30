@@ -14,6 +14,9 @@ type ConsumeRecordRepository interface {
 	// IsConsumed 检查消息是否已经被消费过（幂等检查）
 	IsConsumed(ctx context.Context, db *gorm.DB, messageID string) (bool, error)
 
+	// MarkConsumed 在事务中标记消息已消费
+	MarkConsumed(ctx context.Context, db *gorm.DB, messageID string) (err error)
+
 	// TryMarkConsumed 在事务中尝试标记消息已消费，返回是否首次写入
 	TryMarkConsumed(ctx context.Context, db *gorm.DB, messageID string) (isFirstConsume bool, err error)
 }
@@ -40,11 +43,7 @@ func (r *consumeRecordRepository) IsConsumed(ctx context.Context, db *gorm.DB, m
 	return true, nil
 }
 
-func (r *consumeRecordRepository) TryMarkConsumed(
-	ctx context.Context,
-	db *gorm.DB,
-	messageID string,
-) (bool, error) {
+func (r *consumeRecordRepository) TryMarkConsumed(ctx context.Context, db *gorm.DB, messageID string) (bool, error) {
 	record := &model.ConsumeRecord{
 		ID:        messageID,
 		CreatedAt: time.Now(),
@@ -58,4 +57,17 @@ func (r *consumeRecordRepository) TryMarkConsumed(
 		return false, res.Error
 	}
 	return res.RowsAffected > 0, nil
+}
+
+func (r *consumeRecordRepository) MarkConsumed(ctx context.Context, db *gorm.DB, messageID string) (err error) {
+	record := &model.ConsumeRecord{
+		ID:        messageID,
+		CreatedAt: time.Now(),
+	}
+
+	err = db.WithContext(ctx).Create(record).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

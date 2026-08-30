@@ -24,6 +24,7 @@ import (
 var (
 	ErrOrderNotFound     = errors.New("order not found")
 	ErrCreateAlipayOrder = errors.New("create alipay order fail")
+	ErrRepetitionRequest = errors.New("request is repetition")
 )
 
 type OrderService interface {
@@ -33,15 +34,16 @@ type OrderService interface {
 }
 
 type orderService struct {
-	userRepo       repository.UserRepository
-	userAssetRepo  repository.UserAssetRepository
-	orderRepo      repository.OrderRepository
-	orderTempRepo  repository.OrderTempRepository
-	orderCache     cache.OrderCache
-	db             *gorm.DB
-	cfg            *config.Config
-	alipayStrategy payment.Strategy
-	pool           *agilePool.Pool
+	userRepo          repository.UserRepository
+	userAssetRepo     repository.UserAssetRepository
+	orderRepo         repository.OrderRepository
+	orderTempRepo     repository.OrderTempRepository
+	consumeRecordRepo repository.ConsumeRecordRepository
+	orderCache        cache.OrderCache
+	db                *gorm.DB
+	cfg               *config.Config
+	alipayStrategy    payment.Strategy
+	pool              *agilePool.Pool
 }
 
 func NewOrderService(
@@ -49,6 +51,7 @@ func NewOrderService(
 	userAssetRepo repository.UserAssetRepository,
 	orderRepo repository.OrderRepository,
 	orderTempRepo repository.OrderTempRepository,
+	consumeRecordRepo repository.ConsumeRecordRepository,
 	orderCache cache.OrderCache,
 	db *gorm.DB,
 	cfg *config.Config,
@@ -56,15 +59,16 @@ func NewOrderService(
 	pool *agilePool.Pool,
 ) OrderService {
 	return &orderService{
-		userRepo:       userRepo,
-		userAssetRepo:  userAssetRepo,
-		orderRepo:      orderRepo,
-		orderTempRepo:  orderTempRepo,
-		orderCache:     orderCache,
-		db:             db,
-		cfg:            cfg,
-		alipayStrategy: alipayStrategy,
-		pool:           pool,
+		userRepo:          userRepo,
+		userAssetRepo:     userAssetRepo,
+		orderRepo:         orderRepo,
+		orderTempRepo:     orderTempRepo,
+		consumeRecordRepo: consumeRecordRepo,
+		orderCache:        orderCache,
+		db:                db,
+		cfg:               cfg,
+		alipayStrategy:    alipayStrategy,
+		pool:              pool,
 	}
 }
 
@@ -73,6 +77,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 	var orderID string = uuid.New().String()
 	var orderNo string = strings.ReplaceAll(orderID, "-", "_")
 	var err error
+	var reqUUID = uuid.NewSHA1(uuid.NameSpaceDNS, []byte(req.RequestUUID)).String()
 
 	orderDetail := model.Order{
 		ID:            orderID,
@@ -91,36 +96,48 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		return nil, ErrParam
 	}
 
-	// 创建订单
-	payUrl, _, err = s.alipayStrategy.CreateOrder(
-		payment.Amount{
-			Total:    int64(orderDetail.PayPrice * 100),
-			Currency: "CNY",
-		},
-		orderNo,
-		fmt.Sprintf("GSF充值账单: %d G币", orderDetail.RewordGold),
-	)
-	if err != nil {
-		return nil, ErrCreateAlipayOrder
-	}
-
 	// 添加数据
-	err = s.orderRepo.CreateOrder(ctx, s.db, &orderDetail)
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		err = s.orderRepo.CreateOrder(ctx, tx, &orderDetail)
+		if err != nil {
+			return err
+		}
+
+		err = s.consumeRecordRepo.MarkConsumed(ctx, tx, reqUUID)
+		if err != nil {
+			return ErrRepetitionRequest
+		}
+
+		// 创建订单
+		payUrl, _, err = s.alipayStrategy.CreateOrder(
+			payment.Amount{
+				Total:    int64(orderDetail.PayPrice * 100),
+				Currency: "CNY",
+			},
+			orderNo,
+			fmt.Sprintf("GSF充值账单: %d G币", orderDetail.RewordGold),
+		)
+		if err != nil {
+			return ErrCreateAlipayOrder
+		}
+
+		// 写入redis数据
+		for i := 1; i <= 3; i++ {
+			err := s.orderTempRepo.CreateOrderTemp(ctx, orderDetail)
+			if err != nil {
+				logger.Error("create order temp fail", zap.Error(err))
+				if i == 3 {
+					return fmt.Errorf("create order temp fail")
+				}
+				continue
+			}
+			break
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	// 写入redis数据
-	for i := 1; i <= 3; i++ {
-		err := s.orderTempRepo.CreateOrderTemp(ctx, orderDetail)
-		if err != nil {
-			logger.Error("create order temp fail", zap.Error(err))
-			if i == 3 {
-				return nil, fmt.Errorf("create order temp fail")
-			}
-			continue
-		}
-		break
 	}
 
 	return &dto.CreateOrderResponse{

@@ -86,5 +86,9 @@ func getErrorList() *map[error]errorResponse {
 			Code:    4021,
 			Message: "订单没找到",
 		},
+		service.ErrRepetitionRequest: errorResponse{
+			Code:    4022,
+			Message: "重复的请求",
+		},
 	}
 }

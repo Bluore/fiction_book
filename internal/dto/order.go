@@ -5,8 +5,9 @@ import (
 )
 
 type CreateOrderRequest struct {
-	Price      float64 `json:"price" binding:"required"`
-	RewardGold int64   `json:"reward_gold" binding:"required"`
+	Price       float64 `json:"price" binding:"required"`
+	RewardGold  int64   `json:"reward_gold" binding:"required"`
+	RequestUUID string  `json:"request_uuid" binding:"required"`
 }
 
 type CreateOrderResponse struct {
