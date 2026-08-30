@@ -61,6 +61,7 @@ func queryUserBookshelfDetailWithCache(
 	return userBookshelf, nil
 }
 
+// Deprecated: createUserBookshelfDetailWithCache 旧版创建书架记录带缓存，将被移除
 func createUserBookshelfDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -136,6 +137,7 @@ func createUserBookshelfDetailWithCache(
 	return nil
 }
 
+// Deprecated: deleteUserBookshelfDetailWithCache 旧版删除书架记录带缓存，将被移除
 func deleteUserBookshelfDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,

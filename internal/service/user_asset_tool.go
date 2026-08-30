@@ -60,6 +60,7 @@ func queryUserAssetDetailWithCache(
 	return userAsset, nil
 }
 
+// Deprecated: createUserAssetDetailWithCache 旧版创建用户资产带缓存，将被移除
 func createUserAssetDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -135,6 +136,7 @@ func createUserAssetDetailWithCache(
 	return nil
 }
 
+// Deprecated: updateUserAssetDetailWithCache 旧版更新用户资产带缓存，将被移除
 func updateUserAssetDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -185,6 +187,7 @@ func updateUserAssetDetailWithCache(
 	return nil
 }
 
+// Deprecated: deleteUserAssetDetailWithCache 旧版删除用户资产带缓存，将被移除
 func deleteUserAssetDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,

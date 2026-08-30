@@ -502,18 +502,16 @@ func (suite *BookChapterServiceTestSuite) TestUpdateChapterPartialFields() {
 
 	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
 	suite.mockBookCacheHit(ctx, "b1", book)
-	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
 	suite.chapterRepo.On("BookChapterInfoUpdate", ctx, mock.Anything, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(nil)
-	suite.chapterCache.On("UpdateBookChapterInfo", ctx, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
-	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
+	suite.chapterCache.On("DeleteBookChapterInfo", ctx, "c1").Return(nil)
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", req)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "新标题", res.Title)
 	assert.Equal(suite.T(), "旧内容", res.Content)
 	assert.Equal(suite.T(), int64(10), res.Price)
-	suite.chapterCache.AssertCalled(suite.T(), "UpdateBookChapterInfo", ctx, "c1", mock.AnythingOfType("*model.BookChapterInfo"))
+	suite.chapterCache.AssertCalled(suite.T(), "DeleteBookChapterInfo", ctx, "c1")
 }
 
 // TestUpdateChapterEmptyStringIgnored 测试传入空字符串时不覆盖原有标题与内容
@@ -530,7 +528,7 @@ func (suite *BookChapterServiceTestSuite) TestUpdateChapterEmptyStringIgnored() 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "旧标题", res.Title)
 	assert.Equal(suite.T(), "旧内容", res.Content)
-	suite.chapterCache.AssertNotCalled(suite.T(), "UpdateBookChapterInfo", mock.Anything, mock.Anything, mock.Anything)
+	suite.chapterCache.AssertNotCalled(suite.T(), "DeleteBookChapterInfo", mock.Anything, mock.Anything)
 }
 
 // TestUpdateChapterVIPAndPrice 测试会员等级与价格被规范化后更新
@@ -542,11 +540,9 @@ func (suite *BookChapterServiceTestSuite) TestUpdateChapterVIPAndPrice() {
 
 	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
 	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1", OwnerID: "u1"})
-	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
 	suite.chapterRepo.On("BookChapterInfoUpdate", ctx, mock.Anything, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(nil)
-	suite.chapterCache.On("UpdateBookChapterInfo", ctx, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
-	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
+	suite.chapterCache.On("DeleteBookChapterInfo", ctx, "c1").Return(nil)
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", req)
 	assert.NoError(suite.T(), err)
@@ -590,15 +586,13 @@ func (suite *BookChapterServiceTestSuite) TestUpdateChapterOutboxErrorRollback()
 
 	suite.mockChapterCacheHit(ctx, "c1", chapterInfo, chapterContent)
 	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1", OwnerID: "u1"})
-	suite.chapterCache.On("LockBookChapterInfo", ctx, "c1").Return("token", true, nil)
 	suite.chapterRepo.On("BookChapterInfoUpdate", ctx, mock.Anything, "c1", mock.AnythingOfType("*model.BookChapterInfo")).Return(nil)
 	suite.outboxRepo.On("AddEvent", ctx, mock.Anything, mock.AnythingOfType("*model.Outbox")).Return(wantErr)
-	suite.chapterCache.On("UnlockBookChapterInfo", ctx, "c1", "token").Return(nil)
 
 	res, err := suite.svc.UpdateChapter(ctx, "u1", &dto.UpdateBookChapterRequest{ID: "c1", Title: strPtr("新")})
 	assert.ErrorIs(suite.T(), err, wantErr)
 	assert.Nil(suite.T(), res)
-	suite.chapterCache.AssertNotCalled(suite.T(), "UpdateBookChapterInfo", mock.Anything, mock.Anything, mock.Anything)
+	suite.chapterCache.AssertNotCalled(suite.T(), "DeleteBookChapterInfo", mock.Anything, mock.Anything)
 }
 
 // ---------- DeleteChapter ----------

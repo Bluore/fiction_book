@@ -60,6 +60,7 @@ func queryUserDetailWithCache(
 	return user, nil
 }
 
+// Deprecated: createUserDetailWithCache 旧版创建用户带缓存，将被移除
 func createUserDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -134,6 +135,7 @@ func createUserDetailWithCache(
 	return nil
 }
 
+// Deprecated: updateUserDetailWithCache 旧版更新用户带缓存，将被移除
 func updateUserDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,
@@ -184,6 +186,7 @@ func updateUserDetailWithCache(
 	return nil
 }
 
+// Deprecated: deleteUserDetailWithCache 旧版删除用户带缓存，将被移除
 func deleteUserDetailWithCache(
 	ctx context.Context,
 	db *gorm.DB,

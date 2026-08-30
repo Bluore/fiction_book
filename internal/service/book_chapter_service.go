@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -294,17 +295,43 @@ func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, r
 	}
 
 	if isAlterBookChapterInfo {
-		err := updateBookChapterInfoWithCacheInTx(
-			ctx,
-			s.db,
-			s.bookChapterCache,
-			s.bookChapterRepo,
-			s.outboxRepo,
-			bookChapterDetail,
-			curBookChapterInfo,
-		)
+		// 合并完整章节数据作为 outbox 事件载荷
+		mergeBookChapter := &model.BookChapter{
+			ID:        curBookChapterInfo.ID,
+			BookID:    curBookChapterInfo.BookID,
+			Title:     curBookChapterInfo.Title,
+			Content:   bookChapterDetail.Content,
+			Order:     curBookChapterInfo.Order,
+			VIPLevel:  curBookChapterInfo.VIPLevel,
+			Price:     curBookChapterInfo.Price,
+			CreatedAt: curBookChapterInfo.CreatedAt,
+			UpdatedAt: curBookChapterInfo.UpdatedAt,
+			DeletedAt: curBookChapterInfo.DeletedAt,
+		}
+		mergeBookChapterJSON, err := json.Marshal(mergeBookChapter)
+		if err != nil {
+			return nil, fmt.Errorf("merge book_chapter_info fail")
+		}
+		outboxDetail := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      mergeBookChapter.TableName(),
+			Operation: model.DatabaseOperationUpdate,
+			Payload:   mergeBookChapterJSON,
+		}
+
+		// 先更新数据库（事务内写入 outbox 事件）
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			if err := s.bookChapterRepo.BookChapterInfoUpdate(ctx, tx, curBookChapterInfo.ID, curBookChapterInfo); err != nil {
+				return err
+			}
+			return s.outboxRepo.AddEvent(ctx, tx, outboxDetail)
+		})
 		if err != nil {
 			return nil, err
+		}
+		// 再删除缓存
+		if err := s.bookChapterCache.DeleteBookChapterInfo(ctx, curBookChapterInfo.ID); err != nil {
+			logger.Warn("delete book_chapter_info cache fail", zap.Error(err))
 		}
 	}
 
@@ -322,17 +349,43 @@ func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, r
 	}
 
 	if isAlterBookChapterContent {
-		err := updateBookChapterContentWithCacheInTx(
-			ctx,
-			s.db,
-			s.bookChapterCache,
-			s.bookChapterRepo,
-			s.outboxRepo,
-			bookChapterDetail,
-			curBookChapterContent,
-		)
+		// 合并完整章节数据作为 outbox 事件载荷
+		mergeBookChapter := &model.BookChapter{
+			ID:        curBookChapterContent.ID,
+			BookID:    bookChapterDetail.BookID,
+			Title:     bookChapterDetail.Title,
+			Content:   curBookChapterContent.Content,
+			Order:     bookChapterDetail.Order,
+			VIPLevel:  bookChapterDetail.VIPLevel,
+			Price:     bookChapterDetail.Price,
+			CreatedAt: bookChapterDetail.CreatedAt,
+			UpdatedAt: bookChapterDetail.UpdatedAt,
+			DeletedAt: bookChapterDetail.DeletedAt,
+		}
+		mergeBookChapterJSON, err := json.Marshal(mergeBookChapter)
+		if err != nil {
+			return nil, fmt.Errorf("merge book_chapter_content fail")
+		}
+		outboxDetail := &model.Outbox{
+			ID:        uuid.New().String(),
+			Type:      mergeBookChapter.TableName(),
+			Operation: model.DatabaseOperationUpdate,
+			Payload:   mergeBookChapterJSON,
+		}
+
+		// 先更新数据库（事务内写入 outbox 事件）
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			if err := s.bookChapterRepo.BookChapterContentUpdate(ctx, tx, curBookChapterContent.ID, curBookChapterContent); err != nil {
+				return err
+			}
+			return s.outboxRepo.AddEvent(ctx, tx, outboxDetail)
+		})
 		if err != nil {
 			return nil, err
+		}
+		// 再删除缓存
+		if err := s.bookChapterCache.DeleteBookChapterContent(ctx, curBookChapterContent.ID); err != nil {
+			logger.Warn("delete book_chapter_content cache fail", zap.Error(err))
 		}
 	}
 

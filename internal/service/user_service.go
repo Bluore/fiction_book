@@ -109,9 +109,11 @@ func (s *userService) UpdateEmail(ctx context.Context, id string, req *dto.Updat
 	}
 
 	user.Email = req.Email
-	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
-	if err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 	return s.toUserResponse(user), nil
 }
@@ -138,9 +140,11 @@ func (s *userService) UpdatePassword(ctx context.Context, id string, req *dto.Up
 	}
 	user.Password = hashPwd
 
-	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
-	if err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 	return s.toUserResponse(user), nil
 }
@@ -269,8 +273,11 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 		user.Description = *req.Description
 	}
 
-	if err := updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user); err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 
 	return s.toUserResponse(user), nil
@@ -285,7 +292,13 @@ func (s *userService) Delete(ctx context.Context, id string) error {
 		return response.ErrUserNotFound
 	}
 
-	return deleteUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, id)
+	if err := s.userRepo.Delete(ctx, s.db, id); err != nil {
+		return err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, id); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
+	}
+	return nil
 }
 
 func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
@@ -440,9 +453,11 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 
 	// 更新数据库
 	user.ProfileImage = uploadOut.FilePath
-	err = updateUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, user)
-	if err != nil {
+	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
 		return nil, err
+	}
+	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
+		logger.Warn("delete user cache fail", zap.Error(err))
 	}
 
 	return s.toUserResponse(user), nil

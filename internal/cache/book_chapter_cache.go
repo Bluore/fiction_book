@@ -53,6 +53,8 @@ type BookChapterCache interface {
 	UpdateBookChapterContent(ctx context.Context, chapterID string, chapterContent *model.BookChapterContent) error
 	GetBookChapterInfo(ctx context.Context, chapterID string) (*model.BookChapterInfo, bool, error)
 	GetBookChapterContent(ctx context.Context, chapterID string) (*model.BookChapterContent, bool, error)
+	DeleteBookChapterInfo(ctx context.Context, chapterID string) error
+	DeleteBookChapterContent(ctx context.Context, chapterID string) error
 
 	LockBookChapterInfo(ctx context.Context, chapterID string) (string, bool, error)
 	LockBookChapterContent(ctx context.Context, chapterID string) (string, bool, error)
@@ -96,6 +98,16 @@ func (c bookChapterCache) UpdateBookChapterContent(ctx context.Context, chapterI
 		contentEncode = []byte(constant.RedisValueEmpty)
 	}
 	return c.redis.Set(ctx, KeyBookChapterContent(chapterID), contentEncode, TimeBookChapterContent()).Err()
+}
+
+// DeleteBookChapterInfo 删除章节信息缓存
+func (c bookChapterCache) DeleteBookChapterInfo(ctx context.Context, chapterID string) error {
+	return c.redis.Del(ctx, KeyBookChapterInfo(chapterID)).Err()
+}
+
+// DeleteBookChapterContent 删除章节内容缓存
+func (c bookChapterCache) DeleteBookChapterContent(ctx context.Context, chapterID string) error {
+	return c.redis.Del(ctx, KeyBookChapterContent(chapterID)).Err()
 }
 
 // GetBookChapterInfo 获取章节信息缓存

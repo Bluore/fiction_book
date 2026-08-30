@@ -197,6 +197,7 @@ func queryBookChapterContentWithCache(
 	return bookChapterContent, nil
 }
 
+// Deprecated: updateBookChapterInfoWithCacheInTx 旧版事务更新章节信息带缓存，将被移除
 func updateBookChapterInfoWithCacheInTx(
 	ctx context.Context,
 	db *gorm.DB,
@@ -290,6 +291,7 @@ successLock:
 	return nil
 }
 
+// Deprecated: updateBookChapterContentWithCacheInTx 旧版事务更新章节内容带缓存，将被移除
 func updateBookChapterContentWithCacheInTx(
 	ctx context.Context,
 	db *gorm.DB,

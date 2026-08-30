@@ -2,13 +2,16 @@ package service
 
 import (
 	"context"
+
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/response"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -70,18 +73,48 @@ func (s userLikeService) UpdateUserLike(ctx context.Context, likerID string, req
 
 	switch req.Operator {
 	case userLikeOperatorCreate:
-		err = createUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userLikeDetail)
+		// 幂等：已存在则直接返回
+		userLikeExist, err := queryUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userLikeDetail.UserID, userLikeDetail.LikerID)
 		if err != nil {
 			return nil, err
+		}
+		if userLikeExist != nil {
+			return &dto.UpdateUserLikeResponse{
+				TargetID: req.TargetID,
+				IsLike:   true,
+			}, nil
+		}
+
+		// 旁路缓存：先更新数据库，再删除缓存
+		if err := s.userLikeRepo.Create(ctx, s.db, userLikeDetail); err != nil {
+			return nil, err
+		}
+		if _, err := s.userLikeCache.DeleteUserLike(ctx, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
+			logger.Warn("delete user_like cache fail", zap.Error(err))
 		}
 		return &dto.UpdateUserLikeResponse{
 			TargetID: req.TargetID,
 			IsLike:   true,
 		}, nil
 	case userLikeOperatorDelete:
-		err = deleteUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userLikeDetail)
+		// 幂等：不存在则直接返回
+		userLikeExist, err := queryUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userLikeDetail.UserID, userLikeDetail.LikerID)
 		if err != nil {
 			return nil, err
+		}
+		if userLikeExist == nil {
+			return &dto.UpdateUserLikeResponse{
+				TargetID: req.TargetID,
+				IsLike:   false,
+			}, nil
+		}
+
+		// 先更新数据库，再删除缓存
+		if err := s.userLikeRepo.DeleteByUserIDAndLikerID(ctx, s.db, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
+			return nil, err
+		}
+		if _, err := s.userLikeCache.DeleteUserLike(ctx, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
+			logger.Warn("delete user_like cache fail", zap.Error(err))
 		}
 		return &dto.UpdateUserLikeResponse{
 			TargetID: req.TargetID,
