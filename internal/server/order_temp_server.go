@@ -108,7 +108,7 @@ func (s *OrderTempServer) consumeOrderTempOneTask(ctx context.Context, workspace
 	// 订单未支付
 	if status == payment.StatusPending {
 		if orderDetail.ExpireAt.Before(time.Now()) {
-			err := s.dealExpireOrderTemp(ctx, workspace, orderID)
+			err := s.dealExpireOrderTemp(ctx, orderID)
 			return err
 		}
 
@@ -118,12 +118,16 @@ func (s *OrderTempServer) consumeOrderTempOneTask(ctx context.Context, workspace
 	// 订单已失效
 	if status == payment.StatusFail {
 		logger.Info("query order is close", zap.String("orderNo", orderNo))
-		return s.closeOrderTemp(ctx, workspace, orderNo)
+		if orderDetail.ExpireAt.Before(time.Now()) {
+			err := s.dealExpireOrderTemp(ctx, orderID)
+			return err
+		}
+		return nil
 	}
 
 	// 订单已支付
 	if status == payment.StatusSuccess {
-		return s.dealPaidOrderTemp(ctx, workspace, orderID, paidTime)
+		return s.dealPaidOrderTemp(ctx, orderID, paidTime)
 	}
 
 	// 订单错误
@@ -136,7 +140,7 @@ func (s *OrderTempServer) consumeOrderTempOneTask(ctx context.Context, workspace
 	return fmt.Errorf("order %s is fail", orderNo)
 }
 
-func (s *OrderTempServer) closeOrderTemp(ctx context.Context, workspace int, orderID string) error {
+func (s *OrderTempServer) closeOrderTemp(ctx context.Context, orderID string) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		orderDetail, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
 		if err != nil {
@@ -147,6 +151,11 @@ func (s *OrderTempServer) closeOrderTemp(ctx context.Context, workspace int, ord
 		}
 
 		if orderDetail.Status != model.OrderStatusPending {
+			err := s.orderTempRepo.DeleteOrderTemp(ctx, orderID)
+			if err != nil {
+				logger.Warn("Order query fail", zap.String("orderId", orderID), zap.Error(err))
+				return err
+			}
 			return fmt.Errorf("order %s is not pending", orderID)
 		}
 
@@ -177,7 +186,7 @@ func (s *OrderTempServer) closeOrderTemp(ctx context.Context, workspace int, ord
 	return nil
 }
 
-func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, workspace int, orderID string, paidTime *time.Time) error {
+func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, orderID string, paidTime *time.Time) error {
 	var userID string
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		orderDetail, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
@@ -191,6 +200,11 @@ func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, workspace int, 
 		userID = orderDetail.UserId
 
 		if orderDetail.Status != model.OrderStatusPending {
+			err := s.orderTempRepo.DeleteOrderTemp(ctx, orderID)
+			if err != nil {
+				logger.Warn("Order query fail", zap.String("orderId", orderID), zap.Error(err))
+				return err
+			}
 			return fmt.Errorf("order %s is not pending", orderID)
 		}
 
@@ -229,7 +243,7 @@ func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, workspace int, 
 	return nil
 }
 
-func (s *OrderTempServer) dealExpireOrderTemp(ctx context.Context, workspace int, orderID string) error {
+func (s *OrderTempServer) dealExpireOrderTemp(ctx context.Context, orderID string) error {
 	var orderNo string = strings.ReplaceAll(orderID, "-", "_")
 
 	success, _, err := s.payment.CloseOrder(orderNo)
@@ -240,7 +254,7 @@ func (s *OrderTempServer) dealExpireOrderTemp(ctx context.Context, workspace int
 		return fmt.Errorf("order close %s is fail", orderNo)
 	}
 
-	err = s.closeOrderTemp(ctx, workspace, orderID)
+	err = s.closeOrderTemp(ctx, orderID)
 	if err != nil {
 		return err
 	}

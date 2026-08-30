@@ -53,7 +53,7 @@ func (r orderRepository) DeleteOrder(ctx context.Context, db *gorm.DB, orderId s
 
 func (r orderRepository) GetOrderListByUserID(ctx context.Context, db *gorm.DB, userId string, page int, size int) ([]*model.Order, error) {
 	var orders []*model.Order
-	err := db.WithContext(ctx).Where("user_id = ?", userId).Offset((page - 1) * size).Limit(size).Find(&orders).Error
+	err := db.WithContext(ctx).Where("user_id = ?", userId).Order("created_at DESC").Offset((page - 1) * size).Limit(size).Find(&orders).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return make([]*model.Order, 0), nil
