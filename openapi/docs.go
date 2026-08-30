@@ -3817,7 +3817,7 @@ const docTemplate = `{
             }
         },
         "/api/v2/feed": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "Bearer": []
@@ -3895,7 +3895,7 @@ const docTemplate = `{
             }
         },
         "/api/v2/feed/guest": {
-            "get": {
+            "post": {
                 "description": "未登录用户获取 Feed 流，通过游标分页",
                 "consumes": [
                     "application/json"
@@ -3939,7 +3939,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.GetUserFeedResponseV2"
+                                            "$ref": "#/definitions/dto.GetGuestUserFeedResponseV2"
                                         }
                                     }
                                 }
@@ -4472,11 +4472,15 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "price",
+                "request_uuid",
                 "reward_gold"
             ],
             "properties": {
                 "price": {
                     "type": "number"
+                },
+                "request_uuid": {
+                    "type": "string"
                 },
                 "reward_gold": {
                     "type": "integer"
@@ -4626,6 +4630,9 @@ const docTemplate = `{
                 "feed_created_at": {
                     "type": "string"
                 },
+                "feed_id": {
+                    "type": "string"
+                },
                 "feed_updated_at": {
                     "type": "string"
                 },
@@ -4694,6 +4701,23 @@ const docTemplate = `{
                 },
                 "restarted": {
                     "type": "boolean"
+                }
+            }
+        },
+        "dto.GetGuestUserFeedResponseV2": {
+            "type": "object",
+            "properties": {
+                "feeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.GuestFeedResponse"
+                    }
+                },
+                "next_cursor_id": {
+                    "type": "string"
+                },
+                "next_offset": {
+                    "type": "integer"
                 }
             }
         },
@@ -4784,6 +4808,68 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GuestFeedResponse": {
+            "type": "object",
+            "properties": {
+                "book_bookshelf_amount": {
+                    "type": "integer"
+                },
+                "book_browse_amount": {
+                    "type": "integer"
+                },
+                "book_cover_url": {
+                    "type": "string"
+                },
+                "book_created_at": {
+                    "type": "string"
+                },
+                "book_description": {
+                    "type": "string"
+                },
+                "book_id": {
+                    "type": "string"
+                },
+                "book_name": {
+                    "type": "string"
+                },
+                "book_price": {
+                    "type": "integer"
+                },
+                "book_push_at": {
+                    "type": "string"
+                },
+                "book_updated_at": {
+                    "type": "string"
+                },
+                "book_vip_level": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "feed_created_at": {
+                    "type": "string"
+                },
+                "feed_id": {
+                    "type": "string"
+                },
+                "feed_updated_at": {
+                    "type": "string"
+                },
+                "user_fans": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "user_profile_url": {
+                    "type": "string"
+                },
+                "user_vip_level": {
                     "type": "string"
                 }
             }
