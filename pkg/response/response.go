@@ -59,20 +59,13 @@ func InternalError(c *gin.Context, _ error) {
 	Error(c, http.StatusInternalServerError, "服务器内部出错")
 }
 
-type errorResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
 // PushError 格式化推送Error
 func PushError(c *gin.Context, err error) {
-	errList := getErrorList()
-	for key, resp := range *errList {
-		if errors.Is(err, key) {
-			Error(c, resp.Code, resp.Message)
-			logger.Info("response Error:", zap.Any("error", resp))
-			return
-		}
+	var e *Err
+	if errors.As(err, &e) {
+		Error(c, e.Code, e.Msg)
+		logger.Info("response Error:", zap.Any("error", e))
+		return
 	}
 	logger.Error("response Error:", zap.Error(err))
 	InternalError(c, err)

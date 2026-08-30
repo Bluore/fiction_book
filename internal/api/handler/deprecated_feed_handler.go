@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
 	"fiction-book/pkg/transmit"
 
@@ -29,7 +28,7 @@ func (h *Handler) GetFeedList(c *gin.Context) {
 
 	feeds, err := h.feedService.Deprecate_GetFeedList(c.Request.Context(), userID)
 	if err != nil {
-		if err == service.ErrParam {
+		if err == response.ErrParam {
 			response.PushError(c, err)
 			return
 		}

@@ -6,6 +6,7 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/response"
 
 	"gorm.io/gorm"
 )
@@ -45,7 +46,7 @@ func (s userHistoryService) GetUserHistoryList(ctx context.Context, req *dto.Lis
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	books, err := s.userHistoryRepo.ListByUserID(ctx, s.db, req.UserID, req.Page, req.Size)

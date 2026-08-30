@@ -259,7 +259,7 @@ func TestGetUserNotFound(t *testing.T) {
 	mockService := new(MockUserService)
 	handler := &testUserHandler{userService: mockService}
 
-	mockService.On("GetByID", mock.Anything, "999").Return(nil, service.ErrUserNotFound)
+	mockService.On("GetByID", mock.Anything, "999").Return(nil, response.ErrUserNotFound)
 
 	w := httptest.NewRecorder()
 	_, r := gin.CreateTestContext(w)

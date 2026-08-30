@@ -106,19 +106,19 @@ func (h *Handler) CreateUser(c *gin.Context) {
 
 	user, err := h.userService.Create(c.Request.Context(), req)
 	if err != nil {
-		if err == service.ErrUserExists {
+		if err == response.ErrUserExists {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrEmailExists {
+		if err == response.ErrEmailExists {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrEmailVerifySend {
+		if err == response.ErrEmailVerifySend {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrVerification {
+		if err == response.ErrVerification {
 			response.PushError(c, err)
 			return
 		}
@@ -146,7 +146,7 @@ func (h *Handler) GetUser(c *gin.Context) {
 
 	user, err := h.userService.GetByID(c.Request.Context(), req.ID)
 	if err != nil {
-		if err == service.ErrUserNotFound {
+		if err == response.ErrUserNotFound {
 			response.PushError(c, err)
 			return
 		}
@@ -211,7 +211,7 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 
 	user, err := h.userService.Update(c.Request.Context(), userID, req)
 	if err != nil {
-		if err == service.ErrUserNotFound {
+		if err == response.ErrUserNotFound {
 			response.PushError(c, err)
 			return
 		}
@@ -248,15 +248,15 @@ func (h *Handler) UpdateUserPassword(c *gin.Context) {
 
 	user, err := h.userService.UpdatePassword(c.Request.Context(), userID, req)
 	if err != nil {
-		if err == service.ErrUserNotFound {
+		if err == response.ErrUserNotFound {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrEmailVerifySend {
+		if err == response.ErrEmailVerifySend {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrVerification {
+		if err == response.ErrVerification {
 			response.PushError(c, err)
 			return
 		}
@@ -294,23 +294,23 @@ func (h *Handler) UpdateUserEmail(c *gin.Context) {
 
 	user, err := h.userService.UpdateEmail(c.Request.Context(), userID, req)
 	if err != nil {
-		if err == service.ErrUserNotFound {
+		if err == response.ErrUserNotFound {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrEmailVerifySend {
+		if err == response.ErrEmailVerifySend {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrVerification {
+		if err == response.ErrVerification {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrEmailExists {
+		if err == response.ErrEmailExists {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrInvalidPassword {
+		if err == response.ErrInvalidPassword {
 			response.PushError(c, err)
 			return
 		}
@@ -341,7 +341,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 	}
 
 	if err := h.userService.Delete(c.Request.Context(), userID); err != nil {
-		if err == service.ErrUserNotFound {
+		if err == response.ErrUserNotFound {
 			response.PushError(c, err)
 			return
 		}
@@ -369,8 +369,8 @@ func (h *Handler) Login(c *gin.Context) {
 
 	loginResp, err := h.userService.Login(c.Request.Context(), req)
 	if err != nil {
-		if err == service.ErrUserNotFound || err == service.ErrInvalidPassword {
-			response.PushError(c, service.ErrInvalidPassword)
+		if err == response.ErrUserNotFound || err == response.ErrInvalidPassword {
+			response.PushError(c, response.ErrInvalidPassword)
 			return
 		}
 		response.InternalError(c, err)
@@ -461,19 +461,19 @@ func (h *Handler) UploadAvatar(c *gin.Context) {
 
 	user, err := h.userService.UpdateAvatar(c.Request.Context(), userID, req.Avatar)
 	if err != nil {
-		if err == service.ErrUserNotFound {
+		if err == response.ErrUserNotFound {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrFileType {
+		if err == response.ErrFileType {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrImage {
+		if err == response.ErrImage {
 			response.PushError(c, err)
 			return
 		}
-		if err == service.ErrSizeExceed {
+		if err == response.ErrSizeExceed {
 			response.PushError(c, err)
 		}
 		response.InternalError(c, err)

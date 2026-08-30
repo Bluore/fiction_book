@@ -15,6 +15,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/response"
 )
 
 type userServiceFixture struct {
@@ -117,9 +118,9 @@ func TestUserService_GetByID_UsesCache(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "bob", got.Username)
 
-	// 不存在的用户返回 ErrUserNotFound
+	// 不存在的用户返回 response.ErrUserNotFound
 	_, err = fixture.service.GetByID(ctx, "missing-user")
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }
 
 func TestUserService_Update_KeepsPasswordHash(t *testing.T) {
@@ -170,7 +171,7 @@ func TestUserService_UpdateEmail(t *testing.T) {
 		Email:    "dave-new@example.com",
 		Verify:   "123456",
 	})
-	assert.ErrorIs(t, err, ErrInvalidPassword)
+	assert.ErrorIs(t, err, response.ErrInvalidPassword)
 
 	// 密码正确，邮箱更新成功，缓存同步
 	updated, err := fixture.service.UpdateEmail(ctx, resp.ID, &dto.UpdateUserEmailRequest{
@@ -195,7 +196,7 @@ func TestUserService_UpdateEmail(t *testing.T) {
 		Email:    "eve@example.com",
 		Verify:   "123456",
 	})
-	assert.ErrorIs(t, err, ErrEmailExists)
+	assert.ErrorIs(t, err, response.ErrEmailExists)
 }
 
 func TestUserService_Delete(t *testing.T) {
@@ -217,11 +218,11 @@ func TestUserService_Delete(t *testing.T) {
 	assert.True(t, hit)
 
 	_, err = fixture.service.GetByID(ctx, resp.ID)
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 
-	// 再次删除保持幂等语义（用户不存在返回 ErrUserNotFound）
+	// 再次删除保持幂等语义（用户不存在返回 response.ErrUserNotFound）
 	err = fixture.service.Delete(ctx, resp.ID)
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }
 
 func TestUserService_GetStatByID(t *testing.T) {
@@ -247,5 +248,5 @@ func TestUserService_GetStatByID(t *testing.T) {
 
 	// 用户不存在
 	_, err = fixture.service.GetStatByID(ctx, "missing-user")
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }

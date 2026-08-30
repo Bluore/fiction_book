@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
-	"fiction-book/internal/service"
 	"fiction-book/pkg/response"
 	"fiction-book/pkg/transmit"
 
@@ -36,7 +35,7 @@ func (h *Handler) AddBookChapter(c *gin.Context) {
 
 	bookChapterInfo, err := h.bookChapterService.AddByBookID(c.Request.Context(), userID, req)
 	if err != nil {
-		if err == service.ErrBookNotFound {
+		if err == response.ErrBookNotFound {
 			response.PushError(c, err)
 			return
 		}
@@ -65,7 +64,7 @@ func (h *Handler) GuestGetBookChapter(c *gin.Context) {
 
 	bookChapter, err := h.bookChapterService.GuestGetChapter(c.Request.Context(), req.ChapterID)
 	if err != nil {
-		if err == service.ErrBookNotFound {
+		if err == response.ErrBookNotFound {
 			response.InternalError(c, err)
 			return
 		}
@@ -101,7 +100,7 @@ func (h *Handler) GetBookChapter(c *gin.Context) {
 
 	bookChapter, err := h.bookChapterService.GetChapter(c.Request.Context(), userID.(string), req.ChapterID)
 	if err != nil {
-		if err == service.ErrBookNotFound || err == service.ErrUserNotFound {
+		if err == response.ErrBookNotFound || err == response.ErrUserNotFound {
 			response.InternalError(c, err)
 			return
 		}
@@ -138,7 +137,7 @@ func (h *Handler) UpdateBookChapter(c *gin.Context) {
 
 	curChapter, err := h.bookChapterService.UpdateChapter(c.Request.Context(), userID, req)
 	if err != nil {
-		if err == service.ErrBookNotFound {
+		if err == response.ErrBookNotFound {
 			response.InternalError(c, err)
 		}
 		response.PushError(c, err)
@@ -179,7 +178,7 @@ func (h *Handler) DeleteBookChapter(c *gin.Context) {
 
 	err := h.bookChapterService.DeleteChapter(c.Request.Context(), userIDStr, req.ChapterID)
 	if err != nil {
-		if err == service.ErrBookNotFound {
+		if err == response.ErrBookNotFound {
 			response.InternalError(c, err)
 			return
 		}

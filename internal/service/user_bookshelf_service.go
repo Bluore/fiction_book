@@ -7,6 +7,7 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/response"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
 	"gorm.io/gorm"
@@ -128,7 +129,7 @@ func (s userBookshelfService) DeleteUserBookshelf(ctx context.Context, userID st
 			return err
 		}
 		if !exist {
-			return ErrBookNotFound
+			return response.ErrBookNotFound
 		}
 
 		err = s.userBookshelfRepo.DeleteByUserIDAndBookID(ctx, db, userID, req.BookID)

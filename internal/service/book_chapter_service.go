@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
+	"strings"
+	"time"
+
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/kafka/kafka_client"
@@ -12,19 +14,12 @@ import (
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/constant"
 	"fiction-book/pkg/logger"
-	"strings"
-	"time"
+	"fiction-book/pkg/response"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrBookChapterNotFound = errors.New("book_chapter not found")
-	ErrVIPLevel            = errors.New("the membership level is insufficient")
-	ErrPermission          = errors.New("user permission denied")
 )
 
 type BookChapterService interface {
@@ -111,11 +106,11 @@ func (s *bookChapterService) AddByBookID(ctx context.Context, userID string, req
 		return nil, err
 	}
 	if book == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	if book.OwnerID != userID {
-		return nil, ErrPermission
+		return nil, response.ErrPermission
 	}
 
 	bookChapter := &model.BookChapter{
@@ -181,7 +176,7 @@ func (s *bookChapterService) GuestGetChapter(ctx context.Context, chapterID stri
 		return nil, err
 	}
 	if bookChapter == nil {
-		return nil, ErrBookChapterNotFound
+		return nil, response.ErrBookChapterNotFound
 	}
 
 	book, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapter.BookID)
@@ -189,11 +184,11 @@ func (s *bookChapterService) GuestGetChapter(ctx context.Context, chapterID stri
 		return nil, err
 	}
 	if book == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	if VIPStrToLevel(bookChapter.VIPLevel) > VIPStrToLevel("") {
-		return nil, ErrUserNotLogin
+		return nil, response.ErrUserNotLogin
 	}
 	return toBookChapterResponse(s.cfg, bookChapter, book), nil
 }
@@ -204,7 +199,7 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	bookChapterDetail, err := queryBookChapterDetailWithCache(ctx, s.db, s.bookChapterCache, s.bookChapterRepo, bookChapterID)
@@ -212,7 +207,7 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 		return nil, err
 	}
 	if bookChapterDetail == nil {
-		return nil, ErrBookChapterNotFound
+		return nil, response.ErrBookChapterNotFound
 	}
 
 	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapterDetail.BookID)
@@ -220,7 +215,7 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 		return nil, err
 	}
 	if bookDetail == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	// 先检查是否购买
@@ -235,7 +230,7 @@ func (s *bookChapterService) GetChapter(ctx context.Context, userID string, book
 			return nil, err
 		}
 		if VIPStrToLevel(bookChapterDetail.VIPLevel) > VIPStrToLevel(userAsset.VIPLevel) {
-			return nil, ErrVIPLevel
+			return nil, response.ErrVIPLevel
 		}
 	}
 
@@ -254,7 +249,7 @@ func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, r
 		return nil, err
 	}
 	if bookChapterDetail == nil {
-		return nil, ErrBookChapterNotFound
+		return nil, response.ErrBookChapterNotFound
 	}
 
 	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapterDetail.BookID)
@@ -262,11 +257,11 @@ func (s *bookChapterService) UpdateChapter(ctx context.Context, userID string, r
 		return nil, err
 	}
 	if bookDetail == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	if bookDetail.OwnerID != userID {
-		return nil, ErrPermission
+		return nil, response.ErrPermission
 	}
 
 	var curBookChapterDetail = *bookChapterDetail
@@ -351,7 +346,7 @@ func (s *bookChapterService) DeleteChapter(ctx context.Context, userID string, c
 		return err
 	}
 	if chapter == nil {
-		return ErrBookChapterNotFound
+		return response.ErrBookChapterNotFound
 	}
 
 	// 检查书籍是否存在
@@ -360,12 +355,12 @@ func (s *bookChapterService) DeleteChapter(ctx context.Context, userID string, c
 		return err
 	}
 	if book == nil {
-		return ErrBookNotFound
+		return response.ErrBookNotFound
 	}
 
 	// 检查书籍所有权
 	if book.OwnerID != userID {
-		return ErrPermission
+		return response.ErrPermission
 	}
 
 	err = s.db.Transaction(func(tx *gorm.DB) error {
@@ -406,7 +401,7 @@ func (s *bookChapterService) GetChapterList(ctx context.Context, req *dto.GetBoo
 		return nil, err
 	}
 	if exist == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	chapterList, err := s.bookChapterRepo.GetIDListByBookID(ctx, req.BookID)
@@ -445,14 +440,14 @@ func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, 
 		return err
 	}
 	if bookChapter == nil {
-		return ErrBookNotFound
+		return response.ErrBookNotFound
 	}
 
 	if bookChapter.Price != req.Price {
-		return ErrParam
+		return response.ErrParam
 	}
 	if bookChapter.BookID != req.BookID {
-		return ErrParam
+		return response.ErrParam
 	}
 
 	tx := s.db.Begin()
@@ -463,7 +458,7 @@ func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, 
 	}
 	if exist != nil {
 		tx.Rollback()
-		return ErrBookAlreadyBuy
+		return response.ErrBookAlreadyBuy
 	}
 
 	purchasedChapter := &model.UserPurchasedChapter{
@@ -480,11 +475,11 @@ func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, 
 	}
 	if userAsset == nil {
 		tx.Rollback()
-		return ErrUserNotFound
+		return response.ErrUserNotFound
 	}
 	if userAsset.Gold < req.Price {
 		tx.Rollback()
-		return ErrSufficientFunds
+		return response.ErrSufficientFunds
 	}
 
 	_, err = s.userAssetRepo.SubGoldByID(ctx, tx, userID, req.Price)
@@ -513,7 +508,7 @@ func (s *bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID s
 		return nil, err
 	}
 	if bookChapterInfo == nil {
-		return nil, ErrBookChapterNotFound
+		return nil, response.ErrBookChapterNotFound
 	}
 
 	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, bookChapterInfo.BookID)
@@ -521,7 +516,7 @@ func (s *bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID s
 		return nil, err
 	}
 	if bookDetail == nil {
-		return nil, ErrBookNotFound
+		return nil, response.ErrBookNotFound
 	}
 
 	return &dto.BookChapterInfoResponse{

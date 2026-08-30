@@ -15,6 +15,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/response"
 )
 
 type userLikeServiceFixture struct {
@@ -98,7 +99,7 @@ func TestUserLikeService_UpdateUserLike(t *testing.T) {
 			name:      "reject invalid operator",
 			operators: []string{"toggle"},
 			wantCount: 0,
-			wantErr:   ErrParam,
+			wantErr:   response.ErrParam,
 		},
 	}
 
@@ -165,7 +166,7 @@ func TestUserLikeService_UpdateUserLikeTargetNotFound(t *testing.T) {
 		},
 	)
 
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }
 
 func TestUserLikeService_GetUserLike(t *testing.T) {
@@ -202,5 +203,5 @@ func TestUserLikeService_GetUserLikeTargetNotFound(t *testing.T) {
 		&dto.GetUserLikeRequest{TargetID: "missing-user"},
 	)
 
-	assert.ErrorIs(t, err, ErrUserNotFound)
+	assert.ErrorIs(t, err, response.ErrUserNotFound)
 }

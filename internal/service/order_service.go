@@ -2,7 +2,10 @@ package service
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"strings"
+	"time"
+
 	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
@@ -10,21 +13,12 @@ import (
 	"fiction-book/pkg/config"
 	"fiction-book/pkg/logger"
 	"fiction-book/pkg/payment"
-	"fmt"
-	"strings"
-	"time"
+	"fiction-book/pkg/response"
 
 	agilePool "github.com/Yiming1997/agilePool/v2"
-	"go.uber.org/zap"
-
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
-)
-
-var (
-	ErrOrderNotFound     = errors.New("order not found")
-	ErrCreateAlipayOrder = errors.New("create alipay order fail")
-	ErrRepetitionRequest = errors.New("request is repetition")
 )
 
 type OrderService interface {
@@ -93,7 +87,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 
 	// 货币转化率
 	if int64(req.Price*float64(s.cfg.Purchased.CurrencyRatio)) != req.RewardGold {
-		return nil, ErrParam
+		return nil, response.ErrParam
 	}
 
 	// 添加数据
@@ -105,7 +99,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 
 		err = s.consumeRecordRepo.MarkConsumed(ctx, tx, reqUUID)
 		if err != nil {
-			return ErrRepetitionRequest
+			return response.ErrRepetitionRequest
 		}
 
 		// 创建订单
@@ -118,7 +112,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 			fmt.Sprintf("GSF充值账单: %d G币", orderDetail.RewordGold),
 		)
 		if err != nil {
-			return ErrCreateAlipayOrder
+			return response.ErrCreateAlipayOrder
 		}
 
 		// 写入redis数据
@@ -178,7 +172,7 @@ func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*
 			return nil, err
 		}
 		if order == nil {
-			return nil, ErrOrderNotFound
+			return nil, response.ErrOrderNotFound
 		}
 
 		// 写入缓存
@@ -188,7 +182,7 @@ func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*
 	}
 
 	if order.UserId != userId {
-		return nil, ErrPermission
+		return nil, response.ErrPermission
 	}
 
 	return toOrderResponse(order), nil
@@ -276,7 +270,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 							return err
 						}
 						if txOrder == nil {
-							return ErrOrderNotFound
+							return response.ErrOrderNotFound
 						}
 
 						txOrder.Status = model.OrderStatusOutDate
@@ -309,7 +303,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 							return err
 						}
 						if txOrder == nil {
-							return ErrOrderNotFound
+							return response.ErrOrderNotFound
 						}
 
 						txOrder.PaidAt = paidTime

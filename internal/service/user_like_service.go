@@ -6,6 +6,7 @@ import (
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
+	"fiction-book/pkg/response"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -48,7 +49,7 @@ func (s userLikeService) UpdateUserLike(ctx context.Context, likerID string, req
 	switch req.Operator {
 	case userLikeOperatorCreate, userLikeOperatorDelete:
 	default:
-		return nil, ErrParam
+		return nil, response.ErrParam
 	}
 
 	// 先判断目标用户是否存在
@@ -57,7 +58,7 @@ func (s userLikeService) UpdateUserLike(ctx context.Context, likerID string, req
 		return nil, err
 	}
 	if targetUserDetail == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	// UserID 为被关注用户，LikerID 为发起关注的用户
@@ -87,7 +88,7 @@ func (s userLikeService) UpdateUserLike(ctx context.Context, likerID string, req
 			IsLike:   false,
 		}, nil
 	}
-	return nil, ErrParam
+	return nil, response.ErrParam
 }
 
 func (s userLikeService) GetUserLike(ctx context.Context, likerID string, req *dto.GetUserLikeRequest) (*dto.GetUserLikeResponse, error) {
@@ -97,7 +98,7 @@ func (s userLikeService) GetUserLike(ctx context.Context, likerID string, req *d
 		return nil, err
 	}
 	if target == nil {
-		return nil, ErrUserNotFound
+		return nil, response.ErrUserNotFound
 	}
 
 	userLike, err := queryUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, req.TargetID, likerID)
