@@ -45,7 +45,7 @@ func (c *outboxClient) OutboxProducerClient(ctx context.Context, cfg *config.Con
 		Balancer: &kafka.LeastBytes{},
 	}
 
-	tick := time.NewTicker(1 * time.Second)
+	tick := time.NewTicker(30 * time.Second)
 	defer tick.Stop()
 	for {
 		select {

@@ -52,6 +52,9 @@ func IsEnglishLetter(letter rune) bool {
 }
 
 func HashToInt(in string, numRange uint64) int {
+	if numRange <= 0 {
+		return 0
+	}
 	hashByte := md5.Sum([]byte(in))
 	hashHigh := binary.BigEndian.Uint64(hashByte[:8])
 	hashLow := binary.BigEndian.Uint64(hashByte[8:16])
