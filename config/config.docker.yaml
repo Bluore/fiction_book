@@ -66,8 +66,13 @@ kafka:
 payment:
   alipay:
     app_id: ""
+    # 应用私钥，用于请求签名
     private_key: ""
+    # 应用公钥，需上传到支付宝开放平台
     public_key: ""
+    # 支付宝公钥，用于异步通知验签，从支付宝开放平台获取
+    alipay_public_key: ""
+    # 支付结果异步回调地址，需公网可访问，例如：https://api.example.com/api/v1/pay/alipay
     notify_url: ""
     return_url: ""
     is_prod: false

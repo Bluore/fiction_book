@@ -36,4 +36,6 @@ var (
 	ErrRepetitionRequest            = &Err{Code: 4022, Msg: "重复的请求"}
 	ErrUserPurchasedChapterNotFound = &Err{Code: 4023, Msg: "没有购买此章节的记录"}
 	ErrCreateAlipayOrder            = &Err{Code: 4024, Msg: "创建支付宝订单失败"}
+	ErrAlipayNotifyVerify           = &Err{Code: 4025, Msg: "支付宝回调验签失败"}
+	ErrOrderAmountMismatch          = &Err{Code: 4026, Msg: "订单金额不匹配"}
 )

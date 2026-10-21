@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"context"
+	"errors"
+
 	"fiction-book/internal/api/middleware"
 	"fiction-book/internal/dto"
 	"fiction-book/pkg/response"
@@ -11,7 +14,7 @@ import (
 
 // GetOrderByID 获取用户订单
 // @Summary 获取用户订单
-// @Description 根据订单ID获取用户订单详细信息
+// @Description 根据订单ID获取用户订单详细信息；订单待付款时使用长轮询，服务端最长保持连接 30 秒，期间每秒检查一次，订单状态变化或超时后返回最新订单
 // @Tags 订单管理
 // @Accept json
 // @Produce json
@@ -34,6 +37,10 @@ func (h *Handler) GetOrderByID(c *gin.Context) {
 
 	out, err := h.orderService.GetOrder(c.Request.Context(), userId, req.ID)
 	if err != nil {
+		// 客户端断开长连接时无需返回错误响应
+		if errors.Is(err, context.Canceled) {
+			return
+		}
 		response.PushError(c, err)
 		return
 	}

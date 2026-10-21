@@ -27,6 +27,7 @@ var ServiceSet = wire.NewSet(
 	ProvideUserHistoryService,
 	ProvideUserLikeService,
 	ProvideOrderService,
+	ProvidePayService,
 	ProvideFeedService,
 	ProvideFeedServiceV2,
 )
@@ -252,6 +253,27 @@ func ProvideOrderService(
 	pool *agilepool.Pool,
 ) service.OrderService {
 	return service.NewOrderService(userRepo, userAssetRepo, orderRepo, orderTempRepo, consumeRecordRepo, orderCache, db, cfg, alipayStrategy, pool)
+}
+
+// ProvidePayService 提供支付服务
+func ProvidePayService(
+	orderRepo repository.OrderRepository,
+	orderTempRepo repository.OrderTempRepository,
+	userAssetRepo repository.UserAssetRepository,
+	orderCache cache.OrderCache,
+	userAssetCache cache.UserAssetCache,
+	alipayStrategy payment.Strategy,
+	db *gorm.DB,
+) service.PayService {
+	return service.NewPayService(
+		orderRepo,
+		orderTempRepo,
+		userAssetRepo,
+		orderCache,
+		userAssetCache,
+		alipayStrategy,
+		db,
+	)
 }
 
 // Deprecated: ProvideFeedService 旧版提供 Feed 服务的依赖注入

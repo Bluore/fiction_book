@@ -161,6 +161,12 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 			orders.GET("", middleware.Auth(cfg), middleware.Validation(&dto.GetOrderListRequest{}), h.GetOrderList)
 			orders.POST("/create/gold", middleware.Auth(cfg), middleware.Validation(&dto.CreateOrderRequest{}), h.CreateOrder)
 		}
+
+		// 支付回调，由支付宝服务端调用，不能挂载认证中间件
+		pay := v1.Group("/pay")
+		{
+			pay.POST("/alipay", h.AlipayNotify)
+		}
 	}
 
 	// API v2 版本分组

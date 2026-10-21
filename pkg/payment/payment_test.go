@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
@@ -26,14 +27,16 @@ func TestOrderStatus(t *testing.T) {
 
 func TestAlipayConfig(t *testing.T) {
 	cfg := AlipayConfig{
-		AppID:      "test_app_id",
-		PrivateKey: "test_private_key", // pragma: allowlist secret
-		NotifyURL:  "https://example.com/notify",
-		ReturnURL:  "https://example.com/return",
-		IsProd:     false,
+		AppID:           "test_app_id",
+		PrivateKey:      "test_private_key", // pragma: allowlist secret
+		AlipayPublicKey: "test_alipay_public_key",
+		NotifyURL:       "https://example.com/notify",
+		ReturnURL:       "https://example.com/return",
+		IsProd:          false,
 	}
 
 	assert.Equal(t, "test_app_id", cfg.AppID)
+	assert.Equal(t, "test_alipay_public_key", cfg.AlipayPublicKey)
 	assert.False(t, cfg.IsProd)
 }
 
@@ -62,7 +65,7 @@ type MockPaymentStrategy struct {
 	closeErr     error
 }
 
-func (m *MockPaymentStrategy) CreateOrder(_ Amount, orderNo, _ string) (string, string, error) {
+func (m *MockPaymentStrategy) CreateOrder(_ Amount, orderNo, _, _ string) (string, string, error) {
 	if m.createErr != nil {
 		return "", "", m.createErr
 	}
@@ -81,6 +84,10 @@ func (m *MockPaymentStrategy) CloseOrder(_ string) (bool, CloseStatus, error) {
 	return m.closeSuccess, m.closeStatus, m.closeErr
 }
 
+func (m *MockPaymentStrategy) VerifyNotify(_ *http.Request) (*NotifyResult, error) {
+	return nil, nil
+}
+
 func TestMockPaymentStrategy(t *testing.T) {
 	now := time.Now()
 	mock := &MockPaymentStrategy{
@@ -93,7 +100,7 @@ func TestMockPaymentStrategy(t *testing.T) {
 	var _ PaymentStrategy = mock
 
 	// 测试创建订单
-	payURL, thirdOrderNo, err := mock.CreateOrder(Amount{Total: 100}, "order123", "Test Order")
+	payURL, thirdOrderNo, err := mock.CreateOrder(Amount{Total: 100}, "order123", "Test Order", "https://example.com/notify")
 	assert.NoError(t, err)
 	assert.Contains(t, payURL, "order123")
 	assert.Equal(t, "order123", thirdOrderNo)
@@ -126,7 +133,7 @@ func TestPaymentStrategyContract(t *testing.T) {
 	// 以接口类型持有 mock，验证接口全部方法的行为契约
 	var strategy Strategy = mock
 
-	payURL, thirdOrderNo, err := strategy.CreateOrder(Amount{Total: 100, Currency: "CNY"}, "order123", "Test Order")
+	payURL, thirdOrderNo, err := strategy.CreateOrder(Amount{Total: 100, Currency: "CNY"}, "order123", "Test Order", "https://example.com/notify")
 	assert.NoError(t, err)
 	assert.Contains(t, payURL, "order123")
 	assert.Equal(t, "order123", thirdOrderNo)

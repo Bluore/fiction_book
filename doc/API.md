@@ -12,3 +12,4 @@
 | 书架管理 | 获取自己书架(ListMineBookshelf)<br>获取用户书架(ListUserBookshelf)<br>添加到书架(CreateUserBookshelf)<br>从书架中删除(DeleteUserBookshelf) |
 | 历史管理 | 获取用户浏览历史(ListUserHistory) |
 | 订单管理 | 获取用户订单(GetOrderByID)<br>获取用户订单列表(GetOrderList)<br>创建用户充值订单(CreateOrder) |
+| 支付管理 | 支付宝异步通知(AlipayNotify) |

@@ -80,22 +80,23 @@ func InitializeApp() (*App, error) {
 	orderTempRepository := ProvideOrderTempRepository(config, client)
 	consumeRecordRepository := ProvideConsumeRecordRepository(db)
 	orderCache := ProvideOrderCache(client)
-	strategy, err := ProvideAlipayStrategy(config)
+	alipayStrategy, err := ProvideAlipayStrategy(config)
 	if err != nil {
 		return nil, err
 	}
-	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderTempRepository, consumeRecordRepository, orderCache, db, config, strategy, pool)
+	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderTempRepository, consumeRecordRepository, orderCache, db, config, alipayStrategy, pool)
+	payService := ProvidePayService(orderRepository, orderTempRepository, userAssetRepository, orderCache, userAssetCache, alipayStrategy, db)
 	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
 	feedService := ProvideFeedService(feedRepository, feedCache, db)
 	userInboxRepository := ProvideUserInboxRepository(db)
 	userBookshelfCache := ProvideUserBookshelfCache(client)
 	feedServiceV2 := ProvideFeedServiceV2(bookRepository, bookTagRepository, bookESRepository, userRepository, userAssetRepository, userLikeRepository, userPurchasedBookRepository, userCache, userAssetCache, userFeedRepository, userInboxRepository, outboxRepository, userInfoRepository, userBookshelfRepository, bookCache, userStatCache, bookThermalCache, bookTagCache, userFeedCache, userLikeCache, userInfoCache, userBookshelfCache, db, config)
-	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, userLikeService, orderService, buyVIP, feedService, feedServiceV2, config)
+	handler := ProvideHandler(userService, bookService, bookChapterService, userAssetService, userPurchasedBookService, userPurchasedChapterService, userBookshelfService, userHistoryService, userLikeService, orderService, payService, buyVIP, feedService, feedServiceV2, config)
 	outboxClient := ProvideOutboxClient(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	outboxServer := ProvideOutboxServer(outboxRepository, bookESRepository, bookChapterESRepository, db)
 	feedServer := ProvideFeedServer(userInboxRepository, userLikeRepository, userLikeCache, userFeedCache, consumeRecordRepository, db)
 	kafkaHandler := ProvideKafkaHandler(outboxClient, outboxServer, feedServer)
-	orderTempServer := ProvideOrderTempServer(orderRepository, orderTempRepository, userAssetRepository, orderCache, userAssetCache, config, db, client, pool, strategy)
+	orderTempServer := ProvideOrderTempServer(orderRepository, orderTempRepository, userAssetRepository, orderCache, userAssetCache, config, db, client, pool, alipayStrategy)
 	handle := ProvideServerHandle(orderTempServer, config)
 	app := NewApp(handler, kafkaHandler, handle)
 	return app, nil

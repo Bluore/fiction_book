@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -19,6 +20,13 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+)
+
+const (
+	// orderLongPollTimeout 订单长轮询最长保持时间，需小于 HTTP WriteTimeout
+	orderLongPollTimeout = 30 * time.Second
+	// orderLongPollInterval 订单长轮询检查间隔
+	orderLongPollInterval = time.Second
 )
 
 type OrderService interface {
@@ -110,6 +118,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 			},
 			orderNo,
 			fmt.Sprintf("GSF充值账单: %d G币", orderDetail.RewordGold),
+			s.cfg.Payment.Alipay.NotifyURL,
 		)
 		if err != nil {
 			return response.ErrCreateAlipayOrder
@@ -152,13 +161,59 @@ func toOrderResponse(in *model.Order) *dto.OrderResponse {
 		Status:        in.Status,
 		CreatedAt:     in.CreatedAt,
 	}
-	if time.Now().Before(in.CreatedAt) {
+	if in.Status == model.OrderStatusPending && !time.Now().Before(in.ExpireAt) {
 		out.Status = model.OrderStatusOutDate
 	}
 	return &out
 }
 
+// isOrderPending 订单是否仍在等待支付
+func isOrderPending(order *model.Order) bool {
+	return order.Status == model.OrderStatusPending && time.Now().Before(order.ExpireAt)
+}
+
 func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*dto.OrderResponse, error) {
+	order, err := s.getOrder(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if order.UserId != userId {
+		return nil, response.ErrPermission
+	}
+
+	// 已支付、已超时等终态直接返回，不占用长连接
+	if !isOrderPending(order) {
+		return toOrderResponse(order), nil
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, orderLongPollTimeout)
+	defer cancel()
+
+	ticker := time.NewTicker(orderLongPollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-waitCtx.Done():
+			// 客户端主动断开时不再写响应
+			if errors.Is(waitCtx.Err(), context.Canceled) {
+				return nil, waitCtx.Err()
+			}
+			return toOrderResponse(order), nil
+		case <-ticker.C:
+			latest, err := s.getOrder(waitCtx, id)
+			if err != nil {
+				return nil, err
+			}
+			order = latest
+			if !isOrderPending(order) {
+				return toOrderResponse(order), nil
+			}
+		}
+	}
+}
+
+func (s orderService) getOrder(ctx context.Context, id string) (*model.Order, error) {
 	// 尝试从缓存获取
 	order, exist, err := s.orderCache.Get(ctx, id)
 	if err != nil {
@@ -181,11 +236,7 @@ func (s orderService) GetOrder(ctx context.Context, userId string, id string) (*
 		}
 	}
 
-	if order.UserId != userId {
-		return nil, response.ErrPermission
-	}
-
-	return toOrderResponse(order), nil
+	return order, nil
 }
 
 func (s orderService) GetOrderListByUserID(ctx context.Context, userId string, req *dto.GetOrderListRequest) (*dto.GetOrderListResponse, error) {

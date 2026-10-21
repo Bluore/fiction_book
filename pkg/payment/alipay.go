@@ -3,11 +3,17 @@ package payment
 import (
 	"context"
 	"fmt"
+	"math"
+	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-pay/gopay"
 	"github.com/go-pay/gopay/alipay"
 )
+
+// alipayLocation 支付宝异步通知时间所在时区
+var alipayLocation = time.FixedZone("CST", 8*60*60)
 
 // AlipayStrategy 支付宝支付策略
 type AlipayStrategy struct {
@@ -40,12 +46,15 @@ func NewAlipayStrategy(cfg AlipayConfig) (*AlipayStrategy, error) {
 }
 
 // CreateOrder 创建支付宝订单
-func (s *AlipayStrategy) CreateOrder(amount Amount, orderNo, subject string) (string, string, error) {
+func (s *AlipayStrategy) CreateOrder(amount Amount, orderNo, subject, notifyURL string) (string, string, error) {
 	bm := make(gopay.BodyMap)
 	bm.Set("subject", subject).
 		Set("out_trade_no", orderNo).
 		Set("total_amount", fmt.Sprintf("%.2f", float64(amount.Total)/100)).
 		Set("qr_pay_mode", 2)
+	if notifyURL != "" {
+		bm.Set("notify_url", notifyURL)
+	}
 
 	payURL, err := s.client.TradePagePay(context.Background(), bm)
 	if err != nil {
@@ -79,6 +88,58 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 	default:
 		return StatusPending, nil, nil
 	}
+}
+
+// VerifyNotify 解析并验签支付宝异步通知
+func (s *AlipayStrategy) VerifyNotify(req *http.Request) (*NotifyResult, error) {
+	bm, err := alipay.ParseNotifyToBodyMap(req)
+	if err != nil {
+		return nil, fmt.Errorf("alipay parse notify failed: %w", err)
+	}
+
+	if bm.GetString("app_id") != s.config.AppID {
+		return nil, fmt.Errorf("alipay notify app_id mismatch")
+	}
+	if bm.GetString("out_trade_no") == "" {
+		return nil, fmt.Errorf("alipay notify out_trade_no is empty")
+	}
+
+	ok, err := alipay.VerifySign(s.config.AlipayPublicKey, bm)
+	if err != nil {
+		return nil, fmt.Errorf("alipay notify verify sign failed: %w", err)
+	}
+	if !ok {
+		return nil, fmt.Errorf("alipay notify verify sign failed")
+	}
+
+	totalAmount, err := yuanToFen(bm.GetString("total_amount"))
+	if err != nil {
+		return nil, fmt.Errorf("alipay notify total_amount invalid: %w", err)
+	}
+
+	paidAt := time.Now()
+	if gmtPayment := bm.GetString("gmt_payment"); gmtPayment != "" {
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", gmtPayment, alipayLocation); err == nil {
+			paidAt = t
+		}
+	}
+
+	return &NotifyResult{
+		OutTradeNo:  bm.GetString("out_trade_no"),
+		TradeNo:     bm.GetString("trade_no"),
+		TradeStatus: bm.GetString("trade_status"),
+		TotalAmount: totalAmount,
+		PaidAt:      &paidAt,
+	}, nil
+}
+
+// yuanToFen 将元为单位的金额转换为分
+func yuanToFen(yuan string) (int64, error) {
+	amount, err := strconv.ParseFloat(yuan, 64)
+	if err != nil {
+		return 0, err
+	}
+	return int64(math.Round(amount * 100)), nil
 }
 
 // PayType 返回支付类型

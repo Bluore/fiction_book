@@ -23,6 +23,7 @@ var InfraSet = wire.NewSet(
 	ProvideCatch,
 	ProvideESClient,
 	ProvideAlipayStrategy,
+	wire.Bind(new(payment.Strategy), new(*payment.AlipayStrategy)),
 	ProvideAgilePool,
 )
 
@@ -50,7 +51,7 @@ func ProvideESClient(cfg *config.Config) (*elasticsearch.Client, error) {
 }
 
 // ProvideAlipayStrategy 提供支付宝支付策略
-func ProvideAlipayStrategy(cfg *config.Config) (payment.Strategy, error) {
+func ProvideAlipayStrategy(cfg *config.Config) (*payment.AlipayStrategy, error) {
 	return payment.NewAlipayStrategy(cfg.Payment.Alipay)
 }
 

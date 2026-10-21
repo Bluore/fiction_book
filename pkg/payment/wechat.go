@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -14,6 +15,11 @@ import (
 type WechatStrategy struct {
 	client *wechat.ClientV3
 	config WechatConfig
+}
+
+func (s *WechatStrategy) VerifyNotify(req *http.Request) (*NotifyResult, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 // NewWechatStrategy 创建微信支付策略
@@ -39,11 +45,15 @@ func NewWechatStrategy(cfg WechatConfig) (*WechatStrategy, error) {
 }
 
 // CreateOrder 创建微信支付订单（Native 扫码支付）
-func (s *WechatStrategy) CreateOrder(amount Amount, orderNo, subject string) (string, string, error) {
+func (s *WechatStrategy) CreateOrder(amount Amount, orderNo, subject, notifyURL string) (string, string, error) {
+	if notifyURL == "" {
+		notifyURL = s.config.NotifyURL
+	}
+
 	bm := make(gopay.BodyMap)
 	bm.Set("appid", s.config.AppID).
 		Set("mchid", s.config.MchID).
-		Set("notify_url", s.config.NotifyURL).
+		Set("notify_url", notifyURL).
 		Set("description", subject).
 		Set("out_trade_no", orderNo).
 		SetBodyMap("amount", func(bm gopay.BodyMap) {
