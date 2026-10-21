@@ -46,12 +46,15 @@ func NewAlipayStrategy(cfg AlipayConfig) (*AlipayStrategy, error) {
 }
 
 // CreateOrder 创建支付宝订单
-func (s *AlipayStrategy) CreateOrder(amount Amount, orderNo, subject, notifyURL string) (string, string, error) {
+func (s *AlipayStrategy) CreateOrder(amount Amount, orderNo, subject, timeoutExpress, notifyURL string) (string, string, error) {
 	bm := make(gopay.BodyMap)
 	bm.Set("subject", subject).
 		Set("out_trade_no", orderNo).
 		Set("total_amount", fmt.Sprintf("%.2f", float64(amount.Total)/100)).
 		Set("qr_pay_mode", 2)
+	if timeoutExpress != "" {
+		bm.Set("timeout_express", timeoutExpress)
+	}
 	if notifyURL != "" {
 		bm.Set("notify_url", notifyURL)
 	}

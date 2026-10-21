@@ -44,8 +44,8 @@ func NewWechatStrategy(cfg WechatConfig) (*WechatStrategy, error) {
 	}, nil
 }
 
-// CreateOrder 创建微信支付订单（Native 扫码支付）
-func (s *WechatStrategy) CreateOrder(amount Amount, orderNo, subject, notifyURL string) (string, string, error) {
+// CreateOrder 创建微信支付订单（Native 扫码支付），暂不支持 timeoutExpress
+func (s *WechatStrategy) CreateOrder(amount Amount, orderNo, subject, _, notifyURL string) (string, string, error) {
 	if notifyURL == "" {
 		notifyURL = s.config.NotifyURL
 	}

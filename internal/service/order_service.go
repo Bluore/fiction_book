@@ -27,6 +27,10 @@ const (
 	orderLongPollTimeout = 30 * time.Second
 	// orderLongPollInterval 订单长轮询检查间隔
 	orderLongPollInterval = time.Second
+	// orderTimeout 订单固定超时时间
+	orderTimeout = 5 * time.Minute
+	// orderTimeoutExpress 支付宝下单超时参数，需与 orderTimeout 保持一致
+	orderTimeoutExpress = "5m"
 )
 
 type OrderService interface {
@@ -88,7 +92,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 		OriginalPrice: req.Price,
 		RewordGold:    req.RewardGold,
 		Status:        model.OrderStatusPending,
-		ExpireAt:      time.Now().Add(time.Minute * 5),
+		ExpireAt:      time.Now().Add(orderTimeout),
 		PaidAt:        nil,
 		CreatedAt:     time.Now(),
 	}
@@ -118,6 +122,7 @@ func (s orderService) CreateOrder(ctx context.Context, userId string, req *dto.C
 			},
 			orderNo,
 			fmt.Sprintf("GSF充值账单: %d G币", orderDetail.RewordGold),
+			orderTimeoutExpress,
 			s.cfg.Payment.Alipay.NotifyURL,
 		)
 		if err != nil {

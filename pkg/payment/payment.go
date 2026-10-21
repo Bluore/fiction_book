@@ -34,8 +34,8 @@ const (
 
 // Strategy 支付策略接口
 type Strategy interface {
-	// CreateOrder 创建支付订单
-	CreateOrder(amount Amount, orderNo string, subject string, notifyURL string) (payURL string, thirdOrderNo string, err error)
+	// CreateOrder 创建支付订单，timeoutExpress 使用支付平台超时时间格式（支付宝为 1m～15d，单位 m/h/d）
+	CreateOrder(amount Amount, orderNo string, subject string, timeoutExpress string, notifyURL string) (payURL string, thirdOrderNo string, err error)
 	// QueryOrder 查询订单状态
 	QueryOrder(thirdOrderNo string) (status OrderStatus, paidTime *time.Time, err error)
 	// PayType 支付类型标识
