@@ -15,6 +15,8 @@ type UserInfoRepository interface {
 	GetByUserID(ctx context.Context, db *gorm.DB, userID string) (*model.UserInfo, error)
 	GetByUsername(ctx context.Context, db *gorm.DB, username string) (*model.UserInfo, error)
 	Update(ctx context.Context, db *gorm.DB, userInfo *model.UserInfo) error
+	UpdateUsername(ctx context.Context, db *gorm.DB, userID, username string) error
+	UpdateProfileURL(ctx context.Context, db *gorm.DB, userID, profileURL string) error
 	Delete(ctx context.Context, db *gorm.DB, userID string) error
 	List(ctx context.Context, db *gorm.DB, offset, limit int) ([]*model.UserInfo, error)
 
@@ -65,6 +67,20 @@ func (r *userInfoRepository) GetByUsername(ctx context.Context, db *gorm.DB, use
 
 func (r *userInfoRepository) Update(ctx context.Context, db *gorm.DB, userInfo *model.UserInfo) error {
 	return db.WithContext(ctx).Save(userInfo).Error
+}
+
+// UpdateUsername 只更新用户名字段，避免覆盖计数类字段或为历史缺失记录插入空行
+func (r *userInfoRepository) UpdateUsername(ctx context.Context, db *gorm.DB, userID, username string) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		Update("username", username).Error
+}
+
+// UpdateProfileURL 只更新头像地址字段，避免覆盖计数类字段或为历史缺失记录插入空行
+func (r *userInfoRepository) UpdateProfileURL(ctx context.Context, db *gorm.DB, userID, profileURL string) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ?", userID).
+		Update("user_profile_url", profileURL).Error
 }
 
 func (r *userInfoRepository) Delete(ctx context.Context, db *gorm.DB, userID string) error {

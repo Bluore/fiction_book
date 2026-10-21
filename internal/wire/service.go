@@ -35,9 +35,11 @@ var ServiceSet = wire.NewSet(
 func ProvideUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userInfoRepo repository.UserInfoRepository,
 	userCache cache.UserCache,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
+	userInfoCache cache.UserInfoCache,
 	authCache cache.AuthCache,
 	db *gorm.DB,
 	cfg *config.Config,
@@ -45,9 +47,11 @@ func ProvideUserService(
 	return service.NewUserService(
 		userRepo,
 		userAssetRepo,
+		userInfoRepo,
 		userCache,
 		userStatCache,
 		userAssetCache,
+		userInfoCache,
 		authCache,
 		db,
 		cfg,

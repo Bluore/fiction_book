@@ -26,6 +26,7 @@ func InitializeApp() (*App, error) {
 	}
 	userRepository := ProvideUserRepository(db)
 	userAssetRepository := ProvideUserAssetRepository(db)
+	userInfoRepository := ProvideUserInfoRepository(db)
 	client, err := ProvideCatch(config)
 	if err != nil {
 		return nil, err
@@ -33,8 +34,9 @@ func InitializeApp() (*App, error) {
 	userCache := ProvideUserCache(client)
 	userStatCache := ProvideUserStatCache(client)
 	userAssetCache := ProvideUserAssetCache(client)
+	userInfoCache := ProvideUserInfoCache(client)
 	authCache := ProvideAuthCache(client)
-	userService := ProvideUserService(userRepository, userAssetRepository, userCache, userStatCache, userAssetCache, authCache, db, config)
+	userService := ProvideUserService(userRepository, userAssetRepository, userInfoRepository, userCache, userStatCache, userAssetCache, userInfoCache, authCache, db, config)
 	bookRepository := ProvideBookRepository(db)
 	bookTagRepository := ProvideBookTagRepository(db)
 	elasticsearchClient, err := ProvideESClient(config)
@@ -44,12 +46,10 @@ func InitializeApp() (*App, error) {
 	bookESRepository := ProvideBookESRepository(elasticsearchClient)
 	userPurchasedBookRepository := ProvideUserPurchasedBookRepository(db)
 	outboxRepository := ProvideOutboxRepository(db)
-	userInfoRepository := ProvideUserInfoRepository(db)
 	userFeedRepository := ProvideUserFeedRepository(db)
 	bookCache := ProvideBookCatch(client)
 	bookThermalCache := ProvideBookThermalCache(client)
 	bookTagCache := ProvideBookTagCache(client)
-	userInfoCache := ProvideUserInfoCache(client)
 	userFeedCache := ProvideUserFeedCache(client)
 	feedClient := ProvideFeedClient(config)
 	pool, err := ProvideAgilePool(config)

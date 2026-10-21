@@ -50,9 +50,11 @@ type UserService interface {
 type userService struct {
 	userRepo       repository.UserRepository
 	userAssetRepo  repository.UserAssetRepository
+	userInfoRepo   repository.UserInfoRepository
 	userCache      cache.UserCache
 	userStatCache  cache.UserStatCache
 	userAssetCache cache.UserAssetCache
+	userInfoCache  cache.UserInfoCache
 	authCache      cache.AuthCache
 	db             *gorm.DB
 	cfg            *config.Config
@@ -62,9 +64,11 @@ type userService struct {
 func NewUserService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userInfoRepo repository.UserInfoRepository,
 	userCache cache.UserCache,
 	userStatCache cache.UserStatCache,
 	userAssetCache cache.UserAssetCache,
+	userInfoCache cache.UserInfoCache,
 	authCache cache.AuthCache,
 	db *gorm.DB,
 	cfg *config.Config,
@@ -72,9 +76,11 @@ func NewUserService(
 	return &userService{
 		userRepo:       userRepo,
 		userAssetRepo:  userAssetRepo,
+		userInfoRepo:   userInfoRepo,
 		userCache:      userCache,
 		userStatCache:  userStatCache,
 		userAssetCache: userAssetCache,
+		userInfoCache:  userInfoCache,
 		authCache:      authCache,
 		db:             db,
 		cfg:            cfg,
@@ -155,7 +161,10 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 		return nil, err
 	}
 
-	var user *model.User
+	var (
+		user     *model.User
+		userInfo *model.UserInfo
+	)
 
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		// 检查用户名是否已存在
@@ -201,6 +210,16 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 			return err
 		}
 
+		// 创建用户详情
+		userInfo = &model.UserInfo{
+			UserID:         user.ID,
+			Username:       user.Username,
+			UserProfileUrl: user.ProfileImage,
+		}
+		if err := s.userInfoRepo.Create(ctx, tx, userInfo); err != nil {
+			return err
+		}
+
 		// 创建用户资产
 		if err := s.userAssetRepo.CreateUserAsset(ctx, tx, user.ID); err != nil {
 			return err
@@ -215,6 +234,9 @@ func (s *userService) Create(ctx context.Context, req *dto.CreateUserRequest) (*
 	// 事务提交成功后回写缓存，避免事务回滚时写入脏缓存
 	if err := s.userCache.UpdateUser(ctx, user.ID, user); err != nil {
 		logger.Warn("update user cache fail", zap.Error(err))
+	}
+	if err := s.userInfoCache.UpdateUserInfo(ctx, user.ID, userInfo); err != nil {
+		logger.Warn("update user_info cache fail", zap.Error(err))
 	}
 
 	return s.toUserResponse(user), nil
@@ -263,6 +285,7 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 	}
 
 	// 更新字段
+	usernameChanged := req.Username != nil && *req.Username != user.Username
 	if req.Username != nil {
 		user.Username = *req.Username
 	}
@@ -273,11 +296,25 @@ func (s *userService) Update(ctx context.Context, id string, req *dto.UpdateUser
 		user.Description = *req.Description
 	}
 
-	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.userRepo.Update(ctx, tx, user); err != nil {
+			return err
+		}
+		if !usernameChanged {
+			return nil
+		}
+		return s.userInfoRepo.UpdateUsername(ctx, tx, user.ID, user.Username)
+	})
+	if err != nil {
 		return nil, err
 	}
 	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
 		logger.Warn("delete user cache fail", zap.Error(err))
+	}
+	if usernameChanged {
+		if _, err := s.userInfoCache.DeleteUserInfo(ctx, user.ID); err != nil {
+			logger.Warn("delete user_info cache fail", zap.Error(err))
+		}
 	}
 
 	return s.toUserResponse(user), nil
@@ -453,11 +490,20 @@ func (s *userService) UpdateAvatar(ctx context.Context, userID string, avatar *m
 
 	// 更新数据库
 	user.ProfileImage = uploadOut.FilePath
-	if err := s.userRepo.Update(ctx, s.db, user); err != nil {
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.userRepo.Update(ctx, tx, user); err != nil {
+			return err
+		}
+		return s.userInfoRepo.UpdateProfileURL(ctx, tx, user.ID, user.ProfileImage)
+	})
+	if err != nil {
 		return nil, err
 	}
 	if _, err := s.userCache.DeleteUser(ctx, user.ID); err != nil {
 		logger.Warn("delete user cache fail", zap.Error(err))
+	}
+	if _, err := s.userInfoCache.DeleteUserInfo(ctx, user.ID); err != nil {
+		logger.Warn("delete user_info cache fail", zap.Error(err))
 	}
 
 	return s.toUserResponse(user), nil

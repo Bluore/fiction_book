@@ -33,10 +33,11 @@ func newUserServiceFixture(t *testing.T) *userServiceFixture {
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
-	require.NoError(t, db.AutoMigrate(&model.User{}))
+	require.NoError(t, db.AutoMigrate(&model.User{}, &model.UserInfo{}))
 
 	userRepo := repository.NewUserRepository(db)
 	userAssetRepo := new(MockUserAssetRepository)
+	userInfoRepo := repository.NewUserInfoRepository(db)
 
 	redisServer := miniredis.RunT(t)
 	redisClient := redis.NewClient(&redis.Options{Addr: redisServer.Addr()})
@@ -50,9 +51,11 @@ func newUserServiceFixture(t *testing.T) *userServiceFixture {
 	svc := NewUserService(
 		userRepo,
 		userAssetRepo,
+		userInfoRepo,
 		cache.NewUserCache(redisClient),
 		cache.NewUserStatCache(redisClient),
 		cache.NewUserAssetCache(redisClient),
+		cache.NewUserInfoCache(redisClient),
 		cache.NewAuthCache(redisClient),
 		db,
 		cfg,
@@ -95,6 +98,12 @@ func TestUserService_Create(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, dbUser)
 	assert.True(t, checkPasswordHash("password123", dbUser.Password))
+
+	// 用户详情同步创建
+	dbUserInfo, err := repository.NewUserInfoRepository(fixture.db).GetByUserID(ctx, fixture.db, resp.ID)
+	require.NoError(t, err)
+	require.NotNil(t, dbUserInfo)
+	assert.Equal(t, "alice", dbUserInfo.Username)
 
 	// 事务提交后缓存已回写
 	cachedUser, hit, err := fixture.userCache.GetUser(ctx, resp.ID)
