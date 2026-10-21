@@ -116,13 +116,10 @@ func (s *OrderTempServer) consumeOrderTempOneTask(ctx context.Context, workspace
 	}
 
 	// 订单已失效
-	if status == payment.StatusFail {
+	if status == payment.StatusClose {
 		logger.Info("query order is close", zap.String("orderNo", orderNo))
-		if orderDetail.ExpireAt.Before(time.Now()) {
-			err := s.dealExpireOrderTemp(ctx, orderID)
-			return err
-		}
-		return nil
+		err := s.dealExpireOrderTemp(ctx, orderID)
+		return err
 	}
 
 	// 订单已支付

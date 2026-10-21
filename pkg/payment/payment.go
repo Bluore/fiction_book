@@ -16,9 +16,9 @@ type OrderStatus int
 
 const (
 	StatusSuccess OrderStatus = iota + 1
-	StatusFail
 	StatusPending
 	StatusError
+	StatusClose
 )
 
 // CloseStatus 关闭订单状态

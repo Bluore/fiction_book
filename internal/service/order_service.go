@@ -317,7 +317,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 				}
 
 				// 订单已失效
-				if status == payment.StatusFail {
+				if status == payment.StatusClose {
 					logger.Info("Order already passed time", zap.String("orderNo", orderNo))
 
 					err := s.db.Transaction(func(tx *gorm.DB) error {

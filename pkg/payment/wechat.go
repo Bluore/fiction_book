@@ -91,7 +91,7 @@ func (s *WechatStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 		}
 		return StatusSuccess, &t, nil
 	case wechat.TradeStateRefund, wechat.TradeStateClosed, wechat.TradeStateRevoked, wechat.TradeStatePayError:
-		return StatusFail, nil, nil
+		return StatusClose, nil, nil
 	case wechat.TradeStateNoPay, wechat.TradeStatePaying:
 		return StatusPending, nil, nil
 	default:

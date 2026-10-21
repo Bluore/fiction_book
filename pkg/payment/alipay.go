@@ -75,7 +75,7 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 	resp, err := s.client.TradeQuery(context.Background(), bm)
 	if err != nil {
 		if resp != nil && resp.Response.Code == "40004" {
-			return StatusFail, nil, nil
+			return StatusClose, nil, nil
 		}
 		return StatusError, nil, err
 	}
@@ -85,11 +85,11 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 		t := time.Now()
 		return StatusSuccess, &t, nil
 	case "TRADE_CLOSED":
-		return StatusFail, nil, nil
+		return StatusClose, nil, nil
 	case "WAIT_BUYER_PAY":
 		return StatusPending, nil, nil
 	default:
-		return StatusPending, nil, nil
+		return StatusError, nil, nil
 	}
 }
 
@@ -157,6 +157,9 @@ func (s *AlipayStrategy) CloseOrder(orderNo string) (closeSuccess bool, status C
 
 	result, err := s.client.TradeClose(context.Background(), bm)
 	if err != nil {
+		if result != nil && result.Response.Code == "40004" {
+			return true, CloseStatusSuccess, nil
+		}
 		return false, CloseStatusError, err
 	}
 
