@@ -46,12 +46,15 @@ func NewAlipayStrategy(cfg AlipayConfig) (*AlipayStrategy, error) {
 }
 
 // CreateOrder 创建支付宝订单
-func (s *AlipayStrategy) CreateOrder(amount Amount, orderNo, subject, notifyURL string) (string, string, error) {
+func (s *AlipayStrategy) CreateOrder(amount Amount, orderNo, subject, timeoutExpress, notifyURL string) (string, string, error) {
 	bm := make(gopay.BodyMap)
 	bm.Set("subject", subject).
 		Set("out_trade_no", orderNo).
 		Set("total_amount", fmt.Sprintf("%.2f", float64(amount.Total)/100)).
 		Set("qr_pay_mode", 2)
+	if timeoutExpress != "" {
+		bm.Set("timeout_express", timeoutExpress)
+	}
 	if notifyURL != "" {
 		bm.Set("notify_url", notifyURL)
 	}
@@ -72,7 +75,7 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 	resp, err := s.client.TradeQuery(context.Background(), bm)
 	if err != nil {
 		if resp != nil && resp.Response.Code == "40004" {
-			return StatusFail, nil, nil
+			return StatusClose, nil, nil
 		}
 		return StatusError, nil, err
 	}
@@ -82,11 +85,11 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 		t := time.Now()
 		return StatusSuccess, &t, nil
 	case "TRADE_CLOSED":
-		return StatusFail, nil, nil
+		return StatusClose, nil, nil
 	case "WAIT_BUYER_PAY":
 		return StatusPending, nil, nil
 	default:
-		return StatusPending, nil, nil
+		return StatusError, nil, nil
 	}
 }
 
@@ -154,6 +157,9 @@ func (s *AlipayStrategy) CloseOrder(orderNo string) (closeSuccess bool, status C
 
 	result, err := s.client.TradeClose(context.Background(), bm)
 	if err != nil {
+		if result != nil && result.Response.Code == "40004" {
+			return true, CloseStatusSuccess, nil
+		}
 		return false, CloseStatusError, err
 	}
 

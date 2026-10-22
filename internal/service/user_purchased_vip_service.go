@@ -2,13 +2,17 @@ package service
 
 import (
 	"context"
+	"time"
+
+	"fiction-book/internal/cache"
 	"fiction-book/internal/dto"
 	"fiction-book/internal/model"
 	"fiction-book/internal/repository"
 	"fiction-book/pkg/config"
+	"fiction-book/pkg/logger"
 	"fiction-book/pkg/response"
-	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -32,23 +36,26 @@ type BuyVIP interface {
 }
 
 type buyVIPService struct {
-	userRepo      repository.UserRepository
-	userAssetRepo repository.UserAssetRepository
-	db            *gorm.DB
-	cfg           *config.Config
+	userRepo       repository.UserRepository
+	userAssetRepo  repository.UserAssetRepository
+	userAssetCache cache.UserAssetCache
+	db             *gorm.DB
+	cfg            *config.Config
 }
 
 func NewBuyVIPService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userAssetCache cache.UserAssetCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) BuyVIP {
 	return &buyVIPService{
-		userRepo:      userRepo,
-		userAssetRepo: userAssetRepo,
-		db:            db,
-		cfg:           cfg,
+		userRepo:       userRepo,
+		userAssetRepo:  userAssetRepo,
+		userAssetCache: userAssetCache,
+		db:             db,
+		cfg:            cfg,
 	}
 }
 
@@ -120,6 +127,11 @@ func (s *buyVIPService) BuyVIP(ctx context.Context, userID string, req *dto.BuyV
 		return nil, err
 	}
 
+	// 删除缓存，强制下次查询从数据库获取最新的金币和 VIP 信息
+	if _, err := s.userAssetCache.DeleteUserAsset(ctx, userID); err != nil {
+		logger.Error("Failed to delete user asset cache", zap.String("userId", userID), zap.Error(err))
+	}
+
 	return toBuyVIPResponse(purchasedVIP, price, req.Duration), nil
 }
 
@@ -184,6 +196,11 @@ func (s *buyVIPService) UpgradeVIP(ctx context.Context, userID string, req *dto.
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// 删除缓存，强制下次查询从数据库获取最新的金币和 VIP 信息
+	if _, err := s.userAssetCache.DeleteUserAsset(ctx, userID); err != nil {
+		logger.Error("Failed to delete user asset cache", zap.String("userId", userID), zap.Error(err))
 	}
 
 	return toUpgradeVIPResponse(upgradedVIP, req.OriginalVIPLevel, req.TargetVIPLevel, upgradePrice), nil

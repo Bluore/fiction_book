@@ -65,7 +65,7 @@ type MockPaymentStrategy struct {
 	closeErr     error
 }
 
-func (m *MockPaymentStrategy) CreateOrder(_ Amount, orderNo, _, _ string) (string, string, error) {
+func (m *MockPaymentStrategy) CreateOrder(_ Amount, orderNo, _, _, _ string) (string, string, error) {
 	if m.createErr != nil {
 		return "", "", m.createErr
 	}
@@ -100,7 +100,7 @@ func TestMockPaymentStrategy(t *testing.T) {
 	var _ PaymentStrategy = mock
 
 	// 测试创建订单
-	payURL, thirdOrderNo, err := mock.CreateOrder(Amount{Total: 100}, "order123", "Test Order", "https://example.com/notify")
+	payURL, thirdOrderNo, err := mock.CreateOrder(Amount{Total: 100}, "order123", "Test Order", "5m", "https://example.com/notify")
 	assert.NoError(t, err)
 	assert.Contains(t, payURL, "order123")
 	assert.Equal(t, "order123", thirdOrderNo)
@@ -133,7 +133,7 @@ func TestPaymentStrategyContract(t *testing.T) {
 	// 以接口类型持有 mock，验证接口全部方法的行为契约
 	var strategy Strategy = mock
 
-	payURL, thirdOrderNo, err := strategy.CreateOrder(Amount{Total: 100, Currency: "CNY"}, "order123", "Test Order", "https://example.com/notify")
+	payURL, thirdOrderNo, err := strategy.CreateOrder(Amount{Total: 100, Currency: "CNY"}, "order123", "Test Order", "5m", "https://example.com/notify")
 	assert.NoError(t, err)
 	assert.Contains(t, payURL, "order123")
 	assert.Equal(t, "order123", thirdOrderNo)

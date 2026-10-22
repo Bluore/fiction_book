@@ -187,10 +187,11 @@ func ProvideUserPurchasedChapterService(
 func ProvideBuyVIPService(
 	userRepo repository.UserRepository,
 	userAssetRepo repository.UserAssetRepository,
+	userAssetCache cache.UserAssetCache,
 	db *gorm.DB,
 	cfg *config.Config,
 ) service.BuyVIP {
-	return service.NewBuyVIPService(userRepo, userAssetRepo, db, cfg)
+	return service.NewBuyVIPService(userRepo, userAssetRepo, userAssetCache, db, cfg)
 }
 
 // ProvideUserBookshelfService 提供用户书架服务

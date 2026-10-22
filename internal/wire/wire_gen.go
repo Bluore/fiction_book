@@ -86,7 +86,7 @@ func InitializeApp() (*App, error) {
 	}
 	orderService := ProvideOrderService(userRepository, userAssetRepository, orderRepository, orderTempRepository, consumeRecordRepository, orderCache, db, config, alipayStrategy, pool)
 	payService := ProvidePayService(orderRepository, orderTempRepository, userAssetRepository, orderCache, userAssetCache, alipayStrategy, db)
-	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, db, config)
+	buyVIP := ProvideBuyVIPService(userRepository, userAssetRepository, userAssetCache, db, config)
 	feedService := ProvideFeedService(feedRepository, feedCache, db)
 	userInboxRepository := ProvideUserInboxRepository(db)
 	userBookshelfCache := ProvideUserBookshelfCache(client)
