@@ -75,7 +75,7 @@ func (s *AlipayStrategy) QueryOrder(thirdOrderNo string) (OrderStatus, *time.Tim
 	resp, err := s.client.TradeQuery(context.Background(), bm)
 	if err != nil {
 		if resp != nil && resp.Response.Code == "40004" {
-			return StatusClose, nil, nil
+			return StatusError, nil, nil
 		}
 		return StatusError, nil, err
 	}
