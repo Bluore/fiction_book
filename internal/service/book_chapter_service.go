@@ -541,6 +541,25 @@ func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, 
 		return err
 	}
 
+	// 结算创作者收益：所付金币折半（向上取整）计入作者资产
+	creatorGold := calcCreatorRevenue(req.Price)
+	if creatorGold > 0 {
+		book, err := s.bookRepo.GetByID(ctx, req.BookID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		if book == nil {
+			tx.Rollback()
+			return response.ErrBookNotFound
+		}
+		_, err = s.userAssetRepo.AddGoldByID(ctx, tx, book.OwnerID, creatorGold)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
 	err = s.userPurchasedChapterRepo.AddPurchasedChapter(ctx, purchasedChapter)
 	if err != nil {
 		tx.Rollback()

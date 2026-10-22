@@ -773,6 +773,10 @@ func (suite *BookChapterServiceTestSuite) TestBuyBookChapterSuccess() {
 		Return(&model.UserAsset{ID: "u1", Gold: 100}, nil)
 	suite.assetRepo.On("SubGoldByID", ctx, mock.Anything, "u1", int64(10)).
 		Return(&model.UserAsset{ID: "u1", Gold: 90}, nil)
+	suite.bookRepo.On("GetByID", ctx, "b1").
+		Return(&model.Book{ID: "b1", OwnerID: "creator"}, nil)
+	suite.assetRepo.On("AddGoldByID", ctx, mock.Anything, "creator", int64(5)).
+		Return(&model.UserAsset{ID: "creator", Gold: 5}, nil)
 	suite.purchasedRepo.On("AddPurchasedChapter", ctx, mock.AnythingOfType("*model.UserPurchasedChapter")).
 		Return(nil)
 

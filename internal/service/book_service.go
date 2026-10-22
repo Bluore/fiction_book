@@ -363,6 +363,15 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 			return errors.New("资产扣费失败")
 		}
 
+		// 结算创作者收益：所付金币折半（向上取整）计入作者资产
+		creatorGold := calcCreatorRevenue(book.Price)
+		if creatorGold > 0 {
+			_, err = s.userAssetRepo.AddGoldByID(ctx, db, book.OwnerID, creatorGold)
+			if err != nil {
+				return err
+			}
+		}
+
 		// 添加已购买书籍
 		purchasedBook := &model.UserPurchasedBook{
 			ID:       uuid.New().String(),
