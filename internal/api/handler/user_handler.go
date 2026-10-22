@@ -357,7 +357,7 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 
 // Login 用户登录
 // @Summary 用户登录
-// @Description 用户登录并获取JWT token
+// @Description 用户登录并获取 AccessToken（短期）与 RefreshToken（长期，存储在 Redis 白名单中，单点登录）
 // @Tags 认证
 // @Accept json
 // @Produce json
@@ -381,6 +381,35 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	response.Success(c, loginResp)
+}
+
+// RefreshToken 刷新 AccessToken
+// @Summary 刷新 AccessToken
+// @Description 使用 RefreshToken 换取新的 AccessToken（RefreshToken 需在 Redis 白名单中，且只允许当前登录端使用）
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body dto.RefreshTokenRequest true "RefreshToken"
+// @Success 200 {object} response.Response{data=dto.RefreshTokenResponse}
+// @Failure 400 {object} response.Response "参数错误"
+// @Failure 4002 {object} response.Response "用户未找到"
+// @Failure 4014 {object} response.Response "RefreshToken 无效或已失效，请重新登录"
+// @Failure 500 {object} response.Response "服务器内部错误"
+// @Router /api/v1/auth/refresh [post]
+func (h *Handler) RefreshToken(c *gin.Context) {
+	req := middleware.MustGetRequest[dto.RefreshTokenRequest](c)
+
+	tokenResp, err := h.userService.RefreshToken(c.Request.Context(), req)
+	if err != nil {
+		if err == response.ErrUserNotLogin || err == response.ErrUserNotFound || err == response.ErrTokenExpired {
+			response.PushError(c, err)
+			return
+		}
+		response.InternalError(c, err)
+		return
+	}
+
+	response.Success(c, tokenResp)
 }
 
 // ListUsers 获取用户列表

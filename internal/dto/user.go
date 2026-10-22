@@ -67,9 +67,23 @@ type LoginRequest struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	Token    string `json:"token"`
-	UserID   string `json:"user_id"`
-	Username string `json:"username"`
+	Token        string `json:"token"` // AccessToken，短期有效
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"` // AccessToken 有效期，单位秒
+	UserID       string `json:"user_id"`
+	Username     string `json:"username"`
+}
+
+// RefreshTokenRequest 刷新 token 请求
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+// RefreshTokenResponse 刷新 token 响应
+type RefreshTokenResponse struct {
+	Token        string `json:"token"` // 新的 AccessToken
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int    `json:"expires_in"` // AccessToken 有效期，单位秒
 }
 
 // UserResponse 用户响应

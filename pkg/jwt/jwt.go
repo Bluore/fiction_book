@@ -15,21 +15,34 @@ var (
 	ErrTokenNotValidYet = errors.New("token not valid yet")
 )
 
+// token 类型，用于区分 AccessToken 与 RefreshToken
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
+
 // Claims JWT 声明
 type Claims struct {
-	UserID   string `json:"user_id"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
+	UserID    string `json:"user_id"`
+	Username  string `json:"username"`
+	Role      string `json:"role"`
+	TokenType string `json:"token_type,omitempty"`
 	jwt.RegisteredClaims
 }
 
-// GenerateToken 生成 JWT token
+// GenerateToken 生成 AccessToken
 func GenerateToken(userID, username, role, secret string, expireSeconds int) (string, error) {
+	return GenerateTokenWithType(userID, username, role, TokenTypeAccess, secret, expireSeconds)
+}
+
+// GenerateTokenWithType 按 token 类型生成 JWT token
+func GenerateTokenWithType(userID, username, role, tokenType, secret string, expireSeconds int) (string, error) {
 
 	claims := Claims{
-		UserID:   userID,
-		Username: username,
-		Role:     role,
+		UserID:    userID,
+		Username:  username,
+		Role:      role,
+		TokenType: tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expireSeconds) * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

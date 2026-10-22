@@ -38,4 +38,5 @@ var (
 	ErrCreateAlipayOrder            = &Err{Code: 4024, Msg: "创建支付宝订单失败"}
 	ErrAlipayNotifyVerify           = &Err{Code: 4025, Msg: "支付宝回调验签失败"}
 	ErrOrderAmountMismatch          = &Err{Code: 4026, Msg: "订单金额不匹配"}
+	ErrTokenExpired                 = &Err{Code: 4027, Msg: "登录已过期，请刷新token"}
 )

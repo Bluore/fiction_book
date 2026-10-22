@@ -77,7 +77,10 @@ type RedisConfig struct {
 // JWTConfig JWT 配置
 type JWTConfig struct {
 	Secret string `mapstructure:"secret"`
-	Expire int    `mapstructure:"expire"`
+	// Expire AccessToken 有效期，单位秒
+	Expire int `mapstructure:"expire"`
+	// RefreshExpire RefreshToken 有效期，单位秒
+	RefreshExpire int `mapstructure:"refresh_expire"`
 }
 
 // PprofConfig Pprof 性能分析配置

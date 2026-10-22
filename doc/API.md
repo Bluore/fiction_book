@@ -3,7 +3,7 @@
 | 模块 | 接口 |
 | --- | --- |
 | 系统 | 健康检查(HealthCheck) |
-| 认证 | 用户登录(Login)<br>获取邮箱验证码(EmailVerify)<br>忘记密码(ForgetPassword) |
+| 认证 | 用户登录(Login)<br>刷新 AccessToken(RefreshToken)<br>获取邮箱验证码(EmailVerify)<br>忘记密码(ForgetPassword) |
 | 用户管理 | 创建用户(CreateUser)<br>获取用户列表(ListUsers)<br>获取用户信息(GetUser)<br>获取当前用户详情信息(GetMyUserInfo)<br>更新用户信息(UpdateUser)<br>更新用户密码(UpdateUserPassword)<br>更新用户邮箱(UpdateUserEmail)<br>删除用户(DeleteUser)<br>上传头像(UploadAvatar) |
 | 书籍管理 | 创建书籍(CreateBook)<br>获取书籍(GetBook)<br>获取书籍列表(BookList)<br>上传书籍封面(UploadBookCoverImage)<br>获取书籍章节列表(GetBookChapterList)<br>获取每日热度榜单(GetBookListThermalDaily)<br>获取每周热度榜单(GetBookListThermalWeekly)<br>获取每月热度榜单(GetBookListThermalMonthly)<br>获取用户创作的书籍(GetBookListByOwner)<br>获取用户最近读书的历史记录(GetUserReadBookHistoryRecently)<br>更新书籍信息(UpdateBookInformation)<br>搜索书籍(SearchBooksV2) |
 | 章节管理 | 创建书籍章节(AddBookChapter)<br>获取章节内容游客版(GuestGetBookChapter)<br>获取章节内容认证版(GetBookChapter)<br>修改编辑小说章节(UpdateBookChapter)<br>删除章节(DeleteBookChapter)<br>获取章节信息(GetBookChapterInfo)<br>搜索章节(SearchBookChaptersV2) |

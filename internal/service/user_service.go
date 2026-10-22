@@ -40,6 +40,7 @@ type UserService interface {
 	UpdateEmail(ctx context.Context, id string, req *dto.UpdateUserEmailRequest) (*dto.UserResponse, error)
 	Delete(ctx context.Context, id string) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
+	RefreshToken(ctx context.Context, req *dto.RefreshTokenRequest) (*dto.RefreshTokenResponse, error)
 	List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error)
 	SendEmailVerification(ctx context.Context, receiver string) error
 	UpdateAvatar(ctx context.Context, userID string, avatar *multipart.FileHeader) (*dto.UserResponse, error)
@@ -352,16 +353,89 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, response.ErrInvalidPassword
 	}
 
-	// 生成 JWT token
-	token, err := jwt.GenerateToken(user.ID, user.Username, user.Role, s.cfg.JWT.Secret, s.cfg.JWT.Expire) // pragma: allowlist secret
+	token, refreshToken, err := s.issueTokens(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.LoginResponse{
-		Token:    token,
-		UserID:   user.ID,
-		Username: user.Username,
+		Token:        token,
+		RefreshToken: refreshToken,
+		ExpiresIn:    s.cfg.JWT.Expire,
+		UserID:       user.ID,
+		Username:     user.Username,
+	}, nil
+}
+
+// defaultRefreshExpire RefreshToken 默认有效期：7 天
+const defaultRefreshExpire = 7 * 24 * 60 * 60
+
+// refreshExpire 获取 RefreshToken 有效期（秒）
+func (s *userService) refreshExpire() int {
+	if s.cfg.JWT.RefreshExpire > 0 {
+		return s.cfg.JWT.RefreshExpire
+	}
+	return defaultRefreshExpire
+}
+
+// issueTokens 生成 AccessToken 与 RefreshToken，并把 RefreshToken 写入 Redis 白名单
+// 每个用户只保留最新的 RefreshToken，新登录会顶掉旧登录，实现单点登录
+func (s *userService) issueTokens(ctx context.Context, user *model.User) (string, string, error) {
+	accessToken, err := jwt.GenerateTokenWithType(user.ID, user.Username, user.Role, jwt.TokenTypeAccess, s.cfg.JWT.Secret, s.cfg.JWT.Expire) // pragma: allowlist secret
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshExpire := s.refreshExpire()
+	refreshToken, err := jwt.GenerateTokenWithType(user.ID, user.Username, user.Role, jwt.TokenTypeRefresh, s.cfg.JWT.Secret, refreshExpire) // pragma: allowlist secret
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := s.authCache.UpdateRefreshToken(ctx, user.ID, refreshToken, time.Duration(refreshExpire)*time.Second); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+// RefreshToken 使用 RefreshToken 换取新的 AccessToken
+// RefreshToken 必须存在于 Redis 白名单中，且只允许当前登录端使用
+func (s *userService) RefreshToken(ctx context.Context, req *dto.RefreshTokenRequest) (*dto.RefreshTokenResponse, error) {
+	claims, err := jwt.ParseToken(req.RefreshToken, s.cfg.JWT.Secret)
+	if err != nil {
+		// RefreshToken 过期或非法，只能重新登录
+		return nil, response.ErrUserNotLogin
+	}
+	if claims.TokenType != jwt.TokenTypeRefresh {
+		return nil, response.ErrUserNotLogin
+	}
+
+	whitelistToken, hit, err := s.authCache.GetRefreshToken(ctx, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !hit || whitelistToken != req.RefreshToken {
+		return nil, response.ErrUserNotLogin
+	}
+
+	user, err := s.userRepo.GetByID(ctx, s.db, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, response.ErrUserNotFound
+	}
+
+	token, refreshToken, err := s.issueTokens(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.RefreshTokenResponse{
+		Token:        token,
+		RefreshToken: refreshToken,
+		ExpiresIn:    s.cfg.JWT.Expire,
 	}, nil
 }
 

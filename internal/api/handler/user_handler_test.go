@@ -88,6 +88,17 @@ func (m *MockUserService) Login(ctx context.Context, req *dto.LoginRequest) (*dt
 	return nil, args.Error(1)
 }
 
+func (m *MockUserService) RefreshToken(ctx context.Context, req *dto.RefreshTokenRequest) (*dto.RefreshTokenResponse, error) {
+	args := m.Called(ctx, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	if v, ok := args.Get(0).(*dto.RefreshTokenResponse); ok {
+		return v, args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockUserService) List(ctx context.Context, page, pageSize int) ([]*dto.UserResponse, error) {
 	args := m.Called(ctx, page, pageSize)
 	if args.Get(0) == nil {

@@ -55,6 +55,7 @@ func Setup(r *gin.Engine, h *handler.Handler, cfg *config.Config) {
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/login", middleware.Validation(&dto.LoginRequest{}), h.Login)
+			auth.POST("/refresh", middleware.Validation(&dto.RefreshTokenRequest{}), h.RefreshToken)
 			auth.POST("/email/verify", middleware.Validation(&dto.EmailVerifyRequest{}), h.EmailVerify)
 			auth.POST("/forget/password", middleware.Validation(&dto.ForgetPasswordRequest{}), h.ForgetPassword)
 		}

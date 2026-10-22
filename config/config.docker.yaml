@@ -29,7 +29,8 @@ redis:
 
 jwt:
   secret: your-secret-key-change-in-production # pragma: allowlist secret - 生产环境建议使用环境变量 ${JWT_SECRET}
-  expire: 86400 # 24小时，单位秒
+  expire: 86400 # AccessToken 有效期（秒），建议缩短为 900（15 分钟）
+  refresh_expire: 604800 # RefreshToken 有效期（秒），7 天，存储在 Redis 白名单中
 
 # Pprof 性能分析配置
 pprof:

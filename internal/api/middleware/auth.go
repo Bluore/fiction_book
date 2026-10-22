@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,18 @@ func Auth(cfg *config.Config) gin.HandlerFunc {
 
 		claims, err := jwt.ParseToken(token, cfg.JWT.Secret)
 		if err != nil {
+			if errors.Is(err, jwt.ErrTokenExpired) {
+				// AccessToken 过期，客户端应使用 RefreshToken 换取新的 AccessToken
+				response.PushError(c, response.ErrTokenExpired)
+			} else {
+				response.Unauthorized(c)
+			}
+			c.Abort()
+			return
+		}
+
+		// RefreshToken 不能用于访问业务接口（兼容旧 token：未携带 token_type 时按 AccessToken 处理）
+		if claims.TokenType != "" && claims.TokenType != jwt.TokenTypeAccess {
 			response.Unauthorized(c)
 			c.Abort()
 			return
