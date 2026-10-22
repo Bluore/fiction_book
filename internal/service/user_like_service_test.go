@@ -20,6 +20,7 @@ import (
 type userLikeServiceFixture struct {
 	service      UserLikeService
 	userLikeRepo repository.UserLikeRepository
+	userInfoRepo repository.UserInfoRepository
 	db           *gorm.DB
 }
 
@@ -30,9 +31,10 @@ func newUserLikeServiceFixture(t *testing.T) *userLikeServiceFixture {
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
 	sqlDB.SetMaxOpenConns(1)
-	require.NoError(t, db.AutoMigrate(&model.User{}, &model.UserLike{}))
+	require.NoError(t, db.AutoMigrate(&model.User{}, &model.UserInfo{}, &model.UserLike{}))
 
 	userRepo := repository.NewUserRepository(db)
+	userInfoRepo := repository.NewUserInfoRepository(db)
 	userLikeRepo := repository.NewUserLikeRepository(db)
 	redisServer := miniredis.RunT(t)
 	redisClient := redis.NewClient(&redis.Options{Addr: redisServer.Addr()})
@@ -47,15 +49,22 @@ func newUserLikeServiceFixture(t *testing.T) *userLikeServiceFixture {
 		Password: "password",
 	}
 	require.NoError(t, userRepo.Create(context.Background(), db, targetUser))
+	require.NoError(t, userInfoRepo.Create(context.Background(), db, &model.UserInfo{
+		UserID:   targetUser.ID,
+		Username: targetUser.Username,
+	}))
 
 	return &userLikeServiceFixture{
 		service: NewUserLikeService(
 			userRepo,
+			userInfoRepo,
 			userLikeRepo,
 			cache.NewUserLikeCache(redisClient),
+			cache.NewUserInfoCache(redisClient),
 			db,
 		),
 		userLikeRepo: userLikeRepo,
+		userInfoRepo: userInfoRepo,
 		db:           db,
 	}
 }
@@ -123,6 +132,81 @@ func TestUserLikeService_UpdateUserLike(t *testing.T) {
 			count, err := fixture.userLikeRepo.CountByUserID(ctx, fixture.db, "target-user")
 			require.NoError(t, err)
 			assert.Equal(t, tt.wantCount, count)
+		})
+	}
+}
+
+func TestUserLikeService_UpdateUserLikeFansAndBigV(t *testing.T) {
+	tests := []struct {
+		name        string
+		initialFans int64
+		operators   []string
+		wantFansNum int64
+		wantIsV     int
+	}{
+		{
+			name:        "first follower stays small v",
+			initialFans: 0,
+			operators:   []string{userLikeOperatorCreate},
+			wantFansNum: 1,
+			wantIsV:     0,
+		},
+		{
+			name:        "reaching threshold marks big v",
+			initialFans: 99,
+			operators:   []string{userLikeOperatorCreate},
+			wantFansNum: 100,
+			wantIsV:     1,
+		},
+		{
+			name:        "duplicate follow counts once",
+			initialFans: 98,
+			operators:   []string{userLikeOperatorCreate, userLikeOperatorCreate},
+			wantFansNum: 99,
+			wantIsV:     0,
+		},
+		{
+			name:        "unfollow before threshold stays small v",
+			initialFans: 98,
+			operators:   []string{userLikeOperatorCreate, userLikeOperatorDelete},
+			wantFansNum: 98,
+			wantIsV:     0,
+		},
+		{
+			name:        "unfollow after promotion keeps big v",
+			initialFans: 99,
+			operators:   []string{userLikeOperatorCreate, userLikeOperatorDelete},
+			wantFansNum: 99,
+			wantIsV:     1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fixture := newUserLikeServiceFixture(t)
+			ctx := context.Background()
+
+			if tt.initialFans > 0 {
+				require.NoError(t, fixture.userInfoRepo.IncrementFansNum(ctx, fixture.db, "target-user", tt.initialFans))
+			}
+
+			for _, operator := range tt.operators {
+				_, err := fixture.service.UpdateUserLike(
+					ctx,
+					"liker-user",
+					&dto.UpdateUserLikeRequest{
+						TargetID: "target-user",
+						Operator: operator,
+					},
+				)
+				require.NoError(t, err)
+			}
+
+			userInfo, err := fixture.userInfoRepo.GetByUserID(ctx, fixture.db, "target-user")
+			require.NoError(t, err)
+			require.NotNil(t, userInfo)
+			assert.Equal(t, tt.wantFansNum, userInfo.FansNum)
+			assert.Equal(t, tt.wantIsV, userInfo.IsV)
 		})
 	}
 }

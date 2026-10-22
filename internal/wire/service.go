@@ -233,11 +233,13 @@ func ProvideUserHistoryService(
 // ProvideUserLikeService 提供用户关注服务
 func ProvideUserLikeService(
 	userRepo repository.UserRepository,
+	userInfoRepo repository.UserInfoRepository,
 	userLikeRepo repository.UserLikeRepository,
 	userLikeCache cache.UserLikeCache,
+	userInfoCache cache.UserInfoCache,
 	db *gorm.DB,
 ) service.UserLikeService {
-	return service.NewUserLikeService(userRepo, userLikeRepo, userLikeCache, db)
+	return service.NewUserLikeService(userRepo, userInfoRepo, userLikeRepo, userLikeCache, userInfoCache, db)
 }
 
 // ProvideOrderService 提供订单服务

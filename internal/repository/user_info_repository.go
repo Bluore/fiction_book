@@ -24,6 +24,10 @@ type UserInfoRepository interface {
 	IncrementReadBookNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
 	IncrementReadWordsNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
 	IncrementFansNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
+	// DecrementFansNum 粉丝数减一，历史数据可能未同步过粉丝数，避免出现负数
+	DecrementFansNum(ctx context.Context, db *gorm.DB, userID string) error
+	// MarkBigVIfFansReached 粉丝量达到阈值时由小V升级为大V，只允许 0 -> 1 的单向升级
+	MarkBigVIfFansReached(ctx context.Context, db *gorm.DB, userID string, fansThreshold int64) error
 	IncrementLikeNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
 	IncrementBookShelfNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error
 }
@@ -109,6 +113,18 @@ func (r *userInfoRepository) IncrementFansNum(ctx context.Context, db *gorm.DB, 
 	return db.WithContext(ctx).Model(&model.UserInfo{}).
 		Where("user_id = ?", userID).
 		UpdateColumn("fans_num", gorm.Expr("fans_num + ?", delta)).Error
+}
+
+func (r *userInfoRepository) DecrementFansNum(ctx context.Context, db *gorm.DB, userID string) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ? AND fans_num > 0", userID).
+		UpdateColumn("fans_num", gorm.Expr("fans_num - 1")).Error
+}
+
+func (r *userInfoRepository) MarkBigVIfFansReached(ctx context.Context, db *gorm.DB, userID string, fansThreshold int64) error {
+	return db.WithContext(ctx).Model(&model.UserInfo{}).
+		Where("user_id = ? AND is_v = 0 AND fans_num >= ?", userID, fansThreshold).
+		UpdateColumn("is_v", 1).Error
 }
 
 func (r *userInfoRepository) IncrementLikeNum(ctx context.Context, db *gorm.DB, userID string, delta int64) error {

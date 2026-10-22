@@ -75,7 +75,7 @@ func InitializeApp() (*App, error) {
 	userHistoryService := ProvideUserHistoryService(userRepository, userHistoryRepository, bookRepository, db, config)
 	userLikeRepository := ProvideUserLikeRepository(db)
 	userLikeCache := ProvideUserLikeCache(client)
-	userLikeService := ProvideUserLikeService(userRepository, userLikeRepository, userLikeCache, db)
+	userLikeService := ProvideUserLikeService(userRepository, userInfoRepository, userLikeRepository, userLikeCache, userInfoCache, db)
 	orderRepository := ProvideOrderRepository(db)
 	orderTempRepository := ProvideOrderTempRepository(config, client)
 	consumeRecordRepository := ProvideConsumeRecordRepository(db)

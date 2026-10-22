@@ -18,6 +18,9 @@ import (
 const (
 	userLikeOperatorCreate = "create"
 	userLikeOperatorDelete = "delete"
+
+	// userBigVFansThreshold 粉丝量达到该阈值后由小V升级为大V，升级后不再回退
+	userBigVFansThreshold int64 = 100
 )
 
 // UserLikeService 用户关注服务接口
@@ -28,22 +31,28 @@ type UserLikeService interface {
 
 type userLikeService struct {
 	userRepo      repository.UserRepository
+	userInfoRepo  repository.UserInfoRepository
 	userLikeRepo  repository.UserLikeRepository
 	userLikeCache cache.UserLikeCache
+	userInfoCache cache.UserInfoCache
 	db            *gorm.DB
 }
 
 // NewUserLikeService 创建用户关注服务实例
 func NewUserLikeService(
 	userRepo repository.UserRepository,
+	userInfoRepo repository.UserInfoRepository,
 	userLikeRepo repository.UserLikeRepository,
 	userLikeCache cache.UserLikeCache,
+	userInfoCache cache.UserInfoCache,
 	db *gorm.DB,
 ) UserLikeService {
 	return &userLikeService{
 		userRepo:      userRepo,
+		userInfoRepo:  userInfoRepo,
 		userLikeRepo:  userLikeRepo,
 		userLikeCache: userLikeCache,
+		userInfoCache: userInfoCache,
 		db:            db,
 	}
 }
@@ -86,11 +95,24 @@ func (s userLikeService) UpdateUserLike(ctx context.Context, likerID string, req
 		}
 
 		// 旁路缓存：先更新数据库，再删除缓存
-		if err := s.userLikeRepo.Create(ctx, s.db, userLikeDetail); err != nil {
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			if err := s.userLikeRepo.Create(ctx, tx, userLikeDetail); err != nil {
+				return err
+			}
+			// 粉丝数先加一，再判断是否达到大V阈值，保证第100个粉丝能完成升级
+			if err := s.userInfoRepo.IncrementFansNum(ctx, tx, userLikeDetail.UserID, 1); err != nil {
+				return err
+			}
+			return s.userInfoRepo.MarkBigVIfFansReached(ctx, tx, userLikeDetail.UserID, userBigVFansThreshold)
+		})
+		if err != nil {
 			return nil, err
 		}
 		if _, err := s.userLikeCache.DeleteUserLike(ctx, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
 			logger.Warn("delete user_like cache fail", zap.Error(err))
+		}
+		if _, err := s.userInfoCache.DeleteUserInfo(ctx, userLikeDetail.UserID); err != nil {
+			logger.Warn("delete user_info cache fail", zap.Error(err))
 		}
 		return &dto.UpdateUserLikeResponse{
 			TargetID: req.TargetID,
@@ -110,11 +132,21 @@ func (s userLikeService) UpdateUserLike(ctx context.Context, likerID string, req
 		}
 
 		// 先更新数据库，再删除缓存
-		if err := s.userLikeRepo.DeleteByUserIDAndLikerID(ctx, s.db, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			if err := s.userLikeRepo.DeleteByUserIDAndLikerID(ctx, tx, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
+				return err
+			}
+			// 取消关注只回退粉丝数，大V标记保持单向升级，不回退为小V
+			return s.userInfoRepo.DecrementFansNum(ctx, tx, userLikeDetail.UserID)
+		})
+		if err != nil {
 			return nil, err
 		}
 		if _, err := s.userLikeCache.DeleteUserLike(ctx, userLikeDetail.UserID, userLikeDetail.LikerID); err != nil {
 			logger.Warn("delete user_like cache fail", zap.Error(err))
+		}
+		if _, err := s.userInfoCache.DeleteUserInfo(ctx, userLikeDetail.UserID); err != nil {
+			logger.Warn("delete user_info cache fail", zap.Error(err))
 		}
 		return &dto.UpdateUserLikeResponse{
 			TargetID: req.TargetID,
