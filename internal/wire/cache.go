@@ -24,6 +24,7 @@ var CatchSet = wire.NewSet(
 	ProvideUserBookshelfCache,
 	ProvideUserFeedCache,
 	ProvideUserInfoCache,
+	ProvideFeedComposeCache,
 )
 
 // ProvideBookCatch 创建Book缓存仓库
@@ -98,4 +99,9 @@ func ProvideUserFeedCache(redis *redis.Client) cache.UserFeedCache {
 // ProvideUserInfoCache 创建用户详情缓存
 func ProvideUserInfoCache(redis *redis.Client) cache.UserInfoCache {
 	return cache.NewUserInfoCache(redis)
+}
+
+// ProvideFeedComposeCache 创建 Feed 公共组合缓存
+func ProvideFeedComposeCache(redis *redis.Client) cache.FeedComposeCache {
+	return cache.NewFeedComposeCache(redis)
 }

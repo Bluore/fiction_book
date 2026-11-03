@@ -711,3 +711,163 @@ func (m *MockFeedCache) SetCursor(ctx context.Context, userID string, cursor *mo
 func (m *MockFeedCache) DeleteCursor(ctx context.Context, userID string) error {
 	return m.Called(ctx, userID).Error(0)
 }
+
+// ---------- UserFeedCache ----------
+
+type MockUserFeedCache struct {
+	mock.Mock
+}
+
+func (m *MockUserFeedCache) GetFeedDetail(ctx context.Context, feedID string) (*model.UserFeed, bool, error) {
+	args := m.Called(ctx, feedID)
+	feed, _ := args.Get(0).(*model.UserFeed)
+	return feed, args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserFeedCache) GetUserFeedCursor(ctx context.Context, userID string, cursorID string) (*model.UserFeedCursor, bool, error) {
+	args := m.Called(ctx, userID, cursorID)
+	cursor, _ := args.Get(0).(*model.UserFeedCursor)
+	return cursor, args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserFeedCache) GetUserFeedFeedIDs(ctx context.Context, userID string, cursorID string, offset int, limit int) ([]string, bool, error) {
+	args := m.Called(ctx, userID, cursorID, offset, limit)
+	ids, _ := args.Get(0).([]string)
+	return ids, args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserFeedCache) UpdateFeedDetail(ctx context.Context, feedID string, feedDetail *model.UserFeed) error {
+	return m.Called(ctx, feedID, feedDetail).Error(0)
+}
+
+func (m *MockUserFeedCache) UpdateUserFeedCursor(ctx context.Context, userID string, cursorID string, cursorDetail *model.UserFeedCursor) error {
+	return m.Called(ctx, userID, cursorID, cursorDetail).Error(0)
+}
+
+func (m *MockUserFeedCache) UpdateUserFeedFeedIDs(ctx context.Context, userID string, cursorID string, feedIDs []string) error {
+	return m.Called(ctx, userID, cursorID, feedIDs).Error(0)
+}
+
+func (m *MockUserFeedCache) DeleteFeedDetail(ctx context.Context, feedID string) error {
+	return m.Called(ctx, feedID).Error(0)
+}
+
+func (m *MockUserFeedCache) DeleteUserFeedCursor(ctx context.Context, userID string, cursorID string) error {
+	return m.Called(ctx, userID, cursorID).Error(0)
+}
+
+func (m *MockUserFeedCache) DeleteUserFeedFeedIDs(ctx context.Context, userID string, cursorID string) error {
+	return m.Called(ctx, userID, cursorID).Error(0)
+}
+
+func (m *MockUserFeedCache) LockFeedDetail(ctx context.Context, feedID string) (string, bool, error) {
+	args := m.Called(ctx, feedID)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserFeedCache) LockUserFeedCursor(ctx context.Context, userID string, cursorID string) (string, bool, error) {
+	args := m.Called(ctx, userID, cursorID)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserFeedCache) LockUserFeedFeedIDs(ctx context.Context, userID string, cursorID string) (string, bool, error) {
+	args := m.Called(ctx, userID, cursorID)
+	return args.String(0), args.Bool(1), args.Error(2)
+}
+
+func (m *MockUserFeedCache) UnlockFeedDetail(ctx context.Context, feedID string, token string) error {
+	return m.Called(ctx, feedID, token).Error(0)
+}
+
+func (m *MockUserFeedCache) UnlockUserFeedCursor(ctx context.Context, userID string, cursorID string, token string) error {
+	return m.Called(ctx, userID, cursorID, token).Error(0)
+}
+
+func (m *MockUserFeedCache) UnlockUserFeedFeedIDs(ctx context.Context, userID string, cursorID string, token string) error {
+	return m.Called(ctx, userID, cursorID, token).Error(0)
+}
+
+// ---------- FeedComposeCache ----------
+
+type MockFeedComposeCache struct {
+	mock.Mock
+}
+
+func (m *MockFeedComposeCache) GetCards(ctx context.Context, feedIDs []string) (map[string]*model.FeedCard, []string, error) {
+	args := m.Called(ctx, feedIDs)
+	cards, _ := args.Get(0).(map[string]*model.FeedCard)
+	missed, _ := args.Get(1).([]string)
+	return cards, missed, args.Error(2)
+}
+
+func (m *MockFeedComposeCache) GetViewerStates(ctx context.Context, viewerID string, authorIDs []string, bookIDs []string) (map[string]bool, map[string]bool, error) {
+	args := m.Called(ctx, viewerID, authorIDs, bookIDs)
+	likes, _ := args.Get(0).(map[string]bool)
+	shelves, _ := args.Get(1).(map[string]bool)
+	return likes, shelves, args.Error(2)
+}
+
+func (m *MockFeedComposeCache) UpdateCards(ctx context.Context, cards []*model.FeedCard) error {
+	return m.Called(ctx, cards).Error(0)
+}
+
+func (m *MockFeedComposeCache) DeleteCard(ctx context.Context, feedID string) error {
+	return m.Called(ctx, feedID).Error(0)
+}
+
+// ---------- UserLikeRepository ----------
+
+type MockUserLikeRepository struct {
+	mock.Mock
+}
+
+func (m *MockUserLikeRepository) GetByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) (*model.UserLike, error) {
+	args := m.Called(ctx, db, userID, likerID)
+	item, _ := args.Get(0).(*model.UserLike)
+	return item, args.Error(1)
+}
+
+func (m *MockUserLikeRepository) GetUserLikeListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error) {
+	args := m.Called(ctx, db, likerID)
+	ids, _ := args.Get(0).([]string)
+	return ids, args.Error(1)
+}
+
+func (m *MockUserLikeRepository) GetUserLikeBigVListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error) {
+	args := m.Called(ctx, db, likerID)
+	ids, _ := args.Get(0).([]string)
+	return ids, args.Error(1)
+}
+
+func (m *MockUserLikeRepository) GetUserLikeSmallVListByLikerID(ctx context.Context, db *gorm.DB, likerID string) ([]string, error) {
+	args := m.Called(ctx, db, likerID)
+	ids, _ := args.Get(0).([]string)
+	return ids, args.Error(1)
+}
+
+func (m *MockUserLikeRepository) GetUserFollowerIDListByUserID(ctx context.Context, db *gorm.DB, userID string) ([]string, error) {
+	args := m.Called(ctx, db, userID)
+	ids, _ := args.Get(0).([]string)
+	return ids, args.Error(1)
+}
+
+func (m *MockUserLikeRepository) CountByUserID(ctx context.Context, db *gorm.DB, userID string) (int, error) {
+	args := m.Called(ctx, db, userID)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockUserLikeRepository) Create(ctx context.Context, db *gorm.DB, userLike *model.UserLike) error {
+	return m.Called(ctx, db, userLike).Error(0)
+}
+
+func (m *MockUserLikeRepository) Update(ctx context.Context, db *gorm.DB, userLike *model.UserLike) error {
+	return m.Called(ctx, db, userLike).Error(0)
+}
+
+func (m *MockUserLikeRepository) DeleteByUserIDAndLikerID(ctx context.Context, db *gorm.DB, userID string, likerID string) error {
+	return m.Called(ctx, db, userID, likerID).Error(0)
+}
+
+func (m *MockUserLikeRepository) DeleteAllUserByLikerID(ctx context.Context, db *gorm.DB, likerID string) error {
+	return m.Called(ctx, db, likerID).Error(0)
+}

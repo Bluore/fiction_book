@@ -183,24 +183,30 @@ func (c *userFeedCache) DeleteUserFeedCursor(ctx context.Context, userID string,
 }
 
 // GetUserFeedFeedIDs 获取FeedID列表，带Limit
+// EXISTS 与 LRANGE 放在同一条 pipeline 中执行，减少一次串行往返
 func (c *userFeedCache) GetUserFeedFeedIDs(ctx context.Context, userID string, cursorID string, offset int, limit int) ([]string, bool, error) {
 	key := KeyUserFeedFeedIDs(userID, cursorID)
-	exist, err := c.redis.Exists(ctx, key).Result()
-	if err != nil {
+
+	pipe := c.redis.Pipeline()
+	existCmd := pipe.Exists(ctx, key)
+	var feedIDCmd *redis.StringSliceCmd
+	if limit > 0 {
+		feedIDCmd = pipe.LRange(ctx, key, int64(offset), int64(offset+limit-1))
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
 		return nil, false, err
 	}
-	if exist == 0 {
+
+	if existCmd.Val() == 0 {
 		return nil, false, nil
 	}
 	if limit <= 0 {
 		return make([]string, 0), true, nil
 	}
-
-	feedIDs, err := c.redis.LRange(ctx, key, int64(offset), int64(offset+limit-1)).Result()
-	if err != nil {
-		return nil, false, err
+	if feedIDCmd.Err() != nil {
+		return nil, false, feedIDCmd.Err()
 	}
-	return feedIDs, true, nil
+	return feedIDCmd.Val(), true, nil
 }
 
 // UpdateUserFeedFeedIDs 更新FeedID列表信息

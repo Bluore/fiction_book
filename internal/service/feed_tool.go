@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"time"
 
@@ -495,4 +496,172 @@ func queryUserFeedDetailWithCache(
 		logger.Warn("update user_feed cache fail", zap.Error(err))
 	}
 	return feedDetail, nil
+}
+
+// loadFeedCards 批量读取公共卡片；命中直接复用，miss 时按原有单条 helper 组装。
+// 返回可用的卡片 map，以及本轮新建、需要写回的完整卡片。
+func (s *feedServiceV2) loadFeedCards(ctx context.Context, feedIDs []string) (map[string]*model.FeedCard, []*model.FeedCard) {
+	cards := make(map[string]*model.FeedCard, len(feedIDs))
+	if len(feedIDs) == 0 {
+		return cards, nil
+	}
+
+	var cached map[string]*model.FeedCard
+	var missed []string
+	if s.feedComposeCache == nil {
+		missed = feedIDs
+	} else {
+		var err error
+		cached, missed, err = s.feedComposeCache.GetCards(ctx, feedIDs)
+		if err != nil {
+			logger.Warn("get feed cards cache fail, fallback to per-feed query", zap.Error(err))
+			cached = nil
+			missed = feedIDs
+		}
+	}
+
+	metrics := s.feedMetrics()
+	metrics.cardHit.Add(int64(len(cached)))
+	metrics.cardMiss.Add(int64(len(missed)))
+	metrics.logRequest(len(feedIDs), len(cached), len(missed))
+
+	toWrite := make([]*model.FeedCard, 0, len(missed))
+	for _, feedID := range feedIDs {
+		if card, ok := cached[feedID]; ok {
+			cards[feedID] = card
+			continue
+		}
+		if !slices.Contains(missed, feedID) {
+			// EMPTY：确定不存在，跳过该条 Feed
+			continue
+		}
+
+		card := s.buildCard(ctx, feedID)
+		if card == nil {
+			continue
+		}
+		cards[feedID] = card
+		toWrite = append(toWrite, card)
+	}
+	return cards, toWrite
+}
+
+// buildCard 按原有单条 helper 顺序组装公共卡片；任一必需实体缺失时返回 nil。
+func (s *feedServiceV2) buildCard(ctx context.Context, feedID string) *model.FeedCard {
+	metrics := s.feedMetrics()
+
+	metrics.addSourceFallback(model.FeedSourceFeed)
+	feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
+	if err != nil {
+		logger.Warn("query user feed detail fail", zap.Error(err))
+		return nil
+	}
+	if feedDetail == nil {
+		return nil
+	}
+
+	metrics.addSourceFallback(model.FeedSourceBook)
+	bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, feedDetail.BookID)
+	if err != nil {
+		logger.Warn("query book detail fail", zap.Error(err))
+		return nil
+	}
+	if bookDetail == nil {
+		return nil
+	}
+
+	metrics.addSourceFallback(model.FeedSourceUser)
+	userDetail, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, feedDetail.UserID)
+	if err != nil {
+		logger.Warn("query user detail fail", zap.Error(err))
+		return nil
+	}
+	if userDetail == nil {
+		return nil
+	}
+
+	metrics.addSourceFallback(model.FeedSourceUserAsset)
+	userAssetDetail, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, feedDetail.UserID)
+	if err != nil {
+		logger.Warn("query user asset detail fail", zap.Error(err))
+		return nil
+	}
+	if userAssetDetail == nil {
+		return nil
+	}
+
+	metrics.addSourceFallback(model.FeedSourceUserInfo)
+	userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, feedDetail.UserID)
+	if err != nil {
+		logger.Warn("query user info detail fail", zap.Error(err))
+		return nil
+	}
+	if userInfoDetail == nil {
+		return nil
+	}
+
+	return &model.FeedCard{
+		FeedID:              feedDetail.FeedID,
+		UserID:              feedDetail.UserID,
+		BookID:              feedDetail.BookID,
+		Content:             feedDetail.Content,
+		FeedCreatedAt:       feedDetail.CreatedAt,
+		FeedUpdatedAt:       feedDetail.UpdatedAt,
+		BookName:            bookDetail.Name,
+		BookDescription:     bookDetail.Description,
+		BookCoverURL:        bookDetail.CoverImage,
+		BookVIPLevel:        bookDetail.VIPLevel,
+		BookPrice:           bookDetail.Price,
+		BookBrowseAmount:    bookDetail.BrowseAmount,
+		BookBookshelfAmount: bookDetail.BookshelfAmount,
+		BookPushedAt:        bookDetail.PushedAt,
+		BookCreatedAt:       bookDetail.CreatedAt,
+		BookUpdatedAt:       bookDetail.UpdatedAt,
+		AuthorProfileURL:    userDetail.ProfileImage,
+		AuthorFansNum:       userInfoDetail.FansNum,
+		AuthorVIPLevel:      userAssetDetail.VIPLevel,
+	}
+}
+
+// loadViewerStates 收集当前页卡片涉及的 author/book ID，用一条 pipeline 读取点赞和书架状态。
+// 返回 nil map 表示批量读取失败，调用方按单条 helper 回源。
+func (s *feedServiceV2) loadViewerStates(ctx context.Context, viewerID string, cards map[string]*model.FeedCard) (map[string]bool, map[string]bool) {
+	if s.feedComposeCache == nil || len(cards) == 0 {
+		return nil, nil
+	}
+
+	authorIDs := make([]string, 0, len(cards))
+	bookIDs := make([]string, 0, len(cards))
+	seenAuthors := make(map[string]struct{}, len(cards))
+	seenBooks := make(map[string]struct{}, len(cards))
+	for _, card := range cards {
+		if card == nil {
+			continue
+		}
+		if _, ok := seenAuthors[card.UserID]; !ok && card.UserID != "" {
+			seenAuthors[card.UserID] = struct{}{}
+			authorIDs = append(authorIDs, card.UserID)
+		}
+		if _, ok := seenBooks[card.BookID]; !ok && card.BookID != "" {
+			seenBooks[card.BookID] = struct{}{}
+			bookIDs = append(bookIDs, card.BookID)
+		}
+	}
+
+	likes, shelves, err := s.feedComposeCache.GetViewerStates(ctx, viewerID, authorIDs, bookIDs)
+	if err != nil {
+		logger.Warn("get feed viewer states cache fail, fallback to per-feed query", zap.Error(err))
+		return nil, nil
+	}
+	return likes, shelves
+}
+
+// writeBackCards 在响应组装完成后写回本轮新建的完整卡片，写失败只记录日志。
+func (s *feedServiceV2) writeBackCards(ctx context.Context, cards []*model.FeedCard) {
+	if len(cards) == 0 || s.feedComposeCache == nil {
+		return
+	}
+	if err := s.feedComposeCache.UpdateCards(ctx, cards); err != nil {
+		logger.Warn("update feed cards cache fail", zap.Error(err))
+	}
 }

@@ -45,9 +45,11 @@ type feedServiceV2 struct {
 	bookThermalCache   cache.BookThermalCache
 	bookTagCache       cache.BookTagCache
 	feedCache          cache.UserFeedCache
+	feedComposeCache   cache.FeedComposeCache
 	userLikeCache      cache.UserLikeCache
 	userInfoCache      cache.UserInfoCache
 	userBookshelfCache cache.UserBookshelfCache
+	composeMetrics     *feedComposeMetrics
 	db                 *gorm.DB
 	cfg                *config.Config
 }
@@ -73,6 +75,7 @@ func NewFeedServiceV2(
 	bookThermalCache cache.BookThermalCache,
 	bookTagCache cache.BookTagCache,
 	feedCache cache.UserFeedCache,
+	feedComposeCache cache.FeedComposeCache,
 	userLikeCache cache.UserLikeCache,
 	userInfoCache cache.UserInfoCache,
 	userBookshelfCache cache.UserBookshelfCache,
@@ -99,14 +102,18 @@ func NewFeedServiceV2(
 		bookThermalCache:   bookThermalCache,
 		bookTagCache:       bookTagCache,
 		feedCache:          feedCache,
+		feedComposeCache:   feedComposeCache,
 		userLikeCache:      userLikeCache,
 		userInfoCache:      userInfoCache,
 		userBookshelfCache: userBookshelfCache,
+		composeMetrics:     newFeedComposeMetrics(),
 		db:                 db,
 		cfg:                cfg,
 	}
 }
 
+// Feed 组合缓存失效约定：未来新增 Feed 删除或更新路径时，必须在同一流程中调用
+// feedComposeCache.DeleteCard(feedID)，否则旧卡片会保留到 TTL 到期（60s + 抖动）。
 func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto.GetUserFeedRequestV2) (*dto.GetUserFeedResponseV2, error) {
 	nextCursor, feedIDList, err := s.queryFeedIDListWithCache(ctx, userID, req.LastCursorID, req.TargetCursorID, req.Offset)
 	if err != nil {
@@ -120,105 +127,30 @@ func (s *feedServiceV2) GetUserFeed(ctx context.Context, userID string, req *dto
 		}, nil
 	}
 
-	var feedListResponse = make([]*dto.FeedResponse, 0, len(feedIDList))
-	// 组装 Feed 信息
+	cards, toWrite := s.loadFeedCards(ctx, feedIDList)
+	likes, shelves := s.loadViewerStates(ctx, userID, cards)
+
+	feedListResponse := make([]*dto.FeedResponse, 0, len(feedIDList))
 	for _, feedID := range feedIDList {
-		feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
-		if err != nil {
-			logger.Warn("query user feed detail fail", zap.Error(err))
-			continue
-		}
-		if feedDetail == nil {
+		card := cards[feedID]
+		if card == nil {
 			continue
 		}
 
-		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, feedDetail.BookID)
-		if err != nil {
-			logger.Warn("query book detail fail", zap.Error(err))
+		isUserLiker, isInBookShelf, ok := s.viewerState(ctx, userID, card, likes, shelves)
+		if !ok {
 			continue
 		}
-		if bookDetail == nil {
-			continue
-		}
-
-		userDetail, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user detail fail", zap.Error(err))
-			continue
-		}
-		if userDetail == nil {
-			continue
-		}
-
-		userAssetDetail, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user asset detail fail", zap.Error(err))
-			continue
-		}
-		if userAssetDetail == nil {
-			continue
-		}
-
-		userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user info detail fail", zap.Error(err))
-			continue
-		}
-		if userInfoDetail == nil {
-			continue
-		}
-
-		userLikeDetail, err := queryUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, userID, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user like detail fail", zap.Error(err))
-		}
-		var isUserLiker = true
-		if userLikeDetail == nil {
-			isUserLiker = false
-		}
-
-		userBookshelfDetail, err := queryUserBookshelfDetailWithCache(ctx, s.db, s.userBookshelfCache, s.userBookshelfRepo, userID, feedDetail.BookID)
-		if err != nil {
-			logger.Warn("query user bookshelf detail fail", zap.Error(err))
-			continue
-		}
-		var isInBookshelf = true
-		if userBookshelfDetail == nil {
-			isInBookshelf = false
-		}
-
-		var feedDto = &dto.FeedResponse{
-			FeedID:              feedID,
-			BookID:              feedDetail.BookID,
-			UserID:              feedDetail.UserID,
-			Content:             feedDetail.Content,
-			FeedCreatedAt:       dto.UnixTime(feedDetail.CreatedAt),
-			FeedUpdatedAt:       dto.UnixTime(feedDetail.UpdatedAt),
-			BookName:            bookDetail.Name,
-			BookDescription:     bookDetail.Description,
-			BookCoverUrl:        bookDetail.CoverImage,
-			BookVIPLevel:        bookDetail.VIPLevel,
-			BookPrice:           bookDetail.Price,
-			BookBrowseAmount:    bookDetail.BrowseAmount,
-			BookBookshelfAmount: bookDetail.BookshelfAmount,
-			BookPushAt:          dto.UnixTime(bookDetail.PushedAt),
-			BookCreatedAt:       dto.UnixTime(bookDetail.CreatedAt),
-			BookUpdatedAt:       dto.UnixTime(bookDetail.UpdatedAt),
-			UserProfileUrl:      userDetail.ProfileImage,
-			UserFans:            userInfoDetail.FansNum,
-			UserVIPLevel:        userAssetDetail.VIPLevel,
-			IsInBookShelf:       isInBookshelf,
-			IsUserLiker:         isUserLiker,
-		}
-		feedListResponse = append(feedListResponse, feedDto)
+		feedListResponse = append(feedListResponse, feedResponseFromCard(feedID, card, isUserLiker, isInBookShelf))
 	}
 
-	userFeedResponse := &dto.GetUserFeedResponseV2{
+	s.writeBackCards(ctx, toWrite)
+
+	return &dto.GetUserFeedResponseV2{
 		Feeds:        feedListResponse,
 		NextCursorID: nextCursor.nextCursorID,
 		NextOffset:   nextCursor.nextOffset,
-	}
-	return userFeedResponse, nil
+	}, nil
 }
 
 func (s *feedServiceV2) GuestGetUserFeed(ctx context.Context, req *dto.GetUserFeedRequestV2) (*dto.GetGuestUserFeedResponseV2, error) {
@@ -234,81 +166,107 @@ func (s *feedServiceV2) GuestGetUserFeed(ctx context.Context, req *dto.GetUserFe
 		}, nil
 	}
 
-	var feedListResponse = make([]*dto.GuestFeedResponse, 0, len(feedIDList))
-	// 组装 Feed 信息（游客场景：全局 Feed 时间线，无登录态字段）
+	// 游客与登录用户共用公共卡片，但不读取 like/shelf 状态
+	cards, toWrite := s.loadFeedCards(ctx, feedIDList)
+	feedListResponse := make([]*dto.GuestFeedResponse, 0, len(feedIDList))
 	for _, feedID := range feedIDList {
-		feedDetail, err := queryUserFeedDetailWithCache(ctx, s.db, s.feedCache, s.userFeedRepo, feedID)
-		if err != nil {
-			logger.Warn("query user feed detail fail", zap.Error(err))
+		card := cards[feedID]
+		if card == nil {
 			continue
 		}
-		if feedDetail == nil {
-			continue
-		}
-
-		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, feedDetail.BookID)
-		if err != nil {
-			logger.Warn("query book detail fail", zap.Error(err))
-			continue
-		}
-		if bookDetail == nil {
-			continue
-		}
-
-		userDetail, err := queryUserDetailWithCache(ctx, s.db, s.userCache, s.userRepo, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user detail fail", zap.Error(err))
-			continue
-		}
-		if userDetail == nil {
-			continue
-		}
-
-		userAssetDetail, err := queryUserAssetDetailWithCache(ctx, s.db, s.userAssetCache, s.userAssetRepo, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user asset detail fail", zap.Error(err))
-			continue
-		}
-		if userAssetDetail == nil {
-			continue
-		}
-
-		userInfoDetail, err := queryUserInfoDetailWithCache(ctx, s.db, s.userInfoCache, s.userInfoRepo, feedDetail.UserID)
-		if err != nil {
-			logger.Warn("query user info detail fail", zap.Error(err))
-			continue
-		}
-		if userInfoDetail == nil {
-			continue
-		}
-
-		var feedDto = &dto.GuestFeedResponse{
-			FeedID:              feedID,
-			BookID:              feedDetail.BookID,
-			UserID:              feedDetail.UserID,
-			Content:             feedDetail.Content,
-			FeedCreatedAt:       dto.UnixTime(feedDetail.CreatedAt),
-			FeedUpdatedAt:       dto.UnixTime(feedDetail.UpdatedAt),
-			BookName:            bookDetail.Name,
-			BookDescription:     bookDetail.Description,
-			BookCoverUrl:        bookDetail.CoverImage,
-			BookVIPLevel:        bookDetail.VIPLevel,
-			BookPrice:           bookDetail.Price,
-			BookBrowseAmount:    bookDetail.BrowseAmount,
-			BookBookshelfAmount: bookDetail.BookshelfAmount,
-			BookPushAt:          dto.UnixTime(bookDetail.PushedAt),
-			BookCreatedAt:       dto.UnixTime(bookDetail.CreatedAt),
-			BookUpdatedAt:       dto.UnixTime(bookDetail.UpdatedAt),
-			UserProfileUrl:      userDetail.ProfileImage,
-			UserFans:            userInfoDetail.FansNum,
-			UserVIPLevel:        userAssetDetail.VIPLevel,
-		}
-		feedListResponse = append(feedListResponse, feedDto)
+		feedListResponse = append(feedListResponse, guestFeedResponseFromCard(feedID, card))
 	}
+
+	s.writeBackCards(ctx, toWrite)
 
 	return &dto.GetGuestUserFeedResponseV2{
 		Feeds:        feedListResponse,
 		NextCursorID: nextCursor.nextCursorID,
 		NextOffset:   nextCursor.nextOffset,
 	}, nil
+}
+
+// viewerState 优先使用批量状态 map；map 中没有对应 key 时回退原有单条 helper。
+// 返回值第三个字段为 false 表示 shelf 查询错误，调用方应跳过该条 Feed。
+func (s *feedServiceV2) viewerState(
+	ctx context.Context,
+	viewerID string,
+	card *model.FeedCard,
+	likes map[string]bool,
+	shelves map[string]bool,
+) (bool, bool, bool) {
+	isUserLiker, ok := likes[card.UserID]
+	if !ok {
+		s.feedMetrics().addSourceFallback(model.FeedSourceUserLike)
+		userLikeDetail, err := queryUserLikeDetailWithCache(ctx, s.db, s.userLikeCache, s.userLikeRepo, card.UserID, viewerID)
+		if err != nil {
+			// 保持现有行为：点赞查询失败只记录日志并视为未点赞
+			logger.Warn("query user like detail fail", zap.Error(err))
+		}
+		isUserLiker = userLikeDetail != nil
+	}
+
+	isInBookShelf, ok := shelves[card.BookID]
+	if !ok {
+		s.feedMetrics().addSourceFallback(model.FeedSourceUserBookshelf)
+		userBookshelfDetail, err := queryUserBookshelfDetailWithCache(ctx, s.db, s.userBookshelfCache, s.userBookshelfRepo, viewerID, card.BookID)
+		if err != nil {
+			// 保持现有行为：书架查询失败跳过该条 Feed
+			logger.Warn("query user bookshelf detail fail", zap.Error(err))
+			return false, false, false
+		}
+		isInBookShelf = userBookshelfDetail != nil
+	}
+
+	return isUserLiker, isInBookShelf, true
+}
+
+func feedResponseFromCard(feedID string, card *model.FeedCard, isUserLiker bool, isInBookShelf bool) *dto.FeedResponse {
+	return &dto.FeedResponse{
+		FeedID:              feedID,
+		BookID:              card.BookID,
+		UserID:              card.UserID,
+		Content:             card.Content,
+		FeedCreatedAt:       dto.UnixTime(card.FeedCreatedAt),
+		FeedUpdatedAt:       dto.UnixTime(card.FeedUpdatedAt),
+		BookName:            card.BookName,
+		BookDescription:     card.BookDescription,
+		BookCoverUrl:        card.BookCoverURL,
+		BookVIPLevel:        card.BookVIPLevel,
+		BookPrice:           card.BookPrice,
+		BookBrowseAmount:    card.BookBrowseAmount,
+		BookBookshelfAmount: card.BookBookshelfAmount,
+		BookPushAt:          dto.UnixTime(card.BookPushedAt),
+		BookCreatedAt:       dto.UnixTime(card.BookCreatedAt),
+		BookUpdatedAt:       dto.UnixTime(card.BookUpdatedAt),
+		UserProfileUrl:      card.AuthorProfileURL,
+		UserFans:            card.AuthorFansNum,
+		UserVIPLevel:        card.AuthorVIPLevel,
+		IsInBookShelf:       isInBookShelf,
+		IsUserLiker:         isUserLiker,
+	}
+}
+
+func guestFeedResponseFromCard(feedID string, card *model.FeedCard) *dto.GuestFeedResponse {
+	return &dto.GuestFeedResponse{
+		FeedID:              feedID,
+		BookID:              card.BookID,
+		UserID:              card.UserID,
+		Content:             card.Content,
+		FeedCreatedAt:       dto.UnixTime(card.FeedCreatedAt),
+		FeedUpdatedAt:       dto.UnixTime(card.FeedUpdatedAt),
+		BookName:            card.BookName,
+		BookDescription:     card.BookDescription,
+		BookCoverUrl:        card.BookCoverURL,
+		BookVIPLevel:        card.BookVIPLevel,
+		BookPrice:           card.BookPrice,
+		BookBrowseAmount:    card.BookBrowseAmount,
+		BookBookshelfAmount: card.BookBookshelfAmount,
+		BookPushAt:          dto.UnixTime(card.BookPushedAt),
+		BookCreatedAt:       dto.UnixTime(card.BookCreatedAt),
+		BookUpdatedAt:       dto.UnixTime(card.BookUpdatedAt),
+		UserProfileUrl:      card.AuthorProfileURL,
+		UserFans:            card.AuthorFansNum,
+		UserVIPLevel:        card.AuthorVIPLevel,
+	}
 }
