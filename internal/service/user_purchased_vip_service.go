@@ -76,7 +76,7 @@ func (s *buyVIPService) BuyVIP(ctx context.Context, userID string, req *dto.BuyV
 			return response.ErrUserNotFound
 		}
 
-		userAsset, err := s.userAssetRepo.GetByID(ctx, tx, userID)
+		userAsset, err := s.userAssetRepo.GetByIDForUpdate(ctx, tx, userID)
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func (s *buyVIPService) UpgradeVIP(ctx context.Context, userID string, req *dto.
 			return response.ErrUserNotFound
 		}
 
-		userAsset, err := s.userAssetRepo.GetByID(ctx, tx, userID)
+		userAsset, err := s.userAssetRepo.GetByIDForUpdate(ctx, tx, userID)
 		if err != nil {
 			return err
 		}

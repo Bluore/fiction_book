@@ -5,10 +5,13 @@ import (
 	"fiction-book/internal/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OrderRepository interface {
 	GetOrderByID(ctx context.Context, db *gorm.DB, id string) (*model.Order, error)
+	// GetOrderByIDForUpdate 在事务中对订单行加锁读取，用于订单状态流转，避免并发重复发放
+	GetOrderByIDForUpdate(ctx context.Context, db *gorm.DB, id string) (*model.Order, error)
 	CreateOrder(ctx context.Context, db *gorm.DB, in *model.Order) error
 	DeleteOrder(ctx context.Context, db *gorm.DB, orderId string) error
 	GetOrderListByUserID(ctx context.Context, db *gorm.DB, userId string, page int, size int) ([]*model.Order, error)
@@ -28,8 +31,21 @@ func NewOrderRepository(db *gorm.DB) OrderRepository {
 }
 
 func (r orderRepository) GetOrderByID(ctx context.Context, db *gorm.DB, id string) (*model.Order, error) {
+	return r.firstOrderByID(ctx, db, id, false)
+}
+
+func (r orderRepository) GetOrderByIDForUpdate(ctx context.Context, db *gorm.DB, id string) (*model.Order, error) {
+	return r.firstOrderByID(ctx, db, id, true)
+}
+
+func (r orderRepository) firstOrderByID(ctx context.Context, db *gorm.DB, id string, forUpdate bool) (*model.Order, error) {
 	var order model.Order
-	err := db.WithContext(ctx).First(&order, "id = ?", id).Error
+	query := db.WithContext(ctx)
+	if forUpdate {
+		// 行锁需在事务内使用，SQLite 会忽略该子句
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
+	}
+	err := query.First(&order, "id = ?", id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil

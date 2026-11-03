@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -19,6 +20,8 @@ var (
 
 type UserAssetRepository interface {
 	GetByID(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error)
+	// GetByIDForUpdate 在事务中对用户资产行加锁读取，用于金币等金额的校验与变更
+	GetByIDForUpdate(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error)
 	UpdateByID(ctx context.Context, db *gorm.DB, id string, data *model.UserAsset) error
 	AddGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error)
 	SubGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error)
@@ -36,8 +39,21 @@ func NewUserAssetRepository(db *gorm.DB) UserAssetRepository {
 }
 
 func (u userAssetRepository) GetByID(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error) {
+	return u.firstByID(ctx, db, id, false)
+}
+
+func (u userAssetRepository) GetByIDForUpdate(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error) {
+	return u.firstByID(ctx, db, id, true)
+}
+
+func (u userAssetRepository) firstByID(ctx context.Context, db *gorm.DB, id string, forUpdate bool) (*model.UserAsset, error) {
 	var userAsset model.UserAsset
-	err := db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
+	query := db.WithContext(ctx)
+	if forUpdate {
+		// 行锁需在事务内使用，SQLite 会忽略该子句
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
+	}
+	err := query.First(&userAsset, "id = ?", id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
@@ -57,13 +73,13 @@ func (u userAssetRepository) AddGoldByID(ctx context.Context, db *gorm.DB, id st
 		return nil, errors.New("forbidden gold value negative")
 	}
 
-	var userAsset model.UserAsset
-	err := db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
+	// 加行锁读取，避免并发发放金币丢失更新
+	userAsset, err := u.GetByIDForUpdate(ctx, db, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
 		return nil, err
+	}
+	if userAsset == nil {
+		return nil, nil
 	}
 
 	userAsset.Gold, err = safeAddInt64(userAsset.Gold, gold)
@@ -75,11 +91,11 @@ func (u userAssetRepository) AddGoldByID(ctx context.Context, db *gorm.DB, id st
 		return nil, ErrGoldNegative
 	}
 
-	err = db.WithContext(ctx).Save(&userAsset).Error
+	err = db.WithContext(ctx).Save(userAsset).Error
 	if err != nil {
 		return nil, err
 	}
-	return &userAsset, nil
+	return userAsset, nil
 }
 
 func (u userAssetRepository) SubGoldByID(ctx context.Context, db *gorm.DB, id string, gold int64) (*model.UserAsset, error) {
@@ -88,13 +104,13 @@ func (u userAssetRepository) SubGoldByID(ctx context.Context, db *gorm.DB, id st
 		return nil, errors.New("forbidden gold value negative")
 	}
 
-	var userAsset model.UserAsset
-	err := db.WithContext(ctx).First(&userAsset, "id = ?", id).Error
+	// 加行锁读取，避免并发扣减金币丢失更新
+	userAsset, err := u.GetByIDForUpdate(ctx, db, id)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil
-		}
 		return nil, err
+	}
+	if userAsset == nil {
+		return nil, nil
 	}
 
 	addGold := -gold
@@ -107,11 +123,11 @@ func (u userAssetRepository) SubGoldByID(ctx context.Context, db *gorm.DB, id st
 		return nil, ErrGoldNegative
 	}
 
-	err = db.WithContext(ctx).Save(&userAsset).Error
+	err = db.WithContext(ctx).Save(userAsset).Error
 	if err != nil {
 		return nil, err
 	}
-	return &userAsset, nil
+	return userAsset, nil
 }
 
 func (u userAssetRepository) GetGoldByID(ctx context.Context, db *gorm.DB, id string) (int64, error) {

@@ -321,7 +321,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 					logger.Info("Order already passed time", zap.String("orderNo", orderNo))
 
 					err := s.db.Transaction(func(tx *gorm.DB) error {
-						txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+						txOrder, err := s.orderRepo.GetOrderByIDForUpdate(ctx, tx, orderID)
 						if err != nil {
 							return err
 						}
@@ -354,7 +354,7 @@ func (s orderService) taskCheckOrderTradeSuccess(ctx context.Context, userId str
 							return err
 						}
 
-						txOrder, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+						txOrder, err := s.orderRepo.GetOrderByIDForUpdate(ctx, tx, orderID)
 						if err != nil {
 							return err
 						}

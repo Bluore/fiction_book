@@ -502,6 +502,12 @@ func (m *MockUserAssetRepository) GetByID(ctx context.Context, db *gorm.DB, id s
 	return asset, args.Error(1)
 }
 
+func (m *MockUserAssetRepository) GetByIDForUpdate(ctx context.Context, db *gorm.DB, id string) (*model.UserAsset, error) {
+	args := m.Called(ctx, db, id)
+	asset, _ := args.Get(0).(*model.UserAsset)
+	return asset, args.Error(1)
+}
+
 func (m *MockUserAssetRepository) UpdateByID(ctx context.Context, db *gorm.DB, id string, data *model.UserAsset) error {
 	return m.Called(ctx, db, id, data).Error(0)
 }

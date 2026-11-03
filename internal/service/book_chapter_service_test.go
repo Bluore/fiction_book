@@ -737,7 +737,7 @@ func (suite *BookChapterServiceTestSuite) TestBuyBookChapterInsufficientFunds() 
 	suite.chapterRepo.On("GetByID", ctx, "c1").
 		Return(&model.BookChapter{ID: "c1", BookID: "b1", Price: 10}, nil)
 	suite.purchasedRepo.On("GetByChapterIDAndUserID", ctx, "c1", "u1").Return(nil, nil)
-	suite.assetRepo.On("GetByID", ctx, mock.Anything, "u1").
+	suite.assetRepo.On("GetByIDForUpdate", ctx, mock.Anything, "u1").
 		Return(&model.UserAsset{ID: "u1", Gold: 5}, nil)
 
 	err := suite.svc.BuyBookChapter(ctx, "u1", &dto.BuyBookChapterRequest{
@@ -755,7 +755,7 @@ func (suite *BookChapterServiceTestSuite) TestBuyBookChapterUserAssetNotFound() 
 	suite.chapterRepo.On("GetByID", ctx, "c1").
 		Return(&model.BookChapter{ID: "c1", BookID: "b1", Price: 10}, nil)
 	suite.purchasedRepo.On("GetByChapterIDAndUserID", ctx, "c1", "u1").Return(nil, nil)
-	suite.assetRepo.On("GetByID", ctx, mock.Anything, "u1").Return(nil, nil)
+	suite.assetRepo.On("GetByIDForUpdate", ctx, mock.Anything, "u1").Return(nil, nil)
 
 	err := suite.svc.BuyBookChapter(ctx, "u1", &dto.BuyBookChapterRequest{
 		BookID: "b1", ChapterID: "c1", Price: 10,
@@ -769,7 +769,7 @@ func (suite *BookChapterServiceTestSuite) TestBuyBookChapterSuccess() {
 	suite.chapterRepo.On("GetByID", ctx, "c1").
 		Return(&model.BookChapter{ID: "c1", BookID: "b1", Price: 10}, nil)
 	suite.purchasedRepo.On("GetByChapterIDAndUserID", ctx, "c1", "u1").Return(nil, nil)
-	suite.assetRepo.On("GetByID", ctx, mock.Anything, "u1").
+	suite.assetRepo.On("GetByIDForUpdate", ctx, mock.Anything, "u1").
 		Return(&model.UserAsset{ID: "u1", Gold: 100}, nil)
 	suite.assetRepo.On("SubGoldByID", ctx, mock.Anything, "u1", int64(10)).
 		Return(&model.UserAsset{ID: "u1", Gold: 90}, nil)

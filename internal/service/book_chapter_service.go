@@ -521,7 +521,7 @@ func (s *bookChapterService) BuyBookChapter(ctx context.Context, userID string, 
 		BookID:    req.BookID,
 		ActiveAt:  time.Now().Add(3 * 365 * 24 * time.Hour),
 	}
-	userAsset, err := s.userAssetRepo.GetByID(ctx, tx, userID)
+	userAsset, err := s.userAssetRepo.GetByIDForUpdate(ctx, tx, userID)
 	if err != nil {
 		tx.Rollback()
 		return err

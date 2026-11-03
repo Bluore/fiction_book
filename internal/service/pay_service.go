@@ -74,7 +74,7 @@ func (s payService) AlipayNotify(ctx context.Context, req *http.Request) error {
 	var userID string
 
 	err = s.db.Transaction(func(tx *gorm.DB) error {
-		orderDetail, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+		orderDetail, err := s.orderRepo.GetOrderByIDForUpdate(ctx, tx, orderID)
 		if err != nil {
 			return err
 		}

@@ -139,7 +139,7 @@ func (s *OrderTempServer) consumeOrderTempOneTask(ctx context.Context, workspace
 
 func (s *OrderTempServer) closeOrderTemp(ctx context.Context, orderID string) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		orderDetail, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+		orderDetail, err := s.orderRepo.GetOrderByIDForUpdate(ctx, tx, orderID)
 		if err != nil {
 			return err
 		}
@@ -147,32 +147,29 @@ func (s *OrderTempServer) closeOrderTemp(ctx context.Context, orderID string) er
 			return fmt.Errorf("order %s not found", orderID)
 		}
 
+		// 订单已被其他路径流转到终态，无需再次关单
 		if orderDetail.Status != model.OrderStatusPending {
-			err := s.orderTempRepo.DeleteOrderTemp(ctx, orderID)
-			if err != nil {
-				logger.Warn("Order query fail", zap.String("orderId", orderID), zap.Error(err))
-				return err
-			}
-			return fmt.Errorf("order %s is not pending", orderID)
+			logger.Warn("Order is not pending, skip close",
+				zap.String("orderId", orderID),
+				zap.Int("status", orderDetail.Status),
+			)
+			return nil
 		}
 
 		orderDetail.PaidAt = nil
 		orderDetail.Status = model.OrderStatusOutDate
 
-		err = s.orderRepo.UpdateOrder(ctx, tx, orderDetail)
-		if err != nil {
-			return err
-		}
-
-		err = s.orderTempRepo.DeleteOrderTemp(ctx, orderID)
-		if err != nil {
-			return err
-		}
-		return nil
+		return s.orderRepo.UpdateOrder(ctx, tx, orderDetail)
 	})
 	if err != nil {
 		logger.Error("OrderRepo update error", zap.String("order_id", orderID), zap.Error(err))
 		return err
+	}
+
+	// Redis 不受数据库事务保护，临时单删除放在事务提交后；
+	// 删除失败时残留的临时单会被下次消费按状态守卫幂等跳过
+	if err := s.orderTempRepo.DeleteOrderTemp(ctx, orderID); err != nil {
+		logger.Warn("Failed to delete order temp", zap.String("orderId", orderID), zap.Error(err))
 	}
 
 	// 删除缓存，强制下次查询从数据库获取最新数据
@@ -186,7 +183,7 @@ func (s *OrderTempServer) closeOrderTemp(ctx context.Context, orderID string) er
 func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, orderID string, paidTime *time.Time) error {
 	var userID string
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		orderDetail, err := s.orderRepo.GetOrderByID(ctx, tx, orderID)
+		orderDetail, err := s.orderRepo.GetOrderByIDForUpdate(ctx, tx, orderID)
 		if err != nil {
 			return err
 		}
@@ -196,13 +193,13 @@ func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, orderID string,
 
 		userID = orderDetail.UserId
 
+		// 订单已被其他路径流转到终态，不再重复发放
 		if orderDetail.Status != model.OrderStatusPending {
-			err := s.orderTempRepo.DeleteOrderTemp(ctx, orderID)
-			if err != nil {
-				logger.Warn("Order query fail", zap.String("orderId", orderID), zap.Error(err))
-				return err
-			}
-			return fmt.Errorf("order %s is not pending", orderID)
+			logger.Warn("Order is not pending, skip deal paid",
+				zap.String("orderId", orderID),
+				zap.Int("status", orderDetail.Status),
+			)
+			return nil
 		}
 
 		_, err = s.userAssetRepo.AddGoldByID(ctx, tx, userID, orderDetail.RewordGold)
@@ -213,20 +210,17 @@ func (s *OrderTempServer) dealPaidOrderTemp(ctx context.Context, orderID string,
 		orderDetail.PaidAt = paidTime
 		orderDetail.Status = model.OrderStatusSuccess
 
-		err = s.orderRepo.UpdateOrder(ctx, tx, orderDetail)
-		if err != nil {
-			return err
-		}
-
-		err = s.orderTempRepo.DeleteOrderTemp(ctx, orderID)
-		if err != nil {
-			return err
-		}
-		return nil
+		return s.orderRepo.UpdateOrder(ctx, tx, orderDetail)
 	})
 	if err != nil {
 		logger.Error("OrderRepo update error", zap.String("order_id", orderID), zap.Error(err))
 		return err
+	}
+
+	// Redis 不受数据库事务保护，临时单删除放在事务提交后；
+	// 删除失败时残留的临时单会被下次消费按状态守卫幂等跳过
+	if err := s.orderTempRepo.DeleteOrderTemp(ctx, orderID); err != nil {
+		logger.Warn("Failed to delete order temp", zap.String("orderId", orderID), zap.Error(err))
 	}
 
 	// 删除缓存，强制下次查询从数据库获取最新数据

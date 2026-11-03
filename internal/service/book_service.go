@@ -324,8 +324,8 @@ func (s *bookService) BuyBook(ctx context.Context, userID string, bookID string,
 			return response.ErrBookNotFound
 		}
 
-		// 获取用户资产
-		userAsset, err := s.userAssetRepo.GetByID(ctx, db, userID)
+		// 获取用户资产（加行锁，保证余额校验与扣款在同一快照内）
+		userAsset, err := s.userAssetRepo.GetByIDForUpdate(ctx, db, userID)
 		if err != nil {
 			return err
 		}
