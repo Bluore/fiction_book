@@ -7,6 +7,8 @@ import (
 	"fiction-book/internal/model"
 	"fiction-book/pkg/logger"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"go.uber.org/zap"
@@ -16,7 +18,7 @@ type BookESRepository interface {
 	Create(ctx context.Context, book *model.Book) error
 	Update(ctx context.Context, book *model.Book) error
 	Delete(ctx context.Context, id string) error
-	Search(ctx context.Context, filter *model.BookFilterWithIDPage) ([]model.BookSearchResult, error)
+	Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*model.BookSearchPage, error)
 }
 
 type bookESRepository struct {
@@ -116,7 +118,7 @@ func (r *bookESRepository) Delete(ctx context.Context, id string) error {
 }
 
 // Search 搜索图书ES
-func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterWithIDPage) ([]model.BookSearchResult, error) {
+func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*model.BookSearchPage, error) {
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
 			"must": []interface{}{},
@@ -266,15 +268,43 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 		)
 	}
 
-	// 处理 LastID 筛选：ID 比 LastID 小的结果
-	if filter.LastID != nil && *filter.LastID != "" {
+	// 处理游标筛选：(pushed_at, id) 严格小于游标，与固定排序保持一致
+	if filter.Cursor != nil {
 		query["bool"].(map[string]interface{})["must"] = append(
 			query["bool"].(map[string]interface{})["must"].([]interface{}),
 			map[string]interface{}{
-				"range": map[string]interface{}{
-					"id": map[string]interface{}{
-						"lt": *filter.LastID,
+				"bool": map[string]interface{}{
+					"should": []interface{}{
+						map[string]interface{}{
+							"range": map[string]interface{}{
+								"pushed_at": map[string]interface{}{
+									"lt": filter.Cursor.TimeMS,
+								},
+							},
+						},
+						map[string]interface{}{
+							"bool": map[string]interface{}{
+								"must": []interface{}{
+									map[string]interface{}{
+										"range": map[string]interface{}{
+											"pushed_at": map[string]interface{}{
+												"gte": filter.Cursor.TimeMS,
+												"lte": filter.Cursor.TimeMS,
+											},
+										},
+									},
+									map[string]interface{}{
+										"range": map[string]interface{}{
+											"id": map[string]interface{}{
+												"lt": filter.Cursor.ID,
+											},
+										},
+									},
+								},
+							},
+						},
 					},
+					"minimum_should_match": 1,
 				},
 			},
 		)
@@ -296,21 +326,11 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 		}
 	}
 
-	// 处理排序：先按用户指定的字段排序，最后固定以ID降序排序
-	if filter.Order == "" {
-		filter.Order = model.BookOrderUpdate
-	}
-	var userSortOrder string
-	if filter.OrderDirection == model.SortOrderAsc {
-		userSortOrder = "asc"
-	} else {
-		userSortOrder = "desc"
-	}
-
+	// 固定排序：先按发布时间倒序，再以 ID 降序作为唯一 tie-breaker
 	requestBody["sort"] = []map[string]interface{}{
 		{
-			string(filter.Order): map[string]interface{}{
-				"order": userSortOrder,
+			"pushed_at": map[string]interface{}{
+				"order": "desc",
 			},
 		},
 		{
@@ -345,6 +365,7 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 			Hits []struct {
 				Source    model.Book          `json:"_source"`
 				Highlight map[string][]string `json:"highlight"`
+				Sort      []json.RawMessage   `json:"sort"`
 			} `json:"hits"`
 		} `json:"hits"`
 	}
@@ -353,8 +374,9 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 		return nil, fmt.Errorf("解析搜索响应失败: %w", err)
 	}
 
-	results := make([]model.BookSearchResult, 0, len(searchResponse.Hits.Hits))
-	for _, hit := range searchResponse.Hits.Hits {
+	hits := searchResponse.Hits.Hits
+	results := make([]model.BookSearchResult, 0, len(hits))
+	for _, hit := range hits {
 		// 处理高亮信息
 		highlightMap := make(map[string]string)
 		for field, fragments := range hit.Highlight {
@@ -369,5 +391,57 @@ func (r *bookESRepository) Search(ctx context.Context, filter *model.BookFilterW
 		})
 	}
 
-	return results, nil
+	page := &model.BookSearchPage{Results: results}
+	// 只请求 limit 条：满页时用最后一条命中记录的 hit.sort 作为下一页游标
+	if filter.Limit > 0 && len(hits) == filter.Limit {
+		cursor, err := parseSearchCursor(hits[len(hits)-1].Sort)
+		if err != nil {
+			return nil, fmt.Errorf("解析书籍搜索游标失败: %w", err)
+		}
+		page.Next = cursor
+	}
+
+	return page, nil
+}
+
+// parseSearchCursor 从 ES 命中结果的 sort 数组解析 (时间, id) 游标。
+// 时间字段默认返回 epoch 毫秒（JSON number），同时兼容字符串毫秒和 RFC3339 时间。
+func parseSearchCursor(sortValues []json.RawMessage) (*model.SearchCursor, error) {
+	if len(sortValues) < 2 {
+		return nil, fmt.Errorf("hit.sort 缺少排序值，实际长度 %d", len(sortValues))
+	}
+
+	timeMS, err := parseSortTimeMS(sortValues[0])
+	if err != nil {
+		return nil, err
+	}
+
+	var id string
+	if err := json.Unmarshal(sortValues[1], &id); err != nil {
+		return nil, fmt.Errorf("解析 hit.sort 的 id 失败: %w", err)
+	}
+
+	return &model.SearchCursor{TimeMS: timeMS, ID: id}, nil
+}
+
+func parseSortTimeMS(raw json.RawMessage) (int64, error) {
+	var number float64
+	if err := json.Unmarshal(raw, &number); err == nil {
+		return int64(number), nil
+	}
+
+	var text string
+	if err := json.Unmarshal(raw, &text); err != nil {
+		return 0, fmt.Errorf("解析 hit.sort 的时间失败: %w", err)
+	}
+
+	if ms, err := strconv.ParseInt(text, 10, 64); err == nil {
+		return ms, nil
+	}
+
+	parsed, err := time.Parse(time.RFC3339Nano, text)
+	if err != nil {
+		return 0, fmt.Errorf("解析 hit.sort 的时间失败: %w", err)
+	}
+	return parsed.UnixMilli(), nil
 }

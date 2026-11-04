@@ -462,7 +462,13 @@ definitions:
     type: object
   dto.LoginResponse:
     properties:
+      expires_in:
+        description: AccessToken 有效期，单位秒
+        type: integer
+      refresh_token:
+        type: string
       token:
+        description: AccessToken，短期有效
         type: string
       user_id:
         type: string
@@ -488,12 +494,34 @@ definitions:
       user_id:
         type: string
     type: object
+  dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.RefreshTokenResponse:
+    properties:
+      expires_in:
+        description: AccessToken 有效期，单位秒
+        type: integer
+      refresh_token:
+        type: string
+      token:
+        description: 新的 AccessToken
+        type: string
+    type: object
   dto.SearchBookChaptersV2Response:
     properties:
       chapters:
         items:
           $ref: '#/definitions/dto.BookChapterSearchResult'
         type: array
+      next_id:
+        type: string
+      next_time_ms:
+        type: integer
     type: object
   dto.SearchBooksV2Response:
     properties:
@@ -501,6 +529,10 @@ definitions:
         items:
           $ref: '#/definitions/dto.BookSearchResult'
         type: array
+      next_id:
+        type: string
+      next_time_ms:
+        type: integer
     type: object
   dto.ShopListOfVIPResponse:
     properties:
@@ -901,7 +933,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 用户登录并获取JWT token
+      description: 用户登录并获取 AccessToken（短期）与 RefreshToken（长期，存储在 Redis 白名单中，单点登录）
       parameters:
       - description: 登录信息
         in: body
@@ -934,6 +966,49 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 用户登录
+      tags:
+      - 认证
+  /api/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用 RefreshToken 换取新的 AccessToken（RefreshToken 需在 Redis 白名单中，且只允许当前登录端使用）
+      parameters:
+      - description: RefreshToken
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RefreshTokenResponse'
+              type: object
+        "400":
+          description: 参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4002":
+          description: 用户未找到
+          schema:
+            $ref: '#/definitions/response.Response'
+        "4014":
+          description: RefreshToken 无效或已失效，请重新登录
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 刷新 AccessToken
       tags:
       - 认证
   /api/v1/books/{id}:
@@ -2211,7 +2286,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: 根据订单ID获取用户订单详细信息
+      description: 根据订单ID获取用户订单详细信息；订单待付款时使用长轮询，服务端最长保持连接 30 秒，期间每秒检查一次，订单状态变化或超时后返回最新订单
       parameters:
       - description: 订单ID
         in: path
@@ -2300,6 +2375,37 @@ paths:
       summary: 创建用户充值订单
       tags:
       - 订单管理
+  /api/v1/pay/alipay:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 接收支付宝支付结果异步通知，验签成功后完成订单发货
+      parameters:
+      - description: 商户订单号
+        in: formData
+        name: out_trade_no
+        required: true
+        type: string
+      - description: 交易状态
+        in: formData
+        name: trade_status
+        required: true
+        type: string
+      - description: 订单金额
+        in: formData
+        name: total_amount
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: failure
+          schema:
+            type: string
+      summary: 支付宝异步通知
+      tags:
+      - 支付管理
   /api/v1/purchases/book:
     get:
       consumes:
@@ -2972,7 +3078,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: 搜索书籍，支持多条件过滤、排序和高亮
+      description: 搜索书籍，支持多条件过滤和高亮；结果固定按 pushed_at 倒序、id 倒序排列。响应包含 next_time_ms 和
+        next_id 作为下一页游标，两者都为空表示没有更多记录。
       parameters:
       - description: 搜索关键词
         in: query
@@ -3026,17 +3133,11 @@ paths:
         in: query
         name: thermal_value_end
         type: integer
-      - default: thermal_value
-        description: 排序字段 (thermal_value|browse_amount|bookshelf_amount|updated_at|pushed_at)
+      - description: 上一页最后一条的 pushed_at (Unix 毫秒)，必须与 last_id 同时传入
         in: query
-        name: order
-        type: string
-      - default: desc
-        description: 排序方向 (asc|desc)
-        in: query
-        name: order_direction
-        type: string
-      - description: 用于向后分页的最后一个ID
+        name: last_time_ms
+        type: integer
+      - description: 上一页最后一条的 ID，必须与 last_time_ms 同时传入
         in: query
         name: last_id
         type: string
@@ -3049,7 +3150,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: books 为结果列表，next_time_ms / next_id 为下一页游标
           schema:
             allOf:
             - $ref: '#/definitions/response.Response'
@@ -3072,7 +3173,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: 搜索章节，支持多条件过滤、排序和高亮
+      description: 搜索章节，支持多条件过滤和高亮；结果固定按 created_at 倒序、id 倒序排列。响应包含 next_time_ms 和
+        next_id 作为下一页游标，两者都为空表示没有更多记录；原始 ES 页满 limit 时即使 chapters 为空也应使用非空游标继续翻页。
       parameters:
       - description: 搜索关键词
         in: query
@@ -3102,23 +3204,24 @@ paths:
         in: query
         name: price_end
         type: integer
-      - description: 排序字段 (created_at|price)
+      - description: 上一页最后一条的 created_at (Unix 毫秒)，必须与 last_id 同时传入
         in: query
-        name: order
-        type: string
-      - description: 排序方向 (asc|desc)
-        in: query
-        name: order_direction
-        type: string
-      - description: 用于向后分页的最后一个ID
+        name: last_time_ms
+        type: integer
+      - description: 上一页最后一条的 ID，必须与 last_time_ms 同时传入
         in: query
         name: last_id
         type: string
+      - default: 10
+        description: 每页数量 (1-100)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: chapters 为结果列表，next_time_ms / next_id 为下一页游标
           schema:
             allOf:
             - $ref: '#/definitions/response.Response'

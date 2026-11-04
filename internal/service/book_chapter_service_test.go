@@ -876,7 +876,7 @@ func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2() {
 	book := &model.Book{ID: "b1", Name: "book-1"}
 
 	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
-		Return(esResults, nil)
+		Return(&model.BookChapterSearchPage{Results: esResults}, nil)
 	suite.bookCache.On("GetBook", ctx, "b1").Return(book, true, nil)
 
 	res, err := suite.svc.SearchBookChaptersV2(ctx, &dto.SearchBookChaptersV2Request{
@@ -893,7 +893,7 @@ func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2VIPLevelFilter
 	ctx := context.Background()
 
 	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
-		Return([]model.BookChapterSearchResult{}, nil)
+		Return(&model.BookChapterSearchPage{}, nil)
 
 	_, err := suite.svc.SearchBookChaptersV2(ctx, &dto.SearchBookChaptersV2Request{
 		VIPLevel: "vip_0,vip_1", Limit: 10,
@@ -913,7 +913,7 @@ func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2SkipMissingBoo
 	}
 
 	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
-		Return(esResults, nil)
+		Return(&model.BookChapterSearchPage{Results: esResults}, nil)
 	suite.mockBookCacheMissNotFound(ctx, "b-missing")
 	suite.mockBookCacheHit(ctx, "b1", &model.Book{ID: "b1"})
 
@@ -941,12 +941,51 @@ func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2Empty() {
 	ctx := context.Background()
 
 	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
-		Return([]model.BookChapterSearchResult{}, nil)
+		Return(&model.BookChapterSearchPage{}, nil)
 
 	res, err := suite.svc.SearchBookChaptersV2(ctx, &dto.SearchBookChaptersV2Request{Limit: 10})
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), res.Chapters)
 	assert.Len(suite.T(), res.Chapters, 0)
+}
+
+// TestSearchBookChaptersV2FullPageFiltered 测试原始页满 limit 且整页被过滤时仍返回非空游标
+func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2FullPageFiltered() {
+	ctx := context.Background()
+	esResults := []model.BookChapterSearchResult{
+		{BookChapter: model.BookChapter{ID: "c1", BookID: "b-missing-1"}},
+		{BookChapter: model.BookChapter{ID: "c2", BookID: "b-missing-2"}},
+	}
+	next := &model.SearchCursor{TimeMS: 1730707200123, ID: "c2"}
+
+	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
+		Return(&model.BookChapterSearchPage{Results: esResults, Next: next}, nil)
+	suite.mockBookCacheMissNotFound(ctx, "b-missing-1")
+	suite.mockBookCacheMissNotFound(ctx, "b-missing-2")
+
+	res, err := suite.svc.SearchBookChaptersV2(ctx, &dto.SearchBookChaptersV2Request{Limit: 2})
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), res.Chapters)
+	assert.Equal(suite.T(), int64(1730707200123), res.NextTimeMS)
+	assert.Equal(suite.T(), "c2", res.NextID)
+}
+
+// TestSearchBookChaptersV2ShortPageFiltered 测试原始页少于 limit 且全部被过滤时返回空游标
+func (suite *BookChapterServiceTestSuite) TestSearchBookChaptersV2ShortPageFiltered() {
+	ctx := context.Background()
+	esResults := []model.BookChapterSearchResult{
+		{BookChapter: model.BookChapter{ID: "c1", BookID: "b-missing"}},
+	}
+
+	suite.esRepo.On("Search", ctx, mock.AnythingOfType("model.BookChapterFilterWithIDPage")).
+		Return(&model.BookChapterSearchPage{Results: esResults}, nil)
+	suite.mockBookCacheMissNotFound(ctx, "b-missing")
+
+	res, err := suite.svc.SearchBookChaptersV2(ctx, &dto.SearchBookChaptersV2Request{Limit: 10})
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), res.Chapters)
+	assert.Zero(suite.T(), res.NextTimeMS)
+	assert.Empty(suite.T(), res.NextID)
 }
 
 func TestBookChapterServiceTestSuite(t *testing.T) {

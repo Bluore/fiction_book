@@ -65,12 +65,13 @@ Authorization: Bearer <AccessToken>
 | 场景 | 参数 | 约定 |
 | --- | --- | --- |
 | 页码分页 | `page`、`size` | `page` 从 1 开始；`size` 默认 10，最大 100 |
-| ID 游标分页 | `last_id`、`limit` | 传上一页最后一条记录的 ID；`limit` 默认 10，最大 100 |
+| 时间 + ID 游标分页 | `last_time_ms`、`last_id`、`limit` | 两者必须同时传或同时省略；传上一页响应中的 `next_time_ms`、`next_id`；`limit` 默认 10，最大 100；返回记录数等于 `limit` 时响应才有非空 `next_*`，`next_*` 为空表示没有更多记录 |
 | Feed 游标 | `last_cursor_id`、`target_cursor_id`、`offset` | 首次请求 `target_cursor_id=front`、`offset=0`；之后使用响应中的 `next_cursor_id`、`next_offset` |
 
 时间格式：
 
 - 查询过滤中的时间参数：Unix 秒。
+- 搜索游标 `last_time_ms` / `next_time_ms`：Unix 毫秒。
 - 书籍、Feed 响应中的时间戳：Unix 秒。
 - 用户资料时间：`YYYY-MM-DD HH:mm:ss`。
 - 订单、购买记录、VIP 到期时间：RFC3339。
@@ -83,8 +84,6 @@ Authorization: Bearer <AccessToken>
 | `vip_level` | `""`、`vip_0`、`vip_1`、`vip_2` | 空字符串表示免费；当前售卖 `vip_1`、`vip_2` |
 | 书籍排序 `sort_key` | `browse_amount`、`bookshelf_amount`、`new_update`、`new_push`、`thermal` | 默认 `new_update` |
 | 排序方向 | `asc`、`desc` | 默认 `desc` |
-| 书籍搜索排序 `order` | `thermal_value`、`browse_amount`、`bookshelf_amount`、`updated_at`、`pushed_at` | 默认 `thermal_value` |
-| 章节搜索排序 `order` | `created_at`、`price` | 默认 `created_at` |
 | 订单状态 `status` | `1` 待支付、`2` 待发货、`3` 已成功、`4` 已删除、`5` 已超时 | 当前业务使用 1 / 3 / 5 |
 | 关注操作 `operator` | `create`、`delete` | 关注 / 取消关注 |
 | VIP 时长 `duration` | `month`、`year` | 月 / 年 |
@@ -698,7 +697,7 @@ GET /api/v1/books/thermal/monthly?page=1&size=10
 ### 6.10 搜索书籍
 
 ```http
-GET /api/v2/books/search?query=剑&order=thermal_value&order_direction=desc&limit=10
+GET /api/v2/books/search?query=剑&limit=10
 ```
 
 **查询参数**
@@ -718,9 +717,8 @@ GET /api/v2/books/search?query=剑&order=thermal_value&order_direction=desc&limi
 | `bookshelf_amount_end` | int | 否 | 收藏量上限 |
 | `thermal_value_start` | int | 否 | 热度下限 |
 | `thermal_value_end` | int | 否 | 热度上限 |
-| `order` | string | 否 | 排序字段，默认 `thermal_value` |
-| `order_direction` | string | 否 | `asc` / `desc`，默认 `desc` |
-| `last_id` | string | 否 | 上一页最后一条书籍 ID |
+| `last_time_ms` | int | 否 | 上一页最后一条的 `pushed_at`（Unix 毫秒），必须与 `last_id` 同时传入 |
+| `last_id` | string | 否 | 上一页最后一条的书籍 ID，必须与 `last_time_ms` 同时传入 |
 | `limit` | int | 否 | 每页数量，默认 10，最大 100 |
 
 **响应 `data`**
@@ -734,14 +732,18 @@ GET /api/v2/books/search?query=剑&order=thermal_value&order_direction=desc&limi
         "name": "<em>剑</em>来"
       }
     }
-  ]
+  ],
+  "next_time_ms": 1730707200123,
+  "next_id": "book-uuid"
 }
 ```
 
 **说明**
 
 - 搜索由 Elasticsearch 完成，`highlight` 的 key 为命中字段。
-- 游标分页不返回总数，下一页请把最后一条书籍的 `id` 作为 `last_id`。
+- 结果固定按 `pushed_at` 倒序、`id` 倒序排列；`order` / `order_direction` 不再生效，可忽略。
+- 游标分页不返回总数。下一页请把响应中的 `next_time_ms`、`next_id` 原样作为 `last_time_ms`、`last_id`；两者只传一个返回 `4017`。
+- 只有当前页返回 `limit` 条记录时才返回非空 `next_*`；当前页不足 `limit` 条时 `next_time_ms=0`、`next_id=""`，表示结束。满页恰好是最后一页时会多一次空请求，属预期行为。
 
 ### 6.11 获取书籍标签
 
@@ -938,9 +940,8 @@ GET /api/v2/chapters/search?query=剑&book_id=xxx&limit=10
 | `created_at_end` | int | 否 | 创建结束时间（Unix 秒） |
 | `price_start` | int | 否 | 最低价格（金币） |
 | `price_end` | int | 否 | 最高价格（金币） |
-| `order` | string | 否 | `created_at` / `price`，默认 `created_at` |
-| `order_direction` | string | 否 | `asc` / `desc`，默认 `desc` |
-| `last_id` | string | 否 | 上一页最后一条章节 ID |
+| `last_time_ms` | int | 否 | 上一页最后一条的 `created_at`（Unix 毫秒），必须与 `last_id` 同时传入 |
+| `last_id` | string | 否 | 上一页最后一条的章节 ID，必须与 `last_time_ms` 同时传入 |
 | `limit` | int | 否 | 每页数量，默认 10，最大 100 |
 
 **响应 `data`**
@@ -954,9 +955,18 @@ GET /api/v2/chapters/search?query=剑&book_id=xxx&limit=10
         "content": "……<em>剑</em>……"
       }
     }
-  ]
+  ],
+  "next_time_ms": 1730707200123,
+  "next_id": "chapter-uuid"
 }
 ```
+
+**说明**
+
+- 结果固定按 `created_at` 倒序、`id` 倒序排列；`order` / `order_direction` 不再生效，可忽略。
+- 下一页请把响应中的 `next_time_ms`、`next_id` 原样作为 `last_time_ms`、`last_id`；两者只传一个返回 `4017`。
+- 游标基于原始 Elasticsearch 页：原始页满 `limit` 条时，即使因关联书籍缺失导致 `chapters` 为空，响应仍返回非空 `next_*`，客户端应继续翻页；原始页不足 `limit` 条时 `next_*` 为空，表示结束。
+- 满页恰好是最后一页时会多一次空请求，属预期行为。
 
 ---
 

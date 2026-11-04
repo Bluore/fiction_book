@@ -8,13 +8,6 @@ import (
 
 const TableNameBookChapter = "book_chapter"
 
-type BookChapterOrder string
-
-const (
-	BookChapterOrderCreatedAt = "created_at"
-	BookChapterOrderPrice     = "price"
-)
-
 type BookChapter struct {
 	ID        string         `json:"id" gorm:"primary_key;type:varchar(36)"`
 	BookID    string         `json:"book_id" gorm:"type:varchar(36)"`
@@ -61,19 +54,23 @@ func (*BookChapterContent) TableName() string {
 }
 
 type BookChapterFilterWithIDPage struct {
-	Query          string           `json:"query"`
-	BookID         string           `json:"book_id"`
-	CreatedAtStart time.Time        `json:"created_at_start"`
-	CreatedAtEnd   time.Time        `json:"created_at_end"`
-	VIPLevel       []string         `json:"vip_level"`
-	PriceStart     int64            `json:"price_start"`
-	PriceEnd       int64            `json:"price_end"`
-	Order          BookChapterOrder `json:"order"`
-	OrderDirection SortOrder        `json:"order_direction"`
-	IDPage
+	Query          string        `json:"query"`
+	BookID         string        `json:"book_id"`
+	CreatedAtStart time.Time     `json:"created_at_start"`
+	CreatedAtEnd   time.Time     `json:"created_at_end"`
+	VIPLevel       []string      `json:"vip_level"`
+	PriceStart     int64         `json:"price_start"`
+	PriceEnd       int64         `json:"price_end"`
+	Cursor         *SearchCursor `json:"cursor"`
+	Limit          int           `json:"limit"`
 }
 
 type BookChapterSearchResult struct {
 	BookChapter BookChapter       `json:"book_chapter"`
 	Highlight   map[string]string `json:"highlight"`
+}
+
+type BookChapterSearchPage struct {
+	Results []BookChapterSearchResult
+	Next    *SearchCursor
 }

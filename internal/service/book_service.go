@@ -856,6 +856,15 @@ func (s *bookService) GetBookTags(ctx context.Context, bookID string) (*dto.GetB
 
 // SearchBooksV2 v2 版本的搜索方法，使用 Elasticsearch
 func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2Request) (*dto.SearchBooksV2Response, error) {
+	hasLastTime := req.LastTimeMS != nil
+	hasLastID := req.LastID != nil && *req.LastID != ""
+	if hasLastTime != hasLastID {
+		return nil, response.ErrParam
+	}
+	if hasLastTime && *req.LastTimeMS < 0 {
+		return nil, response.ErrParam
+	}
+
 	// 转换为 model 的 BookFilterWithIDPage
 	filter := &model.BookFilterWithIDPage{
 		Query:                req.Query,
@@ -870,12 +879,10 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 		BookshelfAmountEnd:   req.BookshelfAmountEnd,
 		ThermalValueStart:    req.ThermalValueStart,
 		ThermalValueEnd:      req.ThermalValueEnd,
-		Order:                req.Order,
-		OrderDirection:       req.OrderDirection,
-		IDPage: model.IDPage{
-			LastID: req.LastID,
-			Limit:  req.Limit,
-		},
+		Limit:                req.Limit,
+	}
+	if hasLastTime && hasLastID {
+		filter.Cursor = &model.SearchCursor{TimeMS: *req.LastTimeMS, ID: *req.LastID}
 	}
 
 	if req.VIPLevel != "" {
@@ -883,14 +890,14 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 	}
 
 	// 调用 ES 搜索
-	esResults, err := s.bookESRepo.Search(ctx, filter)
+	page, err := s.bookESRepo.Search(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
 	// 转换为响应
-	results := make([]*dto.BookSearchResult, 0, len(esResults))
-	for _, esResult := range esResults {
+	results := make([]*dto.BookSearchResult, 0, len(page.Results))
+	for _, esResult := range page.Results {
 		bookResp := toBookResponse(s.cfg, &esResult.Book)
 		results = append(results, &dto.BookSearchResult{
 			Book:      *bookResp,
@@ -898,7 +905,10 @@ func (s *bookService) SearchBooksV2(ctx context.Context, req *dto.SearchBooksV2R
 		})
 	}
 
-	return &dto.SearchBooksV2Response{
-		Books: results,
-	}, nil
+	resp := &dto.SearchBooksV2Response{Books: results}
+	if page.Next != nil {
+		resp.NextTimeMS = page.Next.TimeMS
+		resp.NextID = page.Next.ID
+	}
+	return resp, nil
 }

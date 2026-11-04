@@ -1,6 +1,8 @@
 package handler
 
 import (
+	_ "fiction-book/internal/dto" // swag 需要 import 才能解析注释中的 dto 响应类型
+
 	"fiction-book/pkg/response"
 	"fiction-book/pkg/transmit"
 

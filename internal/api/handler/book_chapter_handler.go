@@ -276,7 +276,7 @@ func (h *Handler) GetBookChapterInfo(c *gin.Context) {
 
 // SearchBookChaptersV2 搜索章节
 // @Summary 搜索章节
-// @Description 搜索章节，支持多条件过滤、排序和高亮
+// @Description 搜索章节，支持多条件过滤和高亮；结果固定按 created_at 倒序、id 倒序排列。响应包含 next_time_ms 和 next_id 作为下一页游标，两者都为空表示没有更多记录；原始 ES 页满 limit 时即使 chapters 为空也应使用非空游标继续翻页。
 // @Tags 章节管理
 // @Accept json
 // @Produce json
@@ -287,10 +287,10 @@ func (h *Handler) GetBookChapterInfo(c *gin.Context) {
 // @Param created_at_end query string false "创建结束时间 (Unix)"
 // @Param price_start query int false "价格最小值 (分)"
 // @Param price_end query int false "价格最大值 (分)"
-// @Param order query string false "排序字段 (created_at|price)"
-// @Param order_direction query string false "排序方向 (asc|desc)"
-// @Param last_id query string false "用于向后分页的最后一个ID"
-// @Success 200 {object} response.Response{data=dto.SearchBookChaptersV2Response}
+// @Param last_time_ms query int false "上一页最后一条的 created_at (Unix 毫秒)，必须与 last_id 同时传入"
+// @Param last_id query string false "上一页最后一条的 ID，必须与 last_time_ms 同时传入"
+// @Param limit query int false "每页数量 (1-100)" default(10)
+// @Success 200 {object} response.Response{data=dto.SearchBookChaptersV2Response} "chapters 为结果列表，next_time_ms / next_id 为下一页游标"
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v2/chapters/search [get]
@@ -300,7 +300,7 @@ func (h *Handler) SearchBookChaptersV2(c *gin.Context) {
 
 	chapters, err := h.bookChapterService.SearchBookChaptersV2(c.Request.Context(), req)
 	if err != nil {
-		response.InternalError(c, err)
+		response.PushError(c, err)
 		return
 	}
 	response.Success(c, chapters)

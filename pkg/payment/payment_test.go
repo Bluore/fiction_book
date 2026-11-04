@@ -20,9 +20,9 @@ func TestAmount(t *testing.T) {
 
 func TestOrderStatus(t *testing.T) {
 	assert.Equal(t, OrderStatus(1), StatusSuccess)
-	assert.Equal(t, OrderStatus(2), StatusFail)
-	assert.Equal(t, OrderStatus(3), StatusPending)
-	assert.Equal(t, OrderStatus(4), StatusError)
+	assert.Equal(t, OrderStatus(2), StatusPending)
+	assert.Equal(t, OrderStatus(3), StatusError)
+	assert.Equal(t, OrderStatus(4), StatusClose)
 }
 
 func TestAlipayConfig(t *testing.T) {

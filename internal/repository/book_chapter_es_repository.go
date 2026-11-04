@@ -16,7 +16,7 @@ type BookChapterESRepository interface {
 	Create(ctx context.Context, chapter *model.BookChapter) error
 	Update(ctx context.Context, chapter *model.BookChapter) error
 	Delete(ctx context.Context, id string) error
-	Search(ctx context.Context, filter model.BookChapterFilterWithIDPage) ([]model.BookChapterSearchResult, error)
+	Search(ctx context.Context, filter model.BookChapterFilterWithIDPage) (*model.BookChapterSearchPage, error)
 }
 
 type bookChapterESRepository struct {
@@ -102,7 +102,7 @@ func (r *bookChapterESRepository) Delete(ctx context.Context, id string) error {
 }
 
 // Search 搜索图书章节ES
-func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookChapterFilterWithIDPage) ([]model.BookChapterSearchResult, error) {
+func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookChapterFilterWithIDPage) (*model.BookChapterSearchPage, error) {
 	query := map[string]interface{}{
 		"bool": map[string]interface{}{
 			"must": []interface{}{},
@@ -195,15 +195,43 @@ func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookC
 		)
 	}
 
-	// 处理 LastID 筛选：ID 比 LastID 小的结果 (游标查询)
-	if filter.LastID != nil && *filter.LastID != "" {
+	// 处理游标筛选：(created_at, id) 严格小于游标，与固定排序保持一致
+	if filter.Cursor != nil {
 		query["bool"].(map[string]interface{})["must"] = append(
 			query["bool"].(map[string]interface{})["must"].([]interface{}),
 			map[string]interface{}{
-				"range": map[string]interface{}{
-					"id": map[string]interface{}{
-						"lt": *filter.LastID,
+				"bool": map[string]interface{}{
+					"should": []interface{}{
+						map[string]interface{}{
+							"range": map[string]interface{}{
+								"created_at": map[string]interface{}{
+									"lt": filter.Cursor.TimeMS,
+								},
+							},
+						},
+						map[string]interface{}{
+							"bool": map[string]interface{}{
+								"must": []interface{}{
+									map[string]interface{}{
+										"range": map[string]interface{}{
+											"created_at": map[string]interface{}{
+												"gte": filter.Cursor.TimeMS,
+												"lte": filter.Cursor.TimeMS,
+											},
+										},
+									},
+									map[string]interface{}{
+										"range": map[string]interface{}{
+											"id": map[string]interface{}{
+												"lt": filter.Cursor.ID,
+											},
+										},
+									},
+								},
+							},
+						},
 					},
+					"minimum_should_match": 1,
 				},
 			},
 		)
@@ -225,21 +253,11 @@ func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookC
 		}
 	}
 
-	// 处理排序：先按用户指定的字段排序，最后固定以ID降序排序
-	if filter.Order == "" {
-		filter.Order = model.BookChapterOrderCreatedAt
-	}
-	var userSortOrder string
-	if filter.OrderDirection == model.SortOrderAsc {
-		userSortOrder = "asc"
-	} else {
-		userSortOrder = "desc"
-	}
-
+	// 固定排序：先按创建时间倒序，再以 ID 降序作为唯一 tie-breaker
 	requestBody["sort"] = []map[string]interface{}{
 		{
-			string(filter.Order): map[string]interface{}{
-				"order": userSortOrder,
+			"created_at": map[string]interface{}{
+				"order": "desc",
 			},
 		},
 		{
@@ -275,6 +293,7 @@ func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookC
 			Hits []struct {
 				Source    model.BookChapter   `json:"_source"`
 				Highlight map[string][]string `json:"highlight"`
+				Sort      []json.RawMessage   `json:"sort"`
 			} `json:"hits"`
 		} `json:"hits"`
 	}
@@ -284,8 +303,9 @@ func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookC
 		return nil, fmt.Errorf("解析搜索响应失败: %w", err)
 	}
 
-	results := make([]model.BookChapterSearchResult, 0, len(searchResponse.Hits.Hits))
-	for _, hit := range searchResponse.Hits.Hits {
+	hits := searchResponse.Hits.Hits
+	results := make([]model.BookChapterSearchResult, 0, len(hits))
+	for _, hit := range hits {
 		// 处理高亮信息
 		highlightMap := make(map[string]string)
 		for field, fragments := range hit.Highlight {
@@ -300,5 +320,15 @@ func (r *bookChapterESRepository) Search(ctx context.Context, filter model.BookC
 		})
 	}
 
-	return results, nil
+	page := &model.BookChapterSearchPage{Results: results}
+	// 只请求 limit 条：满页时用最后一条命中记录的 hit.sort 作为下一页游标
+	if filter.Limit > 0 && len(hits) == filter.Limit {
+		cursor, err := parseSearchCursor(hits[len(hits)-1].Sort)
+		if err != nil {
+			return nil, fmt.Errorf("解析章节搜索游标失败: %w", err)
+		}
+		page.Next = cursor
+	}
+
+	return page, nil
 }

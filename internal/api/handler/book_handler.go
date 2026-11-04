@@ -399,7 +399,7 @@ func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
 
 // SearchBooksV2 搜索书籍
 // @Summary 搜索书籍
-// @Description 搜索书籍，支持多条件过滤、排序和高亮
+// @Description 搜索书籍，支持多条件过滤和高亮；结果固定按 pushed_at 倒序、id 倒序排列。响应包含 next_time_ms 和 next_id 作为下一页游标，两者都为空表示没有更多记录。
 // @Tags 书籍管理
 // @Accept json
 // @Produce json
@@ -416,11 +416,10 @@ func (h *Handler) GetBookListThermalMonthly(c *gin.Context) {
 // @Param bookshelf_amount_end query int false "书架数最大值"
 // @Param thermal_value_start query int false "热度最小值"
 // @Param thermal_value_end query int false "热度最大值"
-// @Param order query string false "排序字段 (thermal_value|browse_amount|bookshelf_amount|updated_at|pushed_at)" default(thermal_value)
-// @Param order_direction query string false "排序方向 (asc|desc)" default(desc)
-// @Param last_id query string false "用于向后分页的最后一个ID"
+// @Param last_time_ms query int false "上一页最后一条的 pushed_at (Unix 毫秒)，必须与 last_id 同时传入"
+// @Param last_id query string false "上一页最后一条的 ID，必须与 last_time_ms 同时传入"
 // @Param limit query int false "每页数量 (1-100)" default(10)
-// @Success 200 {object} response.Response{data=dto.SearchBooksV2Response}
+// @Success 200 {object} response.Response{data=dto.SearchBooksV2Response} "books 为结果列表，next_time_ms / next_id 为下一页游标"
 // @Failure 400 {object} response.Response "参数错误"
 // @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v2/books/search [get]
@@ -430,7 +429,7 @@ func (h *Handler) SearchBooksV2(c *gin.Context) {
 
 	books, err := h.bookService.SearchBooksV2(c.Request.Context(), req)
 	if err != nil {
-		response.InternalError(c, err)
+		response.PushError(c, err)
 		logger.Info("HTTP Handler: SearchBooksV2 err", zap.Error(err))
 		return
 	}

@@ -603,6 +603,15 @@ func (s *bookChapterService) GetChapterInfo(ctx context.Context, bookChapterID s
 
 // SearchBookChaptersV2 v2 版本的搜索章节方法，使用 Elasticsearch
 func (s *bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.SearchBookChaptersV2Request) (*dto.SearchBookChaptersV2Response, error) {
+	hasLastTime := req.LastTimeMS != nil
+	hasLastID := req.LastID != nil && *req.LastID != ""
+	if hasLastTime != hasLastID {
+		return nil, response.ErrParam
+	}
+	if hasLastTime && *req.LastTimeMS < 0 {
+		return nil, response.ErrParam
+	}
+
 	filter := model.BookChapterFilterWithIDPage{
 		Query:          req.Query,
 		BookID:         req.BookID,
@@ -610,25 +619,23 @@ func (s *bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.
 		CreatedAtEnd:   req.CreatedAtEnd,
 		PriceStart:     req.PriceStart,
 		PriceEnd:       req.PriceEnd,
-		Order:          req.Order,
-		OrderDirection: req.OrderDirection,
-		IDPage: model.IDPage{
-			LastID: req.LastID,
-			Limit:  req.Limit,
-		},
+		Limit:          req.Limit,
+	}
+	if hasLastTime && hasLastID {
+		filter.Cursor = &model.SearchCursor{TimeMS: *req.LastTimeMS, ID: *req.LastID}
 	}
 
 	if req.VIPLevel != "" {
 		filter.VIPLevel = strings.Split(req.VIPLevel, ",")
 	}
 
-	esResults, err := s.bookChapterESRepo.Search(ctx, filter)
+	page, err := s.bookChapterESRepo.Search(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make([]*dto.BookChapterSearchResult, 0, len(esResults))
-	for _, esResult := range esResults {
+	results := make([]*dto.BookChapterSearchResult, 0, len(page.Results))
+	for _, esResult := range page.Results {
 		// 查询关联的书籍信息以组合返回
 		bookDetail, err := queryBookDetailWithCache(ctx, s.db, s.bookCache, s.bookRepo, esResult.BookChapter.BookID)
 		if err != nil {
@@ -647,7 +654,11 @@ func (s *bookChapterService) SearchBookChaptersV2(ctx context.Context, req *dto.
 		})
 	}
 
-	return &dto.SearchBookChaptersV2Response{
-		Chapters: results,
-	}, nil
+	resp := &dto.SearchBookChaptersV2Response{Chapters: results}
+	// 下一页游标来自原始 ES 页，不能根据过滤后的结果重算
+	if page.Next != nil {
+		resp.NextTimeMS = page.Next.TimeMS
+		resp.NextID = page.Next.ID
+	}
+	return resp, nil
 }

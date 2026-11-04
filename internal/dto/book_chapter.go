@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"fiction-book/internal/model"
 	"time"
 )
 
@@ -72,17 +71,16 @@ type BuyBookChapterRequest struct {
 
 // SearchBookChaptersV2Request v2 版本的搜索章节请求
 type SearchBookChaptersV2Request struct {
-	Query          string                 `form:"query"`
-	BookID         string                 `form:"book_id"`
-	VIPLevel       string                 `form:"vip_level"`
-	CreatedAtStart time.Time              `form:"created_at_start" time_format:"unix"`
-	CreatedAtEnd   time.Time              `form:"created_at_end" time_format:"unix"`
-	PriceStart     int64                  `form:"price_start"`
-	PriceEnd       int64                  `form:"price_end"`
-	Order          model.BookChapterOrder `form:"order"`
-	OrderDirection model.SortOrder        `form:"order_direction"`
-	LastID         *string                `form:"last_id"`
-	Limit          int                    `form:"limit"`
+	Query          string    `form:"query"`
+	BookID         string    `form:"book_id"`
+	VIPLevel       string    `form:"vip_level"`
+	CreatedAtStart time.Time `form:"created_at_start" time_format:"unix"`
+	CreatedAtEnd   time.Time `form:"created_at_end" time_format:"unix"`
+	PriceStart     int64     `form:"price_start"`
+	PriceEnd       int64     `form:"price_end"`
+	LastTimeMS     *int64    `form:"last_time_ms"`
+	LastID         *string   `form:"last_id"`
+	Limit          int       `form:"limit"`
 }
 
 func (p *SearchBookChaptersV2Request) ToStandard() *SearchBookChaptersV2Request {
@@ -91,12 +89,6 @@ func (p *SearchBookChaptersV2Request) ToStandard() *SearchBookChaptersV2Request 
 	}
 	if p.Limit > 100 {
 		p.Limit = 100
-	}
-	if p.Order == "" {
-		p.Order = model.BookChapterOrderCreatedAt
-	}
-	if p.OrderDirection == "" {
-		p.OrderDirection = model.SortOrderDesc
 	}
 	return p
 }
@@ -109,5 +101,7 @@ type BookChapterSearchResult struct {
 
 // SearchBookChaptersV2Response v2 版本的搜索响应
 type SearchBookChaptersV2Response struct {
-	Chapters []*BookChapterSearchResult `json:"chapters"`
+	Chapters   []*BookChapterSearchResult `json:"chapters"`
+	NextTimeMS int64                      `json:"next_time_ms"`
+	NextID     string                     `json:"next_id"`
 }

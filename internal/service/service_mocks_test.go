@@ -438,6 +438,30 @@ func (m *MockBookChapterRepository) BookChapterContentUpdate(ctx context.Context
 	return m.Called(ctx, db, id, bookChapterContent).Error(0)
 }
 
+// ---------- BookESRepository ----------
+
+type MockBookESRepository struct {
+	mock.Mock
+}
+
+func (m *MockBookESRepository) Create(ctx context.Context, book *model.Book) error {
+	return m.Called(ctx, book).Error(0)
+}
+
+func (m *MockBookESRepository) Update(ctx context.Context, book *model.Book) error {
+	return m.Called(ctx, book).Error(0)
+}
+
+func (m *MockBookESRepository) Delete(ctx context.Context, id string) error {
+	return m.Called(ctx, id).Error(0)
+}
+
+func (m *MockBookESRepository) Search(ctx context.Context, filter *model.BookFilterWithIDPage) (*model.BookSearchPage, error) {
+	args := m.Called(ctx, filter)
+	page, _ := args.Get(0).(*model.BookSearchPage)
+	return page, args.Error(1)
+}
+
 // ---------- BookChapterESRepository ----------
 
 type MockBookChapterESRepository struct {
@@ -456,10 +480,10 @@ func (m *MockBookChapterESRepository) Delete(ctx context.Context, id string) err
 	return m.Called(ctx, id).Error(0)
 }
 
-func (m *MockBookChapterESRepository) Search(ctx context.Context, filter model.BookChapterFilterWithIDPage) ([]model.BookChapterSearchResult, error) {
+func (m *MockBookChapterESRepository) Search(ctx context.Context, filter model.BookChapterFilterWithIDPage) (*model.BookChapterSearchPage, error) {
 	args := m.Called(ctx, filter)
-	results, _ := args.Get(0).([]model.BookChapterSearchResult)
-	return results, args.Error(1)
+	page, _ := args.Get(0).(*model.BookChapterSearchPage)
+	return page, args.Error(1)
 }
 
 // ---------- UserPurchasedChapterRepository ----------

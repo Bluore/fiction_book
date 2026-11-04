@@ -2,16 +2,9 @@ package model
 
 import "time"
 
-type SortOrder string
-
-const (
-	SortOrderAsc  SortOrder = "asc"
-	SortOrderDesc SortOrder = "desc"
-)
-
-type IDPage struct {
-	LastID *string `json:"last_id"` // 分页查询时，上一页的最后一个ID
-	Limit  int     `json:"limit"`   // 分页查询时，每页数量
+type SearchCursor struct {
+	TimeMS int64
+	ID     string
 }
 
 type TimePage struct {
